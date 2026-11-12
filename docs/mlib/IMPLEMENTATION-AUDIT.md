@@ -208,3 +208,10 @@ No Spotygram private data is imported. Android package sandboxing and the new de
 ### Validation status for this branch
 
 The identity and build configuration changes are committed, but a new baseline build on this branch has not yet completed. The earlier CI run on `upgrade/mlib-phase-0` does not validate this branch. APK manifest inspection, side-by-side installation, Telegram login, database, playback, CloudSync and desktop coexistence remain NOT VALIDATED. Do not distribute this branch as a production build.
+
+
+### CloudSync isolation correction for coexistence
+
+The inherited Spotygram CloudSync identifiers must not be retained for an independent installation. This supersedes the earlier in-place-upgrade compatibility recommendation in this audit. MLib now uses a separate namespace: `mlib-sync/3`, `mlib-storage/1`, MLib-prefixed channel titles and an MLib-specific local cache filename. Discovery searches for MLib storage descriptions only; the protocol parser accepts MLib markers only. The payload/schema format remains version 3, but the channel identity and protocol markers are intentionally different so that MLib cannot adopt or mutate the Spotygram library-sync channel on the same Telegram account.
+
+This change is source-level only and has not yet been verified against a live Telegram account. The first authenticated run must prove that MLib creates/discovers its own channel and leaves the Spotygram sync channel untouched.
