@@ -1,6 +1,6 @@
 # Using Spotygram
 
-[Documentation](README.md) · **English** · [Русский](usage.ru.md)
+[Documentation](README.md) · **English**
 
 Spotygram plays audio from Telegram chats, music pinned to user profiles and local
 files. Favorites, playlists and selected sources sync through your account;
