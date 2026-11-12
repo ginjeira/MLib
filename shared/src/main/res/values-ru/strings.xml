@@ -108,7 +108,7 @@
     <string name="audio_recording">"Аудиозапись"</string>
     <string name="audio_unavailable">"Аудиофайл недоступен"</string>
     <string name="auth_payment_help">"Telegram требует оплату для этого способа входа. Попробуйте сначала войти в официальном приложении."</string>
-    <string name="auth_privacy_help">"Неофициальное приложение на Telegram API. Вход создаёт сессию с доступом к аккаунту. spotygram создаёт приватный канал без уведомлений в архиве для синхронизации библиотеки. Ты выбираешь источники музыки и можешь слушать музыку профилей. Сессия хранится на этом устройстве."</string>
+    <string name="auth_privacy_help">"Неофициальное приложение на Telegram API. Вход создаёт сессию с доступом к аккаунту. MLib создаёт приватный канал без уведомлений в архиве для синхронизации библиотеки. Ты выбираешь источники музыки и можешь слушать музыку профилей. Сессия хранится на этом устройстве."</string>
     <string name="back">"Назад"</string>
     <string name="cancel">"Отмена"</string>
     <string name="resume_long_audio">Запоминать позицию</string>
@@ -341,7 +341,7 @@
     <string name="update_current">У вас актуальная версия.</string>
     <string name="update_failed">Не удалось проверить GitHub. Попробуйте позже.</string>
     <string name="update_wait">Недавно уже проверяли. Попробуйте позже.</string>
-    <string name="update_available">Доступна spotygram %1$s</string>
+    <string name="update_available">Доступна MLib %1$s</string>
     <string name="update_view">Открыть релиз</string>
     <string name="update_dismiss">Больше не напоминать об этой версии</string>
     <string name="update_no_browser">Нет приложения для открытия страницы релиза.</string>
