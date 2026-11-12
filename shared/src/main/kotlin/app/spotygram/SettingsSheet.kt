@@ -364,7 +364,7 @@ fun SettingsSheet(
             }
             item(key = "about") {
                 Text(
-                    "spotygram ${BuildConfig.VERSION_NAME}",
+                    "MLib ${BuildConfig.VERSION_NAME}",
                     Modifier.padding(top = 20.dp),
                     style = MaterialTheme.typography.titleMedium,
                 )
