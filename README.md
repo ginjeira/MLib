@@ -1,21 +1,23 @@
 <p align="center">
-  <strong>English</strong> · <a href="README.ru.md">Русский</a>
+  <strong>MLib development branch</strong> · <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
-  <img src="docs/banner.png" alt="spotygram — Telegram music player with a pink Takopi plush" width="100%">
+  <img src="docs/banner.png" alt="MLib — inherited Telegram music player artwork" width="100%">
 </p>
 
 <p align="center">
-  <strong>A music player for Telegram chats, profile music and local files.</strong><br>
-  Android · Windows · Linux · macOS
+  <strong>MLib is an independent music library application for Telegram, built from the Spotygram codebase.</strong><br>
+  Android first · Desktop development in progress
 </p>
 
 <p align="center">
-  <a href="https://github.com/Krablante/spotygram/releases/latest"><strong>Download Spotygram</strong></a> ·
-  <a href="docs/usage.md">User guide</a> ·
+  <a href="docs/build.md"><strong>Build MLib</strong></a> ·
+  <a href="docs/mlib/README.md">MLib implementation notes</a> ·
   <a href="docs/README.md">Documentation</a>
 </p>
+
+> **Development status:** MLib is a separate application, not an update of Spotygram. Its Android package is `pt.ginjeira.mlib`; it uses its own private data, Telegram session storage and CloudSync channel. No production MLib release is available yet. Do not install Spotygram release APKs as MLib.
 
 ## From a chat to a music library
 
