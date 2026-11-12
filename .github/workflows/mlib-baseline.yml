@@ -78,6 +78,6 @@ jobs:
         run: python3 tools/build-desktop.py --image-only
       - name: Verify desktop launcher and runtime image
         run: |
-          test -x "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/bin/Spotygram"
-          test -s "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/lib/app/Spotygram.cfg"
-          find "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram" -maxdepth 2 -type f | head -40
+          test -x "$MLIB_STATE/build/desktop/distributions/main/app/MLib/bin/MLib"
+          test -s "$MLIB_STATE/build/desktop/distributions/main/app/MLib/lib/app/MLib.cfg"
+          find "$MLIB_STATE/build/desktop/distributions/main/app/MLib" -maxdepth 2 -type f | head -40
