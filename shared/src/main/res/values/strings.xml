@@ -41,7 +41,7 @@
     <string name="profile_open_to_retry">Open your profile to view saved music or try again.</string>
     <string name="library_open_failed">"Could not open your library. Close MLib and try again. Your data has been kept; do not clear it to fix a startup error."</string>
     <string name="language_english">English</string>
-    <string name="language_russian">Русский</string>
+    <string name="language_portuguese">Português</string>
     <string name="show_window">Open MLib</string>
     <string name="quit_app">Quit MLib</string>
     <string name="update_restart_title">Restart to install?</string>
@@ -90,7 +90,7 @@
     <string name="random_pool_help">%1$s · each next song is chosen independently. Playback continues until you stop it.</string>
     <string name="next_named">Next: %1$s</string>
     <string name="language">Language</string>
-    <string name="language_help">Choose English, Russian or your device language.</string>
+    <string name="language_help">Choose Portuguese, English or your device language.</string>
     <string name="action_failed">"Could not complete the action. Please try again."</string>
     <string name="add_chats">"Add chats"</string>
     <string name="add_query">"Add %1$s"</string>
