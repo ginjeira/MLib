@@ -20,11 +20,11 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Decision:** MCat is the separately developed system for obtaining music through a Telegram bot. It is a capability integrated into MLib, not the application name.  
 **Rationale:** Separates product/library responsibilities from acquisition.
 
-## D-004 — MCat Player status
+## D-004 — MCat Player status and role
 
 **Status:** Accepted  
-**Decision:** MCat Player was never in production. It has no production history to preserve and is not a runtime or code dependency. Useful features and lessons may be selectively reimplemented.  
-**Rationale:** A prototype should not constrain MLib architecture or be treated as an operational system.
+**Decision:** MCat Player was never in production, so it has no production history to preserve and is not a runtime dependency. It is nevertheless an explicit functional and knowledge source for MLib. Its useful workflows, features and lessons must be inventoried and selectively reimplemented.  
+**Rationale:** MLib should benefit from the work already done in MCat Player without inheriting its architectural/security weaknesses or treating it as an operational system.
 
 ## D-005 — Platform scope and sequence
 
@@ -100,7 +100,13 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Impact:** Upstream notice says the Takopi character/photo is not covered by the software's MIT licence. The code licence does not grant rights to that artwork.
 
 
-## D-017 — Candidate MCat integration path
+## D-017 — Both MCat projects as knowledge sources
+
+**Status:** Accepted  
+**Decision:** Both the MCat acquisition system and the separate MCat Player project are sources of functionality and technical knowledge for MLib. Spotygram remains the initial codebase.  
+**Rationale:** MCat supplies the working acquisition workflow; MCat Player supplies additional user-facing capabilities and lessons. The feature matrix records candidate carry-forward decisions.
+
+## D-018 — Candidate MCat integration path
 
 **Status:** Candidate; requires end-to-end proof  
 **Decision direction:** Investigate using the existing MCat FastAPI service for search/job orchestration and the configured Telegram destination as the media delivery channel. MLib would ingest forwarded messages through its existing TDLib/Spotygram source pipeline.  
