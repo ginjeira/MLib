@@ -37,7 +37,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 
 - Do not import, copy, open or mutate Spotygram's private database, TDLib files, keyring entries, preferences or media directories.
 - MLib may use the same Telegram account, but it must establish its own TDLib session and private data directory.
-- Keep the inherited SQLite schema and cloud-sync protocol markers compatible for now, but MLib must discover/create its own sync channel. It must not adopt the Spotygram channel automatically or reuse it as an MCat destination.
+- Keep the SQLite record/schema format compatible where practical, but use a distinct MLib CloudSync namespace: `mlib-sync/3`, `mlib-storage/1`, and `mlib-<id>` channel titles. MLib must never discover, parse, adopt, mute or write to Spotygram's `spotygram-sync/*` / `spotygram-storage/*` channel. It must not reuse that channel as an MCat destination.
 - MCat production remains untouched.
 - Release update checks target the MLib repository only. There must be no fallback to Spotygram releases.
 
