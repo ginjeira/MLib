@@ -283,7 +283,7 @@ class UpdateInstaller(private val app: AndroidApplication) : UpdateInstallation 
                 Intent(Intent.ACTION_VIEW)
                     .setDataAndType(uri, "application/vnd.android.package-archive")
                     .apply {
-                        clipData = ClipData.newRawUri("Spotygram update", uri)
+                        clipData = ClipData.newRawUri("MLib update", uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
             )
