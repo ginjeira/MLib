@@ -17,13 +17,13 @@ import java.util.concurrent.TimeUnit
 class DesktopPlatform : Platform, AutoCloseable {
     override val filesDir = System.getProperty("mlib.data.dir")?.let(::File) ?: when (DesktopTarget.os) {
         "windows" -> File(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"), "MLib")
-        "macos" -> File(System.getProperty("user.home"), "Library/Application Support/Spotygram")
+        "macos" -> File(System.getProperty("user.home"), "Library/Application Support/MLib")
         else -> File(System.getenv("XDG_DATA_HOME") ?: "${System.getProperty("user.home")}/.local/share", "mlib")
     }
     override val cacheDir = if (System.getProperty("mlib.data.dir") != null) File(filesDir, "cache")
         else when (DesktopTarget.os) {
             "windows" -> File(filesDir, "cache")
-            "macos" -> File(System.getProperty("user.home"), "Library/Caches/Spotygram")
+            "macos" -> File(System.getProperty("user.home"), "Library/Caches/MLib")
             else -> File(System.getenv("XDG_CACHE_HOME") ?: "${System.getProperty("user.home")}/.cache", "mlib")
         }
     private val writer = Executors.newSingleThreadExecutor { task ->
@@ -42,7 +42,7 @@ class DesktopPlatform : Platform, AutoCloseable {
     override val deviceModel get() = "${DesktopTarget.os} ${DesktopTarget.arch}"
     override val systemVersion get() = System.getProperty("os.version")
     override val releaseAbi get() = DesktopTarget.id
-    override val testDc get() = BuildConfig.DEBUG && java.lang.Boolean.getBoolean("spotygram.telegram.test")
+    override val testDc get() = BuildConfig.DEBUG && java.lang.Boolean.getBoolean("mlib.telegram.test")
     override val locale get() = when (preferences("settings").getString("language", "system")) {
         "ru" -> Locale.forLanguageTag("ru")
         "en" -> Locale.ENGLISH
@@ -52,7 +52,7 @@ class DesktopPlatform : Platform, AutoCloseable {
 
     init {
         listOf(filesDir, cacheDir).forEach { directory ->
-            check(directory.isDirectory || directory.mkdirs()) { "spotygram storage could not be created" }
+            check(directory.isDirectory || directory.mkdirs()) { "MLib storage could not be created" }
             if (DesktopTarget.os != "windows") Files.setPosixFilePermissions(directory.toPath(),
                 setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE))
         }
@@ -67,7 +67,7 @@ class DesktopPlatform : Platform, AutoCloseable {
         val db = DesktopDatabase(File(filesDir, name))
         try {
             val old = db.rawQuery("PRAGMA user_version", null).use { it.moveToFirst(); it.getInt(0) }
-            check(old <= version) { "This library needs a newer spotygram version" }
+            check(old <= version) { "This library needs a newer MLib version" }
             if (old < version) db.transaction {
                 if (old == 0) create(this) else upgrade(this, old, version)
                 execSQL("PRAGMA user_version=$version")
