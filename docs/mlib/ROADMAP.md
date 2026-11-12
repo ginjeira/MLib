@@ -53,8 +53,10 @@ Acceptance:
 **Goal:** understand the existing MCat workflow before writing integration code.
 
 Tasks:
-- Inspect MCat bot implementation and current production interaction.
-- Document commands, message formats, response correlation, media delivery, concurrency, limits, errors and retry behaviour.
+- Inspect MCat bot implementation and current production interaction. (Initial static inspection completed against ginjeira/MCat.)
+- Validate the deployed revision and document commands, message formats, response correlation, media delivery, concurrency, limits, errors and retry behaviour.
+- Verify the existing FastAPI endpoints and whether they can serve as a stable native-client integration surface.
+- Prove how MLib can correlate an MCat job with the messages forwarded to the configured destination.
 - Map track, album and playlist workflows.
 - Identify stable IDs and metadata for deduplication.
 - Define adapter contract and acquisition state machine.
@@ -183,7 +185,7 @@ Acceptance:
 ## Initial execution order
 
 1. Finish Phase 0 audit and baseline.
-2. Inspect MCat implementation and write its protocol specification.
+2. Complete MCat live protocol validation and prove destination-message correlation.
 3. Decide identity/package migration before creating distributable MLib builds.
 4. Implement track acquisition end-to-end.
 5. Add albums/playlists and automatic playlist creation.
