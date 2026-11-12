@@ -4,9 +4,9 @@
 
 ## 1. Product vision
 
-MLib is a music library that lets users collect, organise, discover, complete and play music. It combines the existing Spotygram library/player experience with MCat, the separately developed Telegram-bot-based system for obtaining music.
+MLib is a music library that lets users collect, organise, discover, complete and play music. It combines the existing Spotygram library/player experience with MCat, the separately developed Telegram-bot-based system for obtaining music, and selectively carries forward useful features and lessons from the separate MCat Player project.
 
-The distinguishing workflow is not merely downloading a track. MLib should understand the user's collection, identify incomplete albums and make it straightforward to obtain missing music through MCat.
+The distinguishing workflow is not merely downloading a track. MLib should understand the user's collection, identify incomplete albums and make it straightforward to obtain missing music through MCat. Both MCat and MCat Player are functional/knowledge sources: MCat for the actual acquisition engine and its playlist/deduplication logic; MCat Player for user-facing workflows, source management, library concepts, duplicate review and playback/MediaSession lessons. See [Source projects and feature matrix](SOURCE-FEATURE-MATRIX.md).
 
 ## 2. Product principles
 
