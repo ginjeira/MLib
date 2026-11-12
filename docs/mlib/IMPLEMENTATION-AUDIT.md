@@ -189,3 +189,22 @@ Only user-visible wording and selected runtime labels have changed in the initia
 - Android job successfully provisioned JDK 21, Android SDK platform 37.0, build-tools 36.0.0, NDK 28.2.13676358 and native build tools. Native build is running; logs show OpenSSL Android ARM64 compilation with non-fatal `__ANDROID_API__` macro-redefinition warnings. TDLib compilation and APK assembly/output assertions have not yet been reported complete.
 - Android result remains NOT VALIDATED until the job completes and both ABI APK output assertions pass.
 - No artifacts are uploaded by this baseline workflow. It is not a release or signing workflow.
+
+## Superseding decision: independent MLib installation (12 Nov 2026)
+
+The initial in-place successor assumption recorded above is superseded. The user confirmed that Spotygram is a third-party project, that the two original private release keys are unavailable, and that MLib must coexist with Spotygram. MLib must not replace or update Spotygram.
+
+The new authoritative decision is documented in [INDEPENDENT-IDENTITY.md](INDEPENDENT-IDENTITY.md). This branch implements the first isolation slice:
+
+- Android release application ID is now `pt.ginjeira.mlib`; debug uses `pt.ginjeira.mlib.dev`. The inherited source namespace `app.spotygram` is retained temporarily to avoid a broad source/R-class refactor and is not the Android install identity.
+- MLib version starts at 0.1.0 / versionCode 1. It is not an update of Spotygram.
+- Android database keystore alias is MLib-specific.
+- Build state is now `MLIB_STATE`, defaulting to `~/.local/state/mlib`; no fallback to `SPOTYGRAM_STATE` is allowed.
+- Desktop runtime paths, cache paths, keyring account and runtime app ID are MLib-specific. The desktop image is named MLib.
+- Desktop release packaging is explicitly disabled until the inherited installer/updater/manifest identities are migrated and a new MLib Ed25519 key pair is provisioned. No Spotygram private key is requested or reused.
+
+No Spotygram private data is imported. Android package sandboxing and the new desktop paths/keyring account provide separate storage boundaries. MLib may authenticate to the same Telegram account using its own TDLib database and session.
+
+### Validation status for this branch
+
+The identity and build configuration changes are committed, but a new baseline build on this branch has not yet completed. The earlier CI run on `upgrade/mlib-phase-0` does not validate this branch. APK manifest inspection, side-by-side installation, Telegram login, database, playback, CloudSync and desktop coexistence remain NOT VALIDATED. Do not distribute this branch as a production build.
