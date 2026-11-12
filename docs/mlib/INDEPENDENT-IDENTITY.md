@@ -11,9 +11,10 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - Release application ID: `pt.ginjeira.mlib`.
 - Debug application ID: `pt.ginjeira.mlib.dev`.
 - The inherited Kotlin/Android namespace remains `app.spotygram` temporarily. It is a source-code namespace, not the installed application identity; retaining it avoids a broad generated-`R` and manifest-class refactor in the same change.
-- MLib starts with versionCode 1 and versionName 0.1.0. It has no update relationship with Spotygram.
+- MLib starts with versionName `0.1.0`. Android `versionCode` is derived monotonically from `MAJOR.MINOR.PATCH` as `MAJOR * 1,000,000 + MINOR * 1,000 + PATCH` (minor and patch must each be below 1000). It has no update relationship with Spotygram.
 - Android's per-package sandbox, SharedPreferences, databases, files, Android Keystore UID scope and FileProvider authority are now distinct from Spotygram.
 - The database encryption alias is MLib-specific.
+- Android release assets use `mlib-VERSION-arm64.apk` and `mlib-VERSION-x86_64.apk`; the updater and manual release workflow use the same naming contract.
 - A new MLib release keystore is expected at `$MLIB_STATE/mlib-release.jks`, with properties in `$MLIB_STATE/signing.properties`; the alias defaults to `mlib`. No key is generated or checked into this branch. Debug builds use Android's debug signer and can be installed alongside Spotygram.
 
 ## Build and native state (implemented)
@@ -31,6 +32,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
   - Linux: `$XDG_DATA_HOME/mlib` and `$XDG_CACHE_HOME/mlib` (with standard home-directory fallbacks)
 - Desktop keyring account identity is `pt.ginjeira.mlib`; runtime app/AUMID identity is also MLib-specific.
 - The desktop application image is now named MLib.
+- The desktop image-only build now uses the MLib application image paths; the legacy Spotygram package generator and release workflow are disabled.
 - **Desktop installer/release publication remains disabled.** The inherited packaging scripts, signed bundle manifest and updater still contain Spotygram assumptions. They must be migrated together, including a fresh MLib Ed25519 key pair and trusted public key, before a desktop installer can be distributed. The build script explicitly refuses to package/publish a desktop release until that work is complete.
 
 ## Compatibility boundaries
