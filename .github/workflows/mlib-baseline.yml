@@ -1,9 +1,6 @@
 name: MLib baseline validation
 
 on:
-  push:
-    branches:
-      - upgrade/mlib-phase-0
   pull_request:
     branches:
       - main
