@@ -7,7 +7,7 @@ plugins {
     id("org.jetbrains.compose")
 }
 
-val buildState = rootProject.extra["spotygramState"] as String
+val buildState = rootProject.extra["mlibState"] as String
 val credentials =
     Properties().apply {
         val file = file("$buildState/telegram.env")
@@ -19,7 +19,7 @@ fun credential(name: String) =
 
 val licenseAssets =
     tasks.register<Copy>("prepareLicenseAssets") {
-        from(rootProject.file("LICENSE")) { rename { "Spotygram-MIT.txt" } }
+        from(rootProject.file("LICENSE")) { rename { "MLib-MIT.txt" } }
         from(rootProject.file("shared/licenses/Fluent-Emoji-MIT.txt"))
         from(rootProject.file("shared/licenses/Takopi-artwork-NOTICE.txt"))
         from(file("$buildState/tdlib-src/LICENSE_1_0.txt")) { rename { "Boost-1.0.txt" } }
@@ -28,14 +28,16 @@ val licenseAssets =
     }
 
 android {
+    // Keep the inherited Kotlin source namespace for now; the install identity is
+    // applicationId, which is deliberately unique to MLib.
     namespace = "app.spotygram"
     compileSdk = 37
     ndkVersion = "28.2.13676358"
     defaultConfig {
-        applicationId = "app.spotygram"
+        applicationId = "pt.ginjeira.mlib"
         minSdk = 26
         targetSdk = 36
-        versionCode = 50
+        versionCode = 1
         versionName = rootProject.version.toString()
         buildConfigField("int", "TELEGRAM_API_ID", credential("TELEGRAM_API_ID").ifBlank { "0" })
         buildConfigField("String", "TELEGRAM_API_HASH", "\"${credential("TELEGRAM_API_HASH")}\"")
@@ -46,10 +48,10 @@ android {
             val props = Properties()
             val path = file("$buildState/signing.properties")
             if (path.exists()) path.inputStream().use { props.load(it) }
-            storeFile = file("$buildState/release.jks")
+            storeFile = file("$buildState/mlib-release.jks")
             storePassword = props.getProperty("storePassword", "")
-            keyAlias = "spotygram"
-            keyPassword = props.getProperty("storePassword", "")
+            keyAlias = props.getProperty("keyAlias", "mlib")
+            keyPassword = props.getProperty("keyPassword", "")
         }
     }
     buildTypes {
