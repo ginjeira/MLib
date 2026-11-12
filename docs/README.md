@@ -11,6 +11,7 @@ The [MLib project documentation](mlib/README.md) defines the new product scope, 
 | [Product specification](mlib/PRODUCT-SPEC.md) | Scope, platforms and functional requirements |
 | [Architecture](mlib/ARCHITECTURE.md) | Existing baseline and proposed design |
 | [MCat integration assessment](mlib/MCAT-INTEGRATION.md) | Source inspection of the existing MCat repository and integration options |
+| [Source projects and feature matrix](mlib/SOURCE-FEATURE-MATRIX.md) | Functional contribution of Spotygram, MCat and MCat Player |
 | [Roadmap](mlib/ROADMAP.md) | Phases and acceptance criteria |
 | [Decision record](mlib/DECISIONS.md) | Accepted decisions and open questions |
 
