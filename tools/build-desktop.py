@@ -47,7 +47,7 @@ def main():
         for log in sorted((state / 'build/desktop/compose/logs').rglob('*-err.txt')):
             print(log.read_text(errors='replace'), file=sys.stderr)
         raise SystemExit(error.returncode)
-    image = state / 'build/desktop/distributions/main/app' / ('Spotygram.app' if target_os == 'macos' else 'Spotygram')
+    image = state / 'build/desktop/distributions/main/app' / ('MLib.app' if target_os == 'macos' else 'MLib')
     if args.image_only:
         print(image)
         return
