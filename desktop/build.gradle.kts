@@ -11,7 +11,7 @@ plugins {
 }
 
 version = rootProject.version
-val buildState = rootProject.extra["spotygramState"] as String
+val buildState = rootProject.extra["mlibState"] as String
 val definitions = layout.buildDirectory.dir("generated/definitions")
 val generateDefinitions = tasks.register("generateDesktopDefinitions") {
     val strings = rootProject.file("shared/src/main/res/values/strings.xml")
@@ -148,7 +148,7 @@ compose.desktop {
         mainClass = "app.spotygram.DesktopMainKt"
         jvmArgs += listOf("-Xms32m", "-Xmx256m", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=10")
         nativeDistributions {
-            packageName = "Spotygram"
+            packageName = "MLib"
             packageVersion = rootProject.version.toString()
             modules("java.sql", "jdk.crypto.ec", "java.net.http", "jdk.unsupported", "jdk.security.auth")
             appResourcesRootDir.set(nativeDirectory.parentFile)
@@ -160,7 +160,7 @@ compose.desktop {
                     "${it[0].toInt() + 1}.${it[1]}.${it[2]}"
                 }
                 iconFile.set(icons.get().asFile.resolve("spotygram.icns"))
-                bundleID = "app.spotygram"
+                bundleID = "pt.ginjeira.mlib"
             }
             outputBaseDir.set(layout.buildDirectory.dir("distributions"))
         }
