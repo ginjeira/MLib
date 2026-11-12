@@ -39,16 +39,16 @@
     <string name="profile_offline">Offline. Downloaded songs can still play; refresh when connected.</string>
     <string name="profile_incomplete">Could not load the complete profile. Previous music is kept; try refreshing.</string>
     <string name="profile_open_to_retry">Open your profile to view saved music or try again.</string>
-    <string name="library_open_failed">"Could not open your library. Close spotygram and try again. Your data has been kept; do not clear it to fix a startup error."</string>
+    <string name="library_open_failed">"Could not open your library. Close MLib and try again. Your data has been kept; do not clear it to fix a startup error."</string>
     <string name="language_english">English</string>
     <string name="language_russian">Русский</string>
-    <string name="show_window">Open spotygram</string>
-    <string name="quit_app">Quit spotygram</string>
+    <string name="show_window">Open MLib</string>
+    <string name="quit_app">Quit MLib</string>
     <string name="update_restart_title">Restart to install?</string>
-    <string name="update_restart_help">spotygram will stop playback, install the verified update and reopen. Your library, playlists and Telegram sign-in will remain.</string>
+    <string name="update_restart_help">MLib will stop playback, install the verified update and reopen. Your library, playlists and Telegram sign-in will remain.</string>
     <string name="update_restart">Restart and install</string>
     <string name="update_package_title">Open the installer?</string>
-    <string name="update_package_help">spotygram will close and open the verified system installer. Complete installation, then open spotygram from your applications. Your library, playlists and Telegram sign-in will remain.</string>
+    <string name="update_package_help">MLib will close and open the verified system installer. Complete installation, then open spotygram from your applications. Your library, playlists and Telegram sign-in will remain.</string>
     <string name="update_package_open">Close and open installer</string>
     <string name="update_install_location">This copy cannot be updated in its current location. Keep the complete Spotygram folder in a location you can write to, then try again.</string>
     <string name="speed">Speed</string>
@@ -106,7 +106,7 @@
     <string name="audio_recording">"Audio recording"</string>
     <string name="audio_unavailable">"Audio file unavailable"</string>
     <string name="auth_payment_help">"Telegram requires payment for this sign-in method. Try signing in through the official app first."</string>
-    <string name="auth_privacy_help">"An unofficial Telegram API app. Signing in creates a session with account access. spotygram creates a private, muted channel in your archive to sync your library. You choose music sources and can browse profile music. The session stays on this device."</string>
+    <string name="auth_privacy_help">"An unofficial Telegram API app. Signing in creates a session with account access. MLib creates a private, muted channel in your archive to sync your library. You choose music sources and can browse profile music. The session stays on this device."</string>
     <string name="back">"Back"</string>
     <string name="cancel">"Cancel"</string>
     <string name="resume_long_audio">Remember audio positions</string>
@@ -168,7 +168,7 @@
     <string name="done_chats">"Done · selected: %1$s"</string>
     <string name="download">"Download"</string>
     <string name="download_channel">"Music downloads"</string>
-    <string name="download_notification_title">"spotygram · Downloads"</string>
+    <string name="download_notification_title">"MLib · Downloads"</string>
     <string name="download_progress">"Downloading: %1$s · %2$s%%"</string>
     <string name="download_selected">"Download selected"</string>
     <string name="download_to_device">"Download to device"</string>
@@ -337,7 +337,7 @@
     <string name="update_current">You have the latest version.</string>
     <string name="update_failed">Could not check GitHub. Try again later.</string>
     <string name="update_wait">Checked recently. Please try again later.</string>
-    <string name="update_available">spotygram %1$s is available</string>
+    <string name="update_available">MLib %1$s is available</string>
     <string name="update_view">View release</string>
     <string name="update_dismiss">Do not remind me about this version</string>
     <string name="update_no_browser">No app available to open the release page.</string>
@@ -354,7 +354,7 @@
     <string name="update_cancelling">Cancelling…</string>
     <string name="update_download_failed">Could not download the update. Check your connection and free space, then try again.</string>
     <string name="update_verification_failed">The update did not pass verification or is no longer available. Download it again.</string>
-    <string name="update_permission_needed">Allow installation from spotygram, then tap Install update again.</string>
+    <string name="update_permission_needed">Allow installation from MLib, then tap Install update again.</string>
     <string name="update_installer_failed">Could not install the update. You can try again or open the release on GitHub.</string>
     <string name="update_check_first">Check for updates again to refresh the download information.</string>
     <string name="discard_listened">Do not keep played tracks</string>
@@ -372,8 +372,8 @@
     <string name="sync_ready">Up to date across your devices.</string>
     <string name="sync_working">Saving and receiving library changes…</string>
     <string name="sync_offline">Changes stay on this device until Telegram reconnects.</string>
-    <string name="sync_paused">Sync is paused. Your changes are saved; spotygram will try again.</string>
-    <string name="sync_newer_version">Update spotygram to read this library format.</string>
+    <string name="sync_paused">Sync is paused. Your changes are saved; MLib will try again.</string>
+    <string name="sync_newer_version">Update MLib to read this library format.</string>
     <string name="sync_history_incomplete">Telegram library history is not available yet.</string>
     <string name="sync_invalid_data">The library file could not be verified.</string>
     <string name="sync_storage_missing">The private storage channel is unavailable. Restore access to it to continue syncing.</string>
@@ -395,7 +395,7 @@
     <string name="share_keep_caption">Keep original caption</string>
     <string name="share_keep_caption_help">Keep the text below the original audio. Track title, artist and artwork are retained either way.</string>
     <string name="share_author_caption_rule">Telegram keeps the existing caption when forwarding with the original sender. For a recording with a caption, enable both options or send a copy from your account.</string>
-    <string name="share_channel_identity_help">Channels and anonymous groups have their own sender rules. Spotygram uses your personal identity where Telegram permits it; channel posts can appear under the channel’s name.</string>
+    <string name="share_channel_identity_help">Channels and anonymous groups have their own sender rules. MLib uses your personal identity where Telegram permits it; channel posts can appear under the channel’s name.</string>
     <string name="share_caption_conflict">Telegram cannot remove this caption while keeping the original sender. Keep the caption or turn off the original sender.</string>
     <string name="share_enable_caption">Keep caption</string>
     <string name="share_from_you">From you</string>

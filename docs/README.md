@@ -24,3 +24,7 @@ Current downloads and release history have one home: the
 [releases page](https://github.com/Krablante/spotygram/releases).
 Detailed earlier verification evidence remains in the tagged source history,
 linked from the verification record.
+
+## MLib upgrade work
+
+The in-place Spotygram-to-MLib implementation audit and Telegram/MCat onboarding design are documented in the [MLib work index](mlib/README.md). This work is being reviewed separately from the MLib product-foundation documents.
