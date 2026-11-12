@@ -68,11 +68,12 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Question:** Should MLib install alongside Spotygram as a separate app, or replace/migrate an existing Spotygram installation?  
 **Impact:** Application ID, signing identity, update channel, package naming and data migration depend on this. Do not change inherited identity/signing until decided.
 
-## D-012 — MCat bot protocol
+## D-012 — MCat bot protocol and service surface
 
-**Status:** Open — required before adapter implementation  
-**Question:** What exact request/response protocol, destination chat, media delivery, correlation identifier, concurrency model and retry semantics does the current bot use?  
-**Impact:** Adapter and acquisition state machine cannot safely be implemented from assumptions.
+**Status:** Partially investigated; live validation still required  
+**Finding:** Static inspection of ginjeira/MCat confirms a Telethon-based Telegram user session, bot-driven search, a FastAPI Web API, SQLite job records and forwarding of acquired Telegram media to a configured destination chat. The Web API does not return audio bytes or per-track destination message IDs. The Telegram session and destination are shared by the MCat installation; a single lock and worker serialise its Telegram operations.  
+**Remaining work:** Verify the deployed revision and live request/response behaviour, confirm destination access from MLib's Telegram account, and establish reliable per-job media correlation.  
+**Impact:** A client adapter must respect the shared execution lane and cannot assume direct media delivery or independent Telegram sessions per Web user.
 
 ## D-013 — Desktop product support
 
@@ -97,3 +98,11 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Status:** Open  
 **Question:** Which Spotygram visual assets will be retained, adapted or replaced?  
 **Impact:** Upstream notice says the Takopi character/photo is not covered by the software's MIT licence. The code licence does not grant rights to that artwork.
+
+
+## D-017 — Candidate MCat integration path
+
+**Status:** Candidate; requires end-to-end proof  
+**Decision direction:** Investigate using the existing MCat FastAPI service for search/job orchestration and the configured Telegram destination as the media delivery channel. MLib would ingest forwarded messages through its existing TDLib/Spotygram source pipeline.  
+**Rationale:** Reuses both existing systems and avoids implementing a second Telegram bot workflow or media-transfer engine.  
+**Conditions:** Confirm the MLib Telegram account can read the destination, secure native-client authentication, establish per-job message correlation, and verify partial/failure/retry behaviour. The current API is an MVP and lacks per-track destination message IDs. Do not modify the production MCat service or rely on this path as final architecture until the proof succeeds.
