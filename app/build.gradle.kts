@@ -8,6 +8,12 @@ plugins {
 }
 
 val buildState = rootProject.extra["mlibState"] as String
+val versionParts = rootProject.version.toString().split(".").map(String::toInt)
+require(versionParts.size == 3 && versionParts[0] in 0..2099 && versionParts[1] in 0..999 && versionParts[2] in 0..999) {
+    "MLib version must be MAJOR.MINOR.PATCH with MINOR and PATCH below 1000"
+}
+val androidVersionCode = versionParts[0] * 1_000_000 + versionParts[1] * 1_000 + versionParts[2]
+require(androidVersionCode > 0) { "MLib Android versionCode must be positive" }
 val credentials =
     Properties().apply {
         val file = file("$buildState/telegram.env")
@@ -37,7 +43,7 @@ android {
         applicationId = "pt.ginjeira.mlib"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = androidVersionCode
         versionName = rootProject.version.toString()
         buildConfigField("int", "TELEGRAM_API_ID", credential("TELEGRAM_API_ID").ifBlank { "0" })
         buildConfigField("String", "TELEGRAM_API_HASH", "\"${credential("TELEGRAM_API_HASH")}\"")
