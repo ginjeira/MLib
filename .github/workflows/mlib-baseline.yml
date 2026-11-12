@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 90
     env:
       JAVA_TOOL_OPTIONS: '-XX:ActiveProcessorCount=2'
-      SPOTYGRAM_STATE: ${{ runner.temp }}/mlib-android-state
+      SPOTYGRAM_STATE: ${{ github.workspace }}/../mlib-android-state
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 60
     env:
       JAVA_TOOL_OPTIONS: '-XX:ActiveProcessorCount=2'
-      SPOTYGRAM_STATE: ${{ runner.temp }}/mlib-desktop-state
+      SPOTYGRAM_STATE: ${{ github.workspace }}/../mlib-desktop-state
       TELEGRAM_API_ID: '0'
       TELEGRAM_API_HASH: ''
     steps:
