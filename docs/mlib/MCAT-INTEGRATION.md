@@ -75,7 +75,11 @@ The playlist engine:
 
 This means the destination Telegram chat is currently the delivery channel for media. The MCat API does not return the audio file or, in the inspected response shape, a per-track destination message ID list.
 
-## 6. Candidate MLib integration flow
+## 6. Destination access confirmed by user
+
+The user has confirmed that the Telegram account intended for MLib has access to the GinjMusic group, where MCat forwards acquired music. This satisfies the user-side access precondition for investigating destination ingestion. It does not yet prove that TDLib can enumerate/read all required media or that MLib can correlate individual destination messages with an MCat job. Those remain end-to-end validation items.
+
+## 7. Candidate MLib integration flow
 
 The least disruptive first design to investigate is:
 
@@ -98,7 +102,7 @@ This reuses the existing MCat workflow and the Spotygram Telegram/library pipeli
 - Only one MCat acquisition operation should be active at a time until the service exposes reliable job correlation and capacity guarantees.
 - The current API does not expose destination message IDs. A robust per-job import therefore needs a reliable correlation mechanism.
 
-## 7. API gaps for a first-class MLib client
+## 8. API gaps for a first-class MLib client
 
 The current Web API is an MVP, not yet a versioned public integration contract. Before relying on it from MLib, evaluate:
 
@@ -115,7 +119,7 @@ The current Web API is an MVP, not yet a versioned public integration contract. 
 
 Do not expose the MCat Telegram user session or bot credentials to MLib. The native client should only communicate with a narrowly scoped authenticated service interface.
 
-## 8. What should not be done yet
+## 9. What should not be done yet
 
 - Do not replace the current MCat bot interaction with a new protocol.
 - Do not change or deploy modifications to the existing MCat production service as part of this MLib documentation phase.
@@ -125,7 +129,7 @@ Do not expose the MCat Telegram user session or bot credentials to MLib. The nat
 - Do not assume multiple simultaneous searches/jobs are safe.
 - Do not automatically delete or overwrite existing MLib tracks based on MCat duplicate summaries.
 
-## 9. Validation still required
+## 10. Validation still required
 
 This assessment is based on source inspection only. It does not establish that the current deployed MCat service is running this exact revision, that the Web endpoints are reachable from MLib, or that the configured destination is accessible to the MLib Telegram account.
 
