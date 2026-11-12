@@ -182,3 +182,10 @@ Only user-visible wording and selected runtime labels have changed in the initia
 - Both jobs use isolated temporary build state outside the checkout. Telegram API build credentials are set to non-working placeholders (0/empty) because compile validation does not require a real Telegram account or production API credentials. No user session or signing key is used.
 - The workflow has push, pull_request and workflow_dispatch triggers. The GitHub Actions run and commit status endpoints available during this work returned no run/status for the latest workflow commits. Therefore the workflow is committed but neither successful execution nor build output has yet been verified.
 - The baseline workflow is deliberately separate from the existing signed desktop release workflow and does not modify the release pipeline.
+## Baseline CI execution update (12 Nov 2026)
+
+- Run `43132643507` (`fix(ci): install Android 17 API 37.0 SDK package`) is executing against the current implementation branch.
+- Desktop Linux application image job completed successfully: `:desktop:createDistributable` finished and the workflow's launcher/runtime-image assertions passed. This validates Linux image assembly only; it does not validate installer packaging, signatures, desktop runtime behaviour or other operating systems.
+- Android job successfully provisioned JDK 21, Android SDK platform 37.0, build-tools 36.0.0, NDK 28.2.13676358 and native build tools. Native build is running; logs show OpenSSL Android ARM64 compilation with non-fatal `__ANDROID_API__` macro-redefinition warnings. TDLib compilation and APK assembly/output assertions have not yet been reported complete.
+- Android result remains NOT VALIDATED until the job completes and both ABI APK output assertions pass.
+- No artifacts are uploaded by this baseline workflow. It is not a release or signing workflow.
