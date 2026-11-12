@@ -44,7 +44,7 @@ class DesktopPlatform : Platform, AutoCloseable {
     override val releaseAbi get() = DesktopTarget.id
     override val testDc get() = BuildConfig.DEBUG && java.lang.Boolean.getBoolean("mlib.telegram.test")
     override val locale get() = when (preferences("settings").getString("language", "system")) {
-        "ru" -> Locale.forLanguageTag("ru")
+        "pt" -> Locale.forLanguageTag("pt-PT")
         "en" -> Locale.ENGLISH
         else -> Locale.getDefault()
     }
