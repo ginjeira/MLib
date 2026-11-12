@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>MLib development branch</strong> · <a href="README.ru.md">Русский</a>
+  <strong>MLib development branch</strong>
 </p>
 
 <p align="center">
@@ -157,7 +157,7 @@ media keys. The small player opens the full player and queue.
 
 Queue, listening positions and sound controls stay on each device. The
 [user guide](docs/usage.md) covers the controls, offline storage and sync conflicts.
-The interface supports English and Russian, with light and dark appearances.
+The interface supports Portuguese (Portugal) and English, with light and dark appearances.
 
 Glass controls reflect the artwork and the library scrolling beneath them.
 Light and dark share the same layout and material; wide screens use side
@@ -201,7 +201,7 @@ inside the app. Desktop uses a bundled, limited Java runtime.
 
 For the details, start with [architecture](docs/architecture.md) or
 [building from source](docs/build.md). The [documentation index](docs/README.md)
-links both language editions.
+contains the project documentation.
 
 This is an early public release. Secret chats, voice notes and automatic transfer
 of imported audio files are not supported. The [verification record](docs/verification.md) separates
