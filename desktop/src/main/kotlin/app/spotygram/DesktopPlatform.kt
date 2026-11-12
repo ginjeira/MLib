@@ -15,19 +15,19 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class DesktopPlatform : Platform, AutoCloseable {
-    override val filesDir = System.getProperty("spotygram.data.dir")?.let(::File) ?: when (DesktopTarget.os) {
-        "windows" -> File(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"), "Spotygram")
+    override val filesDir = System.getProperty("mlib.data.dir")?.let(::File) ?: when (DesktopTarget.os) {
+        "windows" -> File(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"), "MLib")
         "macos" -> File(System.getProperty("user.home"), "Library/Application Support/Spotygram")
-        else -> File(System.getenv("XDG_DATA_HOME") ?: "${System.getProperty("user.home")}/.local/share", "spotygram")
+        else -> File(System.getenv("XDG_DATA_HOME") ?: "${System.getProperty("user.home")}/.local/share", "mlib")
     }
-    override val cacheDir = if (System.getProperty("spotygram.data.dir") != null) File(filesDir, "cache")
+    override val cacheDir = if (System.getProperty("mlib.data.dir") != null) File(filesDir, "cache")
         else when (DesktopTarget.os) {
             "windows" -> File(filesDir, "cache")
             "macos" -> File(System.getProperty("user.home"), "Library/Caches/Spotygram")
-            else -> File(System.getenv("XDG_CACHE_HOME") ?: "${System.getProperty("user.home")}/.cache", "spotygram")
+            else -> File(System.getenv("XDG_CACHE_HOME") ?: "${System.getProperty("user.home")}/.cache", "mlib")
         }
     private val writer = Executors.newSingleThreadExecutor { task ->
-        Thread(task, "Spotygram settings").apply { isDaemon = true }
+        Thread(task, "MLib settings").apply { isDaemon = true }
     }
     private val preferences = ConcurrentHashMap<String, DesktopPreferences>()
     private val text = DesktopText()
@@ -79,7 +79,7 @@ class DesktopPlatform : Platform, AutoCloseable {
     override fun databaseKey(): String {
         val account = MessageDigest.getInstance("SHA-256").digest(filesDir.canonicalPath.toByteArray())
             .joinToString("") { "%02x".format(it) }
-        val existing = runCatching { keyring.getPassword("app.spotygram", account) }.getOrNull()
+        val existing = runCatching { keyring.getPassword("pt.ginjeira.mlib", account) }.getOrNull()
         if (!existing.isNullOrBlank()) {
             check(Base64.getDecoder().decode(existing).size == 32) { tr(R.string.database_key_error) }
             return existing
@@ -87,8 +87,8 @@ class DesktopPlatform : Platform, AutoCloseable {
         check(!preferences("settings").getBoolean("database_key_created", false) &&
             !File(filesDir, "telegram/db").isDirectory) { tr(R.string.database_key_error) }
         val secret = Base64.getEncoder().encodeToString(ByteArray(32).also { SecureRandom().nextBytes(it) })
-        keyring.setPassword("app.spotygram", account, secret)
-        check(keyring.getPassword("app.spotygram", account) == secret &&
+        keyring.setPassword("pt.ginjeira.mlib", account, secret)
+        check(keyring.getPassword("pt.ginjeira.mlib", account) == secret &&
             preferences("settings").edit().putBoolean("database_key_created", true).commit()) {
             tr(R.string.database_key_error)
         }
@@ -120,7 +120,7 @@ class DesktopPlatform : Platform, AutoCloseable {
     override fun installer(app: SpotygramApp): UpdateInstallation = DesktopUpdateInstaller(app)
     override fun assetName(version: String, abi: String) =
         "spotygram-$version-$abi.${DesktopTarget.installerExtension ?: if (abi.startsWith("linux")) "tar.gz" else "zip"}"
-    override fun logPlaybackError(code: String) { System.err.println("Spotygram playback failed: $code") }
+    override fun logPlaybackError(code: String) { System.err.println("MLib playback failed: $code") }
     override fun close() {
         writer.shutdown()
         writer.awaitTermination(5, TimeUnit.SECONDS)
