@@ -69,7 +69,7 @@ val generateDefinitions = tasks.register("generateDesktopDefinitions") {
             package app.spotygram
             object BuildConfig {
                 const val VERSION_NAME = "${rootProject.version}"
-                const val APPLICATION_ID = "app.spotygram"
+                const val APPLICATION_ID = "pt.ginjeira.mlib"
                 const val DEBUG = ${providers.gradleProperty("desktopDebug").orElse("false").get().toBoolean()}
                 const val TELEGRAM_API_ID = $apiId
                 const val TELEGRAM_API_HASH = "$apiHash"
