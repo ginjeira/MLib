@@ -230,7 +230,7 @@ This change is source-level only and has not yet been verified against a live Te
 - The baseline CI run for the current identity branch has been repeatedly cancelled by subsequent pushes under its concurrency policy; no successful build on this branch is claimed yet. Earlier PASS evidence on `upgrade/mlib-phase-0` does not validate this branch.
 
 
-## Validation and localization update (12 Nov 2026, 02:26 UTC)
+## Validation and localization update (12 Nov 2026, 09:20 UTC)
 
 This section supersedes the earlier statements in this audit that the current independent-identity branch had no successful baseline build. Those statements were accurate when written but are now outdated.
 
@@ -251,12 +251,12 @@ This section supersedes the earlier statements in this audit that the current in
 - The Android locale configuration contains only `en` and `pt-PT`.
 - The Russian Android resource directory is absent.
 - The current Portuguese resource bundle is `shared/src/main/res/values-pt-rPT/strings.xml`.
-- A key audit found 424 resource groups in the English default bundle and 127 in the Portuguese bundle. There are 297 English resource groups without Portuguese translations and 3 Portuguese-only keys. Android therefore falls back to English for untranslated entries. The interface is not yet fully translated.
+- A key audit found 424 resource groups in the English default bundle and 238 in the Portuguese bundle. Of these, 235 match English resource names and 189 English resource groups still lack Portuguese translations; 3 Portuguese-only keys remain. Placeholder parity was checked for all matching resources and no mismatches were found. Android therefore still falls back to English for untranslated entries. The interface is not yet fully translated.
 - No results were returned by the repository code searches for `Russian`, `values-ru` or `ru-RU`; this is supporting evidence, not a proof that every binary asset or every possible spelling has been exhaustively inspected.
 
 ### Still NOT VALIDATED
 
-- Portuguese translation completeness, placeholder/plural parity and visual review.
+- Portuguese translation of the remaining 189 resource groups, plural-rule validation and visual review.
 - Installation on a physical Android device and side-by-side coexistence with Spotygram.
 - Upgrade/reinstall behaviour for an existing MLib installation and retention of MLib's own data.
 - Telegram authentication using real MLib-owned application credentials.
