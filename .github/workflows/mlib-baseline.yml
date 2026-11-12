@@ -1,6 +1,17 @@
 name: MLib baseline validation
 
 on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'desktop/**'
+      - 'shared/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'tools/build*.sh'
+      - 'tools/build-desktop.py'
+      - 'tools/desktop-dependencies.py'
+      - '.github/workflows/mlib-baseline.yml'
   workflow_dispatch:
 
 permissions:
