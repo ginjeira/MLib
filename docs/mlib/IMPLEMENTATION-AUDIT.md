@@ -1,5 +1,7 @@
 # MLib implementation baseline audit
 
+> **Current authoritative decision (12 Nov 2026):** MLib is an independent application that coexists with third-party Spotygram. The earlier in-place successor strategy described in the historical audit below is superseded. Follow [INDEPENDENT-IDENTITY.md](INDEPENDENT-IDENTITY.md) for current package, storage, signing, CloudSync and release decisions. No Spotygram private keys or private data are reused.
+
 **Audit date:** 2026-11-12  
 **Scope:** static inspection of the `main` branch of `ginjeira/MLib`. No build, device test, authenticated Telegram session or release installation was performed.
 
@@ -215,3 +217,14 @@ The identity and build configuration changes are committed, but a new baseline b
 The inherited Spotygram CloudSync identifiers must not be retained for an independent installation. This supersedes the earlier in-place-upgrade compatibility recommendation in this audit. MLib now uses a separate namespace: `mlib-sync/3`, `mlib-storage/1`, MLib-prefixed channel titles and an MLib-specific local cache filename. Discovery searches for MLib storage descriptions only; the protocol parser accepts MLib markers only. The payload/schema format remains version 3, but the channel identity and protocol markers are intentionally different so that MLib cannot adopt or mutate the Spotygram library-sync channel on the same Telegram account.
 
 This change is source-level only and has not yet been verified against a live Telegram account. The first authenticated run must prove that MLib creates/discovers its own channel and leaves the Spotygram sync channel untouched.
+
+
+## Current implementation status (12 Nov 2026)
+
+- Android release/debug application IDs: `pt.ginjeira.mlib` / `pt.ginjeira.mlib.dev`.
+- Android version name starts at 0.1.0; versionCode is derived monotonically from MAJOR.MINOR.PATCH. Android update assets are named `mlib-VERSION-ABI.apk`.
+- Android release workflow `.github/workflows/android-release.yml` is manual and requires the MLib keystore and Telegram application credentials as repository Actions secrets. It verifies package, version, ABI, signature and SHA-256; it can create a draft release. It is not runnable until the workflow file is on the repository default branch and secrets are configured.
+- Desktop development image identity and runtime paths are MLib-specific. Desktop installer generation and the inherited Spotygram packager/workflow are disabled until the installer format and new Ed25519 trust key are migrated.
+- Build scripts use only `MLIB_STATE`; generated output and native sources remain outside the checkout.
+- CloudSync uses a separate `mlib-sync/3` / `mlib-storage/1` namespace and MLib channel titles. It does not discover or parse Spotygram sync markers.
+- The baseline CI run for the current identity branch has been repeatedly cancelled by subsequent pushes under its concurrency policy; no successful build on this branch is claimed yet. Earlier PASS evidence on `upgrade/mlib-phase-0` does not validate this branch.
