@@ -1,6 +1,19 @@
 name: MLib baseline validation
 
 on:
+  push:
+    branches:
+      - feat/mlib-independent-identity
+    paths:
+      - 'app/**'
+      - 'desktop/**'
+      - 'shared/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'tools/build*.sh'
+      - 'tools/build-desktop.py'
+      - 'tools/desktop-dependencies.py'
+      - '.github/workflows/mlib-baseline.yml'
   pull_request:
     paths:
       - 'app/**'
