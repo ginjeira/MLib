@@ -95,3 +95,43 @@ Do not make the onboarding wizard a second Telegram client or a second catalogue
 - A test acquisition can be correlated with the delivered Telegram message and imported once.
 - Reopening the wizard resumes safely and does not duplicate actions, sources, tracks or playlists.
 - No Telegram message, group, track or local file is deleted as part of setup.
+## Additional source audit: exact MCat Player setup behaviour
+
+The MCat-Player main branch was inspected on 2026-11-12, including SetupWizardModal.tsx and the server-side setup route. The original workflow is more specific than a generic group-creation wizard:
+
+1. The automatic tab calls POST /api/telegram/setup/auto.
+2. The server uses the current MCat Player per-user Telethon client/session and sends /start to the configured bot username. The default is @MusicsHuntersbot (overridable through TG_BOT_USERNAME). The route reports success when the send call succeeds; it does not prove that the bot returned a successful activation response.
+3. It searches existing dialogs for a non-Saved-Messages chat whose title contains 'mcat player', contains 'mcat -', or equals 'mcat'.
+4. If none is found, it creates a private broadcast channel, not a basic group or supergroup, titled '🎵 MCat Player - Músicas & Arquivo'.
+5. It sets that channel as both destination and source in the MCat Player user context, and sets it as the cloud-configuration chat.
+6. It attempts to invite @MusicsHuntersbot to the channel. If invitation fails, the wizard reports a warning and suggests that the user may promote the bot to administrator if direct forwarding is required. The code does not automatically grant administrator rights.
+7. It writes a #MCAT_PLAYER_CONFIG record (or a JSON document for a large payload) to the channel and attempts to pin the configuration message.
+8. If channel creation/discovery fails, the route falls back to Telegram Saved Messages as source and destination and attempts to persist the configuration there.
+9. It refreshes dialogs and scans the selected channel for tracks.
+
+The manual tab lets the user select destination and source independently and trigger cloud-config synchronisation. The wizard therefore treats the music destination/source and its own playlist/config persistence as related but distinct settings.
+
+### What must not be copied literally
+
+- MCat Player's server owns a separate Telethon client and session per user context. MLib must not export its TDLib session or create a second Telegram login just to reproduce that workflow.
+- MCat Player's server-side session persistence and browser localStorage strategy are not a suitable reason to send the MLib TDLib authorization data to a backend. Keep MLib's Telegram session local to the device.
+- The original wizard's channel-title matching is broad and may select an unrelated channel. MLib must use explicit identity/config markers and ask for confirmation when a match is ambiguous.
+- The original wizard calls a successful /start send 'bot activated' without verifying the bot's response. MLib must track command-sent and bot-confirmed as different states.
+- The original route calls the channel 'destination' after creating it, but the production MCat service inspected separately uses a server-configured TG_DESTINATION. A channel created in the user's account does not automatically change that production destination.
+- The original wizard can report cloud persistence success based on the helper's return path. MLib should verify that the configuration message can be read back and parsed before declaring the step READY.
+
+### Three Telegram resources that must remain distinct
+
+1. **MLib library-sync channel:** the private, muted channel managed by Spotygram CloudSync for library metadata and cross-device sync. Preserve its current protocol markers and format.
+2. **MCat Player-style personal music archive:** the optional private broadcast channel created by the MCat Player wizard, with the MCat bot invited. It can be both a music source and destination only when the acquisition backend is configured for that user's channel.
+3. **Production MCat destination:** the existing configured destination used by the production MCat service (currently understood as GinjMusic). The service's fixed TG_DESTINATION remains authoritative until a per-user destination API is implemented and approved.
+
+These resources are not interchangeable. The first release should validate and use the production MCat destination where that is the active acquisition path. The MCat Player-style personal archive can be offered only as a separate optional setup path after backend support is proven. The MLib sync channel must never be repurposed as a music archive.
+
+### Updated implementation order
+
+- First reuse TDLib to detect the signed-in user, discover the known bot and destination, inspect access, and add an approved destination as a library source.
+- Then reproduce the safe parts of the MCat Player setup: explicit bot activation, create-or-select a personal private broadcast channel, invite the bot with consent, and verify membership/permissions.
+- Keep destination selection behind a backend capability check. If the active MCat API exposes only fixed TG_DESTINATION, do not claim the newly created personal channel is the acquisition destination.
+- Implement cloud playlist/config persistence only if MLib actually needs to import MCat Player's configuration format. Prefer MLib's own LibrarySync for MLib library state rather than creating a parallel playlist database in Telegram.
+- Do not grant bot administrator rights automatically. Explain the exact permission required and let the user complete it manually in Telegram.
