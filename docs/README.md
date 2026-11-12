@@ -1,6 +1,6 @@
 # Documentation
 
-[Spotygram](../README.md) · **English** · [Русский](README.ru.md)
+[MLib](../README.md) · **English**
 
 MLib is an independent development fork. The user and architecture guides below are inherited Spotygram reference material; they are not yet a validated MLib user manual. The build guide documents the current MLib development workflow.
 
@@ -12,11 +12,7 @@ MLib is an independent development fork. The user and architecture guides below 
 | [Verification record](verification.md) | What was actually checked, how, and what remains unverified |
 | [Third-party notices](third-party.md) | Dependencies and licenses |
 
-Each guide has a language switch at the top. English uses the plain file name;
-translations add a language code before `.md`, such as `usage.ru.md` or
-`usage.ua.md`. To add a language, translate the five guides and both entry pages,
-then add it to their navigation. Keep the topics and current facts aligned across
-editions; wording can differ. The application interface has its own XML translations.
+The project documentation is maintained in English. The application interface supports Portuguese (Portugal) and English; Portuguese strings live in the platform resource bundle and English is the fallback.
 
 There are currently no production MLib releases. Do not use the upstream Spotygram releases as MLib installers. MLib release assets, when available, will be published on the [MLib releases page](https://github.com/ginjeira/MLib/releases).
 Detailed earlier verification evidence remains in the tagged source history,
