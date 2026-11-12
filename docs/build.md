@@ -69,7 +69,7 @@ Restrict both files to your user and keep them outside source control. Every fut
 bash tools/build.sh release
 ```
 
-The ARM64 release APK is written to `$MLIB_STATE/build/app/outputs/apk/release/`. Verify it with Android SDK `apksigner verify --verbose`, calculate SHA-256 and publish only after the MLib release workflow and update path have been validated. Never publish the keystore or signing configuration.
+The ARM64 release APK is written to `$MLIB_STATE/build/app/outputs/apk/release/`. Verify it with Android SDK `apksigner verify --verbose`, calculate SHA-256 and publish only through the MLib release workflow. The workflow is prepared in `.github/workflows/android-release.yml`; it is manually dispatched with an existing `vMAJOR.MINOR.PATCH` tag. It requires repository Actions secrets `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `MLIB_ANDROID_KEYSTORE_BASE64`, `MLIB_ANDROID_KEYSTORE_PASSWORD`, `MLIB_ANDROID_KEY_ALIAS` and `MLIB_ANDROID_KEY_PASSWORD`. Store the keystore as base64 (`base64 -w0 mlib-release.jks` on Linux) and never commit the keystore or signing configuration. The workflow verifies package ID, version, ABI and APK signer, then uploads an artifact; setting `publish_draft=true` additionally creates a GitHub draft release. This workflow cannot be dispatched until its file is present on the repository's default branch.
 
 ## Desktop development image
 
