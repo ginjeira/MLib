@@ -31,10 +31,15 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - name: Install Android CLI
+        run: |
+          curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/android" --version
       - name: Install Android SDK components
         run: |
-          yes | sdkmanager --licenses || { status=$?; [ "$status" -eq 141 ]; }
-          sdkmanager --install "platforms;android-37" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1" "platform-tools" --channel=3
+          yes | android --sdk="$ANDROID_SDK_ROOT" sdk install --canary platforms/android-37 || { status=$?; [ "$status" -eq 141 ]; }
+          yes | android --sdk="$ANDROID_SDK_ROOT" sdk install build-tools/36.0.0 ndk/28.2.13676358 cmake/3.22.1 platform-tools || { status=$?; [ "$status" -eq 141 ]; }
       - name: Install native build tools
         run: |
           sudo apt-get update
