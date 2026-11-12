@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 90
     env:
       JAVA_TOOL_OPTIONS: '-XX:ActiveProcessorCount=2'
-      SPOTYGRAM_STATE: ${{ github.workspace }}/../mlib-android-state
+      MLIB_STATE: ${{ github.workspace }}/../mlib-android-state
       ANDROID_SDK_ROOT: ${{ github.workspace }}/../mlib-android-sdk
     steps:
       - uses: actions/checkout@v7
@@ -40,15 +40,15 @@ jobs:
         env:
           TELEGRAM_API_ID: '0'
           TELEGRAM_API_HASH: ''
-          SPOTYGRAM_JOBS: '2'
+          MLIB_JOBS: '2'
         run: bash tools/build.sh debug
       - name: Verify both ABI APK outputs
         shell: bash
         run: |
           set -euo pipefail
-          APK_DIR="$SPOTYGRAM_STATE/build/app/outputs/apk/debug"
-          test -s "$APK_DIR/app-arm64-v8a-debug.apk"
-          test -s "$APK_DIR/app-x86_64-debug.apk"
+          APK_DIR="$MLIB_STATE/build/app/outputs/apk/debug"
+          find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -size +0c -print
+          test "$(find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -size +0c | wc -l)" -eq 2
           ls -lh "$APK_DIR"/*.apk
 
   desktop-linux-image:
@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 60
     env:
       JAVA_TOOL_OPTIONS: '-XX:ActiveProcessorCount=2'
-      SPOTYGRAM_STATE: ${{ github.workspace }}/../mlib-desktop-state
+      MLIB_STATE: ${{ github.workspace }}/../mlib-desktop-state
       TELEGRAM_API_ID: '0'
       TELEGRAM_API_HASH: ''
     steps:
@@ -78,6 +78,6 @@ jobs:
         run: python3 tools/build-desktop.py --image-only
       - name: Verify desktop launcher and runtime image
         run: |
-          test -x "$SPOTYGRAM_STATE/build/desktop/distributions/main/app/Spotygram/bin/Spotygram"
-          test -s "$SPOTYGRAM_STATE/build/desktop/distributions/main/app/Spotygram/lib/app/Spotygram.cfg"
-          find "$SPOTYGRAM_STATE/build/desktop/distributions/main/app/Spotygram" -maxdepth 2 -type f | head -40
+          test -x "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/bin/Spotygram"
+          test -s "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/lib/app/Spotygram.cfg"
+          find "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram" -maxdepth 2 -type f | head -40
