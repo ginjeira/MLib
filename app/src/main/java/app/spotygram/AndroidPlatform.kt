@@ -225,14 +225,14 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
     override fun assetName(version: String, abi: String) = "spotygram-$version-$abi.apk"
 
     override fun logPlaybackError(code: String) {
-        android.util.Log.w("SpotygramPlayback", "Playback failed: $code")
+        android.util.Log.w("MLibPlayback", "Playback failed: $code")
     }
 
     @android.annotation.SuppressLint("ApplySharedPref")
     override fun databaseKey(): String {
         val prefs = preferences("settings")
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        val alias = "spotygram.database"
+        val alias = "mlib.database"
         val saved = prefs.getString("database_key", null)
         val existing = store.getKey(alias, null) as? SecretKey
         check(
