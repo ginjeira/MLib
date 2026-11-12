@@ -238,8 +238,8 @@ This section supersedes the earlier statements in this audit that the current in
 
 - Branch: `feat/mlib-independent-identity`
 - PR: [#3](https://github.com/ginjeira/MLib/pull/3)
-- PR head: `f4d93e4796588f4084c986802e556e324132f22e`
-- Baseline workflow: [run 43136415195](https://github.com/ginjeira/MLib/actions/runs/43136415195)
+- PR head: `68687e96f610ef44a198134c323009ac15ebb65a` (localization update; subsequent Russian screenshot cleanup is in the branch history)
+- Baseline workflow: [run 43217923574](https://github.com/ginjeira/MLib/actions/runs/43217923574)
 - Android debug build (both ABIs): **PASS**. TDLib and OpenSSL native builds completed; Gradle reported `BUILD SUCCESSFUL`; two APKs were generated.
 - APK metadata: both use `pt.ginjeira.mlib.dev`, `versionName=0.1.0`, `versionCode=1000`. The output assertions identified ARM64 and x86_64 APKs.
 - Desktop Linux application image: **PASS**. `:desktop:createDistributable` completed and launcher/runtime-image assertions passed.
@@ -251,12 +251,12 @@ This section supersedes the earlier statements in this audit that the current in
 - The Android locale configuration contains only `en` and `pt-PT`.
 - The Russian Android resource directory is absent.
 - The current Portuguese resource bundle is `shared/src/main/res/values-pt-rPT/strings.xml`.
-- A key audit found 424 resource groups in the English default bundle and 238 in the Portuguese bundle. Of these, 235 match English resource names and 189 English resource groups still lack Portuguese translations; 3 Portuguese-only keys remain. Placeholder parity was checked for all matching resources and no mismatches were found. Android therefore still falls back to English for untranslated entries. The interface is not yet fully translated.
-- No results were returned by the repository code searches for `Russian`, `values-ru` or `ru-RU`; this is supporting evidence, not a proof that every binary asset or every possible spelling has been exhaustively inspected.
+- A key audit compared the English default bundle and the Portuguese bundle: all 424 English resource groups have Portuguese counterparts; 3 additional Portuguese-only keys are retained. No missing or duplicate keys, resource-type mismatches or placeholder mismatches were found. Plural resources were included in the structural parity check. This validates resource coverage and format, not visual review of every screen.
+- A repository-tree audit found no Russian Markdown files, `values-ru` resources or Russian locale configuration. The remaining Russian-labelled screenshot `docs/screenshots/speed-light-ru.png` was removed in commit `96079c3c6790c4d9cf4dfd1ef2f79a209bb05a97`. The Android locale configuration lists only `en` and `pt-PT`.
 
 ### Still NOT VALIDATED
 
-- Portuguese translation of the remaining 189 resource groups, plural-rule validation and visual review.
+- Visual review of Portuguese translations across Android screens and validation of plural behaviour at runtime.
 - Installation on a physical Android device and side-by-side coexistence with Spotygram.
 - Upgrade/reinstall behaviour for an existing MLib installation and retention of MLib's own data.
 - Telegram authentication using real MLib-owned application credentials.
