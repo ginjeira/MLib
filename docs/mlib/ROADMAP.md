@@ -50,10 +50,11 @@ Acceptance:
 
 ## Phase 2 — MCat protocol discovery and adapter design
 
-**Goal:** understand the existing MCat workflow before writing integration code.
+**Goal:** understand the existing MCat workflow and reconcile it with the feature/lessons inventory from MCat Player before writing integration code.
 
 Tasks:
 - Inspect MCat bot implementation and current production interaction. (Initial static inspection completed against ginjeira/MCat.)
+- Review MCat Player feature inventory and classify each item as reuse, reimplement, redesign or exclude.
 - Validate the deployed revision and document commands, message formats, response correlation, media delivery, concurrency, limits, errors and retry behaviour.
 - Verify the existing FastAPI endpoints and whether they can serve as a stable native-client integration surface.
 - Prove how MLib can correlate an MCat job with the messages forwarded to the configured destination.
