@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 120
     env:
       MLIB_STATE: ${{ runner.temp }}/mlib-release-state
+      RELEASE_TAG: ${{ inputs.release_tag }}
       MLIB_JOBS: '2'
       TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
       TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
@@ -60,7 +61,7 @@ jobs:
           set -euo pipefail
           VERSION=$(sed -nE 's/^version = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' build.gradle.kts)
           test -n "$VERSION"
-          test "$GITHUB_REF_NAME" = "v$VERSION"
+          test "$RELEASE_TAG" = "v$VERSION"
           test -n "$TELEGRAM_API_ID"
           test -n "$TELEGRAM_API_HASH"
           test -n "$MLIB_ANDROID_KEYSTORE_BASE64"
@@ -120,7 +121,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" \
             "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-arm64.apk" \
             "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-x86_64.apk" \
             "$MLIB_STATE/releases/$MLIB_VERSION/SHA256SUMS.txt" \
