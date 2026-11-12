@@ -410,9 +410,7 @@ accessible, the deleted copy may not be recoverable. Cleanup requires a connecte
 
 ## Language and appearance
 
-The interface follows your system language: English or Russian, with English
-for other languages. **Settings → Language** offers English, Russian or the
-system language on every supported platform.
+The interface supports Portuguese (Portugal) and English. **Settings → Language** offers Portuguese, English or the system language on every supported platform.
 Song and chat names are not translated.
 
 Open Settings with the gear. In wide windows it opens a centered panel: use
