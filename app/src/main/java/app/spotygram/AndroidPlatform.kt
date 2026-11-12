@@ -222,7 +222,7 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
 
     override fun installer(app: SpotygramApp): UpdateInstallation = UpdateInstaller(context)
 
-    override fun assetName(version: String, abi: String) = "spotygram-$version-$abi.apk"
+    override fun assetName(version: String, abi: String) = "mlib-$version-$abi.apk"
 
     override fun logPlaybackError(code: String) {
         android.util.Log.w("MLibPlayback", "Playback failed: $code")
