@@ -174,3 +174,11 @@ Only user-visible wording and selected runtime labels have changed in the initia
 - The MLib repository currently has no validated MLib release pipeline/assets. Until the first compatible release is published, manual update checks from an MLib build will not find a usable update. Automatic checks are non-blocking. Do not publish or distribute this branch as a production build.
 - Existing cached update metadata is retained, but the download URL is derived from the new repository. An old cached Spotygram version is therefore not intentionally fetched from the upstream Spotygram repository.
 - Desktop Ed25519 verification key and Android signing identity were not changed. Availability of their private keys has not been verified.
+## Baseline CI added (not yet executed/observed)
+
+- Added `.github/workflows/mlib-baseline.yml` on the implementation branch.
+- Android job provisions JDK 21, Android SDK platform 37, build-tools 36.0.0, NDK 28.2.13676358, CMake and native build tools; it builds pinned TDLib and OpenSSL and assembles debug APKs for ARM64 and x86_64.
+- Desktop job builds the Linux application image only, using pinned TDLib/libmpv prebuilts. It does not generate installers, sign artifacts, or publish a release.
+- Both jobs use isolated temporary build state outside the checkout. Telegram API build credentials are set to non-working placeholders (0/empty) because compile validation does not require a real Telegram account or production API credentials. No user session or signing key is used.
+- The workflow has push, pull_request and workflow_dispatch triggers. The GitHub Actions run and commit status endpoints available during this work returned no run/status for the latest workflow commits. Therefore the workflow is committed but neither successful execution nor build output has yet been verified.
+- The baseline workflow is deliberately separate from the existing signed desktop release workflow and does not modify the release pipeline.
