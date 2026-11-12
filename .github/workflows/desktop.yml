@@ -1,4 +1,4 @@
-name: Desktop release assets
+name: Legacy Spotygram desktop release assets (disabled)
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   desktop:
+    if: false # MLib desktop packaging and signing migration is not complete.
     strategy:
       fail-fast: false
       matrix:
