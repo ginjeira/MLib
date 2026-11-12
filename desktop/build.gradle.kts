@@ -101,9 +101,9 @@ val prepareNative = tasks.register<Exec>("prepareNativeLibraries") {
         rootProject.file("tools/desktop-dependencies.py"), "--target", "$targetOs-$targetArch", "--state", buildState)
     doLast {
         nativeDirectory.resolve("licenses").mkdirs()
-        rootProject.file("LICENSE").copyTo(nativeDirectory.resolve("licenses/Spotygram.txt"), overwrite = true)
+        rootProject.file("LICENSE").copyTo(nativeDirectory.resolve("licenses/MLib.txt"), overwrite = true)
         file("src/main/resources/third-party-notices.txt").copyTo(
-            nativeDirectory.resolve("licenses/Spotygram-dependencies.txt"), overwrite = true)
+            nativeDirectory.resolve("licenses/MLib-dependencies.txt"), overwrite = true)
         rootProject.file("shared/licenses/Fluent-Emoji-MIT.txt").copyTo(
             nativeDirectory.resolve("licenses/Fluent-Emoji-MIT.txt"), overwrite = true)
         rootProject.file("shared/licenses/Takopi-artwork-NOTICE.txt").copyTo(
@@ -170,15 +170,15 @@ tasks.withType<JavaExec>().configureEach {
     if (name == "run") {
         dependsOn(prepareNative)
         jvmArgs("-Dspotygram.native.dir=${nativeDirectory.absolutePath}")
-        providers.gradleProperty("desktopData").orNull?.let { jvmArgs("-Dspotygram.data.dir=$it") }
-        providers.gradleProperty("telegramTestDc").orNull?.let { jvmArgs("-Dspotygram.telegram.test=$it") }
+        providers.gradleProperty("desktopData").orNull?.let { jvmArgs("-Dmlib.data.dir=$it") }
+        providers.gradleProperty("telegramTestDc").orNull?.let { jvmArgs("-Dmlib.telegram.test=$it") }
     }
 }
 tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDistributable" }.configureEach {
     dependsOn(prepareNative, prepareIcons)
     if (targetOs == "windows") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val destination = layout.buildDirectory.dir("distributions/$variant/app/Spotygram/app").get().asFile
+        val destination = layout.buildDirectory.dir("distributions/$variant/app/MLib/app").get().asFile
         val angle = configurations.runtimeClasspath.get().single { it.name.startsWith("skiko-awt-runtime-angle-windows-") }
         ZipFile(angle).use { archive ->
             listOf("libEGL.dll", "libGLESv2.dll").forEach { name ->
@@ -190,7 +190,7 @@ tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDi
     }
     if (targetOs == "linux") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val resources = layout.buildDirectory.dir("distributions/$variant/app/Spotygram/lib/app/resources")
+        val resources = layout.buildDirectory.dir("distributions/$variant/app/MLib/lib/app/resources")
             .get().asFile.toPath()
         // Gradle's resource copy follows native aliases, duplicating large libraries.
         nativeDirectory.listFiles().orEmpty().filter { Files.isSymbolicLink(it.toPath()) }.forEach { source ->
@@ -201,7 +201,7 @@ tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDi
     }
     if (targetOs == "macos") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val bundle = layout.buildDirectory.dir("distributions/$variant/app/Spotygram.app").get().asFile
+        val bundle = layout.buildDirectory.dir("distributions/$variant/app/MLib.app").get().asFile
         val plist = bundle.resolve("Contents/Info.plist")
         providers.exec {
             commandLine("/usr/libexec/PlistBuddy", "-c", "Set :CFBundleShortVersionString ${rootProject.version}", plist)
