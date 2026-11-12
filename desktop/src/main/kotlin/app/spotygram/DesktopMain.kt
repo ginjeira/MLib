@@ -37,17 +37,17 @@ fun main(arguments: Array<String>) {
         BrandIcons.write(File(arguments[1]))
         return
     }
-    System.setProperty("nucleus.app.id", "app.spotygram")
+    System.setProperty("nucleus.app.id", "pt.ginjeira.mlib")
     System.setProperty("nucleus.app.name", "MLib")
     System.setProperty("nucleus.app.version", BuildConfig.VERSION_NAME)
-    System.setProperty("nucleus.app.aumid", "app.spotygram")
+    System.setProperty("nucleus.app.aumid", "pt.ginjeira.mlib")
     val platform = try { DesktopPlatform() } catch (error: Exception) {
         JOptionPane.showMessageDialog(null, error.message, "MLib", JOptionPane.ERROR_MESSAGE)
         return
     }
     val instance = try { DesktopInstance(platform.filesDir) } catch (error: Exception) {
         platform.close()
-        JOptionPane.showMessageDialog(null, error.message, "spotygram", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, error.message, "MLib", JOptionPane.ERROR_MESSAGE)
         return
     }
     if (!instance.primary) {
