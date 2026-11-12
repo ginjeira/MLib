@@ -95,6 +95,18 @@ jobs:
           test -s "$X86_64_APK"
           ls -lh "${APKS[@]}"
 
+          mkdir -p "$RUNNER_TEMP/mlib-apks"
+          cp "$ARM64_APK" "$RUNNER_TEMP/mlib-apks/MLib-debug-arm64.apk"
+          cp "$X86_64_APK" "$RUNNER_TEMP/mlib-apks/MLib-debug-x86_64.apk"
+
+      - name: Upload Android debug APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MLib-Android-debug
+          path: ${{ runner.temp }}/mlib-apks/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
   desktop-linux-image:
     name: Desktop Linux application image
     runs-on: ubuntu-24.04
