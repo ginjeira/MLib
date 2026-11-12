@@ -71,9 +71,29 @@ jobs:
         run: |
           set -euo pipefail
           APK_DIR="$MLIB_STATE/build/app/outputs/apk/debug"
-          find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -size +0c -print
-          test "$(find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" -size +0c | wc -l)" -eq 2
-          ls -lh "$APK_DIR"/*.apk
+          APKS=("$APK_DIR"/*.apk)
+          test "${#APKS[@]}" -eq 2
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          VERSION=$(sed -nE 's/^version = "([0-9]+\\.[0-9]+\\.[0-9]+)"$/\\1/p' build.gradle.kts)
+          for APK in "${APKS[@]}"; do
+            test -s "$APK"
+            BADGING=$("$AAPT" dump badging "$APK")
+            grep -F "package: name='pt.ginjeira.mlib.dev'" <<< "$BADGING"
+            grep -F "versionName='$VERSION'" <<< "$BADGING"
+            if grep -q "native-code:.*arm64-v8a" <<< "$BADGING"; then
+              test -z "${ARM64_APK:-}"
+              ARM64_APK="$APK"
+            elif grep -q "native-code:.*x86_64" <<< "$BADGING"; then
+              test -z "${X86_64_APK:-}"
+              X86_64_APK="$APK"
+            else
+              echo "Unexpected or missing ABI in $APK" >&2
+              exit 1
+            fi
+          done
+          test -s "$ARM64_APK"
+          test -s "$X86_64_APK"
+          ls -lh "${APKS[@]}"
 
   desktop-linux-image:
     name: Desktop Linux application image
