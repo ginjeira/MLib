@@ -44,7 +44,7 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
     override val locale
         get() =
             when (preferences("settings").getString("language", "system")) {
-                "ru" -> Locale.forLanguageTag("ru")
+                "pt" -> Locale.forLanguageTag("pt-PT")
                 "en" -> Locale.ENGLISH
                 else -> context.resources.configuration.locales[0]
             }
