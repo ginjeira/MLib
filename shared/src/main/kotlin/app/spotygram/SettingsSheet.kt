@@ -436,7 +436,7 @@ fun SettingsSheet(
                     listOf(
                             "system" to R.string.system_default,
                             "en" to R.string.language_english,
-                            "ru" to R.string.language_russian,
+                            "pt" to R.string.language_portuguese,
                         )
                         .forEach { (value, label) ->
                             TextButton(
