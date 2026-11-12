@@ -171,7 +171,7 @@ Only user-visible wording and selected runtime labels have changed in the initia
 - Android latest-release lookup and release-page links now target ginjeira/MLib rather than Krablante/spotygram.
 - The shared UpdateAsset download URL now resolves against the MLib repository.
 - Desktop update requests identify as MLib; Android update download notifications use MLib.
-- English and Russian user-facing update labels have been aligned with the MLib channel.
+- User-facing update labels have been aligned with the MLib channel.
 - Transitional release asset filenames remain Spotygram-specific because the existing platform assetName methods, desktop packaging workflow, signed installer manifest text and installed desktop directory are still Spotygram-specific. This is deliberate until a coordinated packaging identity migration is tested.
 - The MLib repository currently has no validated MLib release pipeline/assets. Until the first compatible release is published, manual update checks from an MLib build will not find a usable update. Automatic checks are non-blocking. Do not publish or distribute this branch as a production build.
 - Existing cached update metadata is retained, but the download URL is derived from the new repository. An old cached Spotygram version is therefore not intentionally fetched from the upstream Spotygram repository.
