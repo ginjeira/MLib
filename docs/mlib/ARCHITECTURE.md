@@ -144,3 +144,14 @@ Review inherited artwork and notices. The upstream third-party notice states tha
 - Do not expose private Telegram media through public/shared caches.
 - Define retention and cleanup for temporary media and failed jobs.
 - Keep acquisition/import auditable without recording secrets.
+
+
+## 12. Existing MCat implementation — source inspection
+
+The separate repository [ginjeira/MCat](https://github.com/ginjeira/MCat) currently contains a Python/Telethon Telegram workflow and a FastAPI Web MVP. The inspected code is documented in [MCat integration assessment](MCAT-INTEGRATION.md).
+
+The important distinction is that MCat currently forwards Telegram media messages to a configured destination chat; it does not return audio bytes through its HTTP API. The Web API exposes authenticated search and job control/status. MLib may therefore use MCat as a control plane and the configured Telegram destination as the media delivery/source channel.
+
+The Web service has a shared server-side Telegram user session and destination, serialises Telegram work with one lock and processes queued jobs with one worker. Web job records are associated with Web usernames, but the Telegram session and destination are installation-wide. This is not an independent Telegram account/session per MLib user.
+
+The API does not currently return a per-track destination message-ID list. Robust MLib import correlation will need a verified strategy or a separately approved MCat API enhancement. The current integration assessment is static only; live operation and deployed configuration remain unverified.
