@@ -45,10 +45,10 @@
     <string name="show_window">Open MLib</string>
     <string name="quit_app">Quit MLib</string>
     <string name="update_restart_title">Restart to install?</string>
-    <string name="update_restart_help">spotygram will stop playback, install the verified update and reopen. Your library, playlists and Telegram sign-in will remain.</string>
+    <string name="update_restart_help">MLib will stop playback, install the verified update and reopen. Your library, playlists and Telegram sign-in will remain.</string>
     <string name="update_restart">Restart and install</string>
     <string name="update_package_title">Open the installer?</string>
-    <string name="update_package_help">spotygram will close and open the verified system installer. Complete installation, then open spotygram from your applications. Your library, playlists and Telegram sign-in will remain.</string>
+    <string name="update_package_help">MLib will close and open the verified system installer. Complete installation, then open spotygram from your applications. Your library, playlists and Telegram sign-in will remain.</string>
     <string name="update_package_open">Close and open installer</string>
     <string name="update_install_location">This copy cannot be updated in its current location. Keep the complete Spotygram folder in a location you can write to, then try again.</string>
     <string name="speed">Speed</string>
@@ -337,7 +337,7 @@
     <string name="update_current">You have the latest version.</string>
     <string name="update_failed">Could not check GitHub. Try again later.</string>
     <string name="update_wait">Checked recently. Please try again later.</string>
-    <string name="update_available">spotygram %1$s is available</string>
+    <string name="update_available">MLib %1$s is available</string>
     <string name="update_view">View release</string>
     <string name="update_dismiss">Do not remind me about this version</string>
     <string name="update_no_browser">No app available to open the release page.</string>
@@ -354,7 +354,7 @@
     <string name="update_cancelling">Cancelling…</string>
     <string name="update_download_failed">Could not download the update. Check your connection and free space, then try again.</string>
     <string name="update_verification_failed">The update did not pass verification or is no longer available. Download it again.</string>
-    <string name="update_permission_needed">Allow installation from spotygram, then tap Install update again.</string>
+    <string name="update_permission_needed">Allow installation from MLib, then tap Install update again.</string>
     <string name="update_installer_failed">Could not install the update. You can try again or open the release on GitHub.</string>
     <string name="update_check_first">Check for updates again to refresh the download information.</string>
     <string name="discard_listened">Do not keep played tracks</string>
