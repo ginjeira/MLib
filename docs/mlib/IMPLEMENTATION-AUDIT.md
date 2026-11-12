@@ -103,3 +103,64 @@ The following identities were deliberately left unchanged in this slice: Android
 **Not yet migrated:** release endpoint, release asset names, desktop installer branding, root Gradle project name, internal Kotlin package names, build-state directory and all remaining repository/docs branding. In particular, updater-related strings still mention Spotygram because the update channel itself has not yet been migrated; this is an intentional temporary gate, not the final product state.
 
 **Validation:** GitHub branch comparison confirms only the audit document and the three intended branding files differ from `main`. No Gradle build, APK build, desktop package build, device test or existing-install update test has been run. The branch is therefore a draft implementation, not a validated release.
+
+## Deeper source inventory
+
+### Gradle and platform composition
+- Root Gradle project name is spotygram; version is 0.28.0.
+- Two Gradle modules exist: :app (Android) and :desktop (Compose Desktop). Shared Kotlin source is compiled into both; there is no independent :shared Gradle module.
+- Android compiles shared source at JVM 17, min SDK 26, target SDK 36, compile SDK 37, with arm64-v8a and x86_64 APK outputs.
+- Desktop compiles shared source at JVM 21 and packages native dependencies per OS/architecture.
+- Android debug uses app.spotygram.dev; release uses app.spotygram. Telegram API credentials are build-time application credentials, not the user's Telegram account session.
+- Build state defaults to ~/.local/state/spotygram via SPOTYGRAM_STATE. Caches, generated output, native TDLib libraries, credentials and signing material live outside the checkout.
+
+### Database and account state
+- Both platforms use the same logical library.db SQLite schema, currently version 8, through platform-specific adapters.
+- Tables include tracks, sources, playlists, playlist_tracks, downloads, temporary_audio, playback_progress, profiles, sync_meta and sync_values.
+- Migrations are incremental and version-gated in Library.onUpgrade.
+- Android database encryption uses Android Keystore plus an encrypted preference value; desktop uses the OS credential store keyed to the canonical data directory.
+- TDLib data is below the platform private files directory at telegram/db and telegram/files. The database key is retrieved before those directories are created, distinguishing a new profile from an existing profile with a missing key.
+- On open, stale TDLib numeric file bindings are cleared because they belong to a client lifetime. This does not delete catalogue records or media copies.
+
+### Telegram and library ownership
+- Telegram owns one TDLib client per application instance, authorization, connection state, chat/file caches, request correlation, message updates and confirmed message sends.
+- MLib must reuse this session and must not create a second login/session for MCat.
+- SpotygramApp coordinates library, Telegram, sync, profiles, downloads, cache, sharing and updates.
+- Library owns catalogue persistence and immutable snapshots. Selected chats are sources; profile music has separate profile-owned identities.
+- Existing chat discovery supports loading main/archive lists, local and server search, resolving public chats by username and adding chats as sources.
+- Existing sharing code inspects group/channel type, membership, posting rights, audio/document permissions, send-as identities, forum topics and protected-content restrictions. This is groundwork for onboarding checks, not an MCat setup wizard.
+- No existing code path was identified that creates a Telegram group, joins a bot to a group, or configures an MCat backend destination. Do not assume these operations exist.
+
+### Telegram library sync is not the MCat music destination
+- CloudSync uses the authenticated TDLib client and discovers/maintains private, muted storage channels in the user's Telegram archive.
+- Current sync identifiers are spotygram-sync/3 and spotygram-storage/1; channels are discovered using protocol markers and titles beginning spotygram-.
+- LibrarySync format is 3. It validates portable records for tracks, favorites, sources, profiles, playlists and selected settings. Playback queue and progress are local-only.
+- These identifiers, channel titles, protocol markers and persisted format are compatibility data. Renaming them or changing discovery without dual-read/dual-write migration risks making libraries appear empty or creating duplicate storage channels.
+- The MCat destination group is a separate operational resource and needs its own configuration and identity.
+
+### Playback, imports, downloads and duplicates
+- Android playback uses Media3 through PlaybackService and PlayerConnection; the shared queue handles selection, ordering, repeat, speed and progress.
+- Desktop playback uses libmpv through a native adapter, with desktop media controls and single-instance/window lifecycle.
+- Downloads are persisted in the library queue and executed by a platform-owned service/lifecycle. Temporary playback cache is separate from explicitly saved or imported copies.
+- Local imports are copied into app-owned storage; catalogue records file keys, remote IDs, size and path.
+- Duplicate hiding is recording-level grouping and non-destructive. Telegram message/file identity and recording identity must remain distinct when adding MCat acquisition.
+- Explicit sharing/forwarding to Telegram recipients confirms send results, but this is not the same as importing an MCat job result.
+
+### CI, release and update observations
+- The only workflow in .github/workflows is a manually dispatched desktop release-assets workflow. No Android build/test workflow was found in the current tree.
+- Desktop workflow requires Telegram API credentials and the desktop Ed25519 release private key as repository secrets.
+- Android release signing uses an external JKS and properties file in build state; neither is available for inspection from repository source.
+- Android update checking is hard-coded to Krablante/spotygram and uses Spotygram release tags and ABI-specific APK asset names. Desktop updates also use Spotygram assets and a trusted Ed25519 public key.
+- Desktop package metadata, installer scripts, artifact names and notices remain Spotygram-specific.
+- docs/verification.md contains historical evidence for Spotygram 0.28.0, including Android 16 update retention from 0.17.0 to 0.28.0, certificate continuity, desktop package verification and UI checks. This is not validation of the current MLib branch.
+
+### Brand migration inventory
+Brand references fall into distinct classes: user-visible name/descriptions; OS-visible labels/notifications/installer metadata; resource names/artwork; internal package/application/keyring/database identifiers; cloud-sync protocol markers; update endpoints/assets/trusted keys; build-state environment variables and filesystem paths.
+Only user-visible wording and selected runtime labels have changed in the initial MLib slice. Compatibility/security-sensitive identifiers must not be globally replaced. Packaging changes require a coordinated release migration. Artwork requires a rights review. Build-state paths need compatibility fallbacks.
+
+### Conclusions and validation gates
+- The architecture supports in-place MLib evolution; a rewrite or parallel Android package is not required for the successor strategy.
+- Static inspection confirms persistence/platform boundaries, but cannot prove that actual signing keys are available or that an upgrade APK works.
+- Android debug/release and desktop image builds still need to run in an environment with required SDK/NDK/native dependencies and external state.
+- First upgrade validation must use a copy of an existing Spotygram installation/profile and prove same-signer update, retained TDLib login, database readability, cloud-sync discovery and local media/playback continuity.
+- Do not change package ID, signing identity, storage paths, SQLite version, cloud-sync markers or release endpoints before this proof.
