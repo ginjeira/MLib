@@ -6,7 +6,7 @@ plugins {
     id("org.jetbrains.compose") version "1.12.0" apply false
 }
 
-version = "0.28.0"
+version = "0.1.0"
 
 subprojects {
     plugins.withId("org.jetbrains.kotlin.plugin.compose") {
@@ -21,11 +21,11 @@ subprojects {
     }
 }
 
-val buildState = file(providers.environmentVariable("SPOTYGRAM_STATE")
-    .orElse("${System.getProperty("user.home")}/.local/state/spotygram").get()).canonicalFile
+val buildState = file(providers.environmentVariable("MLIB_STATE")
+    .orElse("${System.getProperty("user.home")}/.local/state/mlib").get()).canonicalFile
 require(!buildState.toPath().startsWith(rootDir.canonicalFile.toPath())) {
-    "SPOTYGRAM_STATE must be outside the source checkout"
+    "MLIB_STATE must be outside the source checkout"
 }
-extra["spotygramState"] = buildState.absolutePath
+extra["mlibState"] = buildState.absolutePath
 layout.buildDirectory.set(buildState.resolve("build/root"))
 subprojects { layout.buildDirectory.set(buildState.resolve("build/$name")) }
