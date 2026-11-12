@@ -36,7 +36,7 @@ def main():
         parser.error(f'No pinned native dependencies for {target}')
 
     version_match = re.search(
-        r'^version = "([0-9]+\\.[0-9]+\\.[0-9]+)"$',
+        r'^version = "([0-9]+\.[0-9]+\.[0-9]+)"$',
         (ROOT / 'build.gradle.kts').read_text(), re.MULTILINE)
     if not version_match:
         parser.error('Could not determine the MLib version from build.gradle.kts')
