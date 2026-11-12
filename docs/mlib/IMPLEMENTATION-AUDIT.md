@@ -92,3 +92,14 @@ These are preservation requirements, not features to rewrite merely to change th
 - `docs/usage.md`
 
 The evidence above is static source/document inspection only. It is not a claim that a build, update, migration or runtime behaviour has been validated.
+
+
+## Upgrade work started on `upgrade/mlib-phase-0`
+
+The first implementation slice introduces the MLib name in the Android launcher label, shared user-facing wording and desktop runtime/window/tray labels.
+
+The following identities were deliberately left unchanged in this slice: Android namespace/application ID and debug suffix, signing alias and external keystore paths, database/keyring identifiers, desktop bundle/installer identities, per-user data directories, SQLite schema and TDLib session storage. The existing Takopi artwork and its separate notice were also left untouched pending a properly licensed MLib identity asset.
+
+**Not yet migrated:** release endpoint, release asset names, desktop installer branding, root Gradle project name, internal Kotlin package names, build-state directory and all remaining repository/docs branding. In particular, updater-related strings still mention Spotygram because the update channel itself has not yet been migrated; this is an intentional temporary gate, not the final product state.
+
+**Validation:** GitHub branch comparison confirms only the audit document and the three intended branding files differ from `main`. No Gradle build, APK build, desktop package build, device test or existing-install update test has been run. The branch is therefore a draft implementation, not a validated release.
