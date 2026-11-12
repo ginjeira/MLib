@@ -19,6 +19,10 @@
 
 > **Development status:** MLib is a separate application, not an update of Spotygram. Its Android package is `pt.ginjeira.mlib`; it uses its own private data, Telegram session storage and CloudSync channel. No production MLib release is available yet. Do not install Spotygram release APKs as MLib.
 
+## Inherited player functionality reference
+
+The following screenshots and usage descriptions document the upstream Spotygram feature set that MLib is based on. They are reference material, not a claim that the current MLib branch has passed device, account, playback or release validation.
+
 ## From a chat to a music library
 
 A song in Saved Messages, an album in a channel, a few recordings from a friend.
