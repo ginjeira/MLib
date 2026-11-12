@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--state', type=Path, default=Path(os.environ.get('SPOTYGRAM_STATE',
-        Path.home() / '.local/state/spotygram')))
+    parser.add_argument('--state', type=Path, default=Path(os.environ.get('MLIB_STATE',
+        Path.home() / '.local/state/mlib')))
     parser.add_argument('--image-only', action='store_true', help='Build without signing a release archive')
     parser.add_argument('--debug', action='store_true', help='Allow the isolated Telegram test environment')
     args = parser.parse_args()
@@ -32,7 +32,7 @@ def main():
         parser.error(f'No pinned native dependencies for {target}')
     version = re.search(r'^version = "([0-9]+\.[0-9]+\.[0-9]+)"$',
                         (ROOT / 'build.gradle.kts').read_text(), re.MULTILINE).group(1)
-    environment = dict(os.environ, SPOTYGRAM_STATE=str(state))
+    environment = dict(os.environ, MLIB_STATE=str(state))
     wrapper = ROOT / ('gradlew.bat' if target_os == 'windows' else 'gradlew')
     command = [str(wrapper), '--project-cache-dir', str(state / 'gradle'),
         f'-Pkotlin.project.persistent.dir={state / "kotlin"}',
@@ -53,6 +53,7 @@ def main():
         return
     if args.debug:
         parser.error('Debug images cannot be published to the release update channel')
+    parser.error('MLib desktop release packaging is disabled until the MLib installer identity and release signing key are provisioned')
     secret = os.environ.get('DESKTOP_RELEASE_KEY')
     if secret:
         private = state / 'desktop/signing/release-private.pem'
