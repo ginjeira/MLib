@@ -122,7 +122,7 @@ The manual tab lets the user select destination and source independently and tri
 
 ### Three Telegram resources that must remain distinct
 
-1. **MLib library-sync channel:** the private, muted channel managed by Spotygram CloudSync for library metadata and cross-device sync. Preserve its current protocol markers and format.
+1. **MLib library-sync channel:** the private, muted channel managed by Spotygram CloudSync for library metadata and cross-device sync. Use the MLib-only `mlib-sync/3` and `mlib-storage/1` markers and the MLib-prefixed channel identity. Never discover, adopt, read or modify the Spotygram CloudSync channel.
 2. **MCat Player-style personal music archive:** the optional private broadcast channel created by the MCat Player wizard, with the MCat bot invited. It can be both a music source and destination only when the acquisition backend is configured for that user's channel.
 3. **Production MCat destination:** the existing configured destination used by the production MCat service (currently understood as GinjMusic). The service's fixed TG_DESTINATION remains authoritative until a per-user destination API is implemented and approved.
 
