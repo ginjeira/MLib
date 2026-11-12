@@ -228,3 +228,42 @@ This change is source-level only and has not yet been verified against a live Te
 - Build scripts use only `MLIB_STATE`; generated output and native sources remain outside the checkout.
 - CloudSync uses a separate `mlib-sync/3` / `mlib-storage/1` namespace and MLib channel titles. It does not discover or parse Spotygram sync markers.
 - The baseline CI run for the current identity branch has been repeatedly cancelled by subsequent pushes under its concurrency policy; no successful build on this branch is claimed yet. Earlier PASS evidence on `upgrade/mlib-phase-0` does not validate this branch.
+
+
+## Validation and localization update (12 Nov 2026, 02:26 UTC)
+
+This section supersedes the earlier statements in this audit that the current independent-identity branch had no successful baseline build. Those statements were accurate when written but are now outdated.
+
+### Current baseline evidence
+
+- Branch: `feat/mlib-independent-identity`
+- PR: [#3](https://github.com/ginjeira/MLib/pull/3)
+- PR head: `f4d93e4796588f4084c986802e556e324132f22e`
+- Baseline workflow: [run 43136415195](https://github.com/ginjeira/MLib/actions/runs/43136415195)
+- Android debug build (both ABIs): **PASS**. TDLib and OpenSSL native builds completed; Gradle reported `BUILD SUCCESSFUL`; two APKs were generated.
+- APK metadata: both use `pt.ginjeira.mlib.dev`, `versionName=0.1.0`, `versionCode=1000`. The output assertions identified ARM64 and x86_64 APKs.
+- Desktop Linux application image: **PASS**. `:desktop:createDistributable` completed and launcher/runtime-image assertions passed.
+- This workflow produced no release artifact and performed no signing/release publication. It used placeholder Telegram application credentials; it does not validate Telegram authentication or runtime API access.
+
+### Russian-language removal and locale scope
+
+- Russian documentation files have been removed from the implementation branch.
+- The Android locale configuration contains only `en` and `pt-PT`.
+- The Russian Android resource directory is absent.
+- The current Portuguese resource bundle is `shared/src/main/res/values-pt-rPT/strings.xml`.
+- A key audit found 424 resource groups in the English default bundle and 127 in the Portuguese bundle. There are 297 English resource groups without Portuguese translations and 3 Portuguese-only keys. Android therefore falls back to English for untranslated entries. The interface is not yet fully translated.
+- No results were returned by the repository code searches for `Russian`, `values-ru` or `ru-RU`; this is supporting evidence, not a proof that every binary asset or every possible spelling has been exhaustively inspected.
+
+### Still NOT VALIDATED
+
+- Portuguese translation completeness, placeholder/plural parity and visual review.
+- Installation on a physical Android device and side-by-side coexistence with Spotygram.
+- Upgrade/reinstall behaviour for an existing MLib installation and retention of MLib's own data.
+- Telegram authentication using real MLib-owned application credentials.
+- TDLib source discovery, library persistence, imports, downloads, playback, queue and background operation.
+- Live CloudSync creation/discovery and proof that the Spotygram CloudSync channel remains untouched.
+- Android updater download, signature verification and installation.
+- Desktop runtime execution and coexistence on a user machine; desktop installers and release packaging remain disabled.
+- MCat authentication, acquisition, job-to-destination-message correlation and import.
+
+A successful CI compile is a build baseline only. It is not a functional acceptance test or a production-release approval.
