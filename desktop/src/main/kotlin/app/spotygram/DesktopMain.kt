@@ -196,7 +196,7 @@ fun main(arguments: Array<String>) {
                     }
                 }
             }
-            if (traySupported) Tray(icon = painterResource(R.drawable.spotygram_launcher), tooltip = "MLib",
+            if (traySupported) Tray(icon = painterResource(R.drawable.mlib_launcher), tooltip = "MLib",
                 onAction = ::show, menu = {
                     Item(tr(R.string.show_window), onClick = ::show)
                     Separator()
