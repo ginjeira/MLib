@@ -40,8 +40,11 @@ class LibraryMigrationTest {
             assertEquals("Test Track", library.state.value.tracks.single().title)
             assertEquals("GinjMusic", library.state.value.sources.single().title)
             assertEquals("favorite/123:456", library.sync.records().single().key)
-
+        } finally {
             library.close()
+        }
+
+        try {
             val reopened = Library(MigrationPlatform(root))
             try {
                 reopened.reload()
@@ -52,7 +55,6 @@ class LibraryMigrationTest {
                 reopened.close()
             }
         } finally {
-            library.close()
             root.deleteRecursively()
         }
     }
