@@ -34,7 +34,7 @@ fun AuthScreen(app: SpotygramApp, auth: AuthState, onLocal: () -> Unit, onBack: 
     var value by rememberSaveable(auth.type, auth.editingPhone) {
         mutableStateOf(if (auth.editingPhone) auth.phoneNumber else "")
     }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var passwordVisible by rememberSaveable(auth.type) { mutableStateOf(false) }
     val phone = auth.type == "authorizationStateWaitPhoneNumber" || auth.editingPhone
     val waitingCode = !phone && auth.type == "authorizationStateWaitCode"
     var resendSeconds by remember(auth.resendAt) { mutableIntStateOf(auth.resendSeconds()) }
@@ -175,7 +175,7 @@ fun AuthScreen(app: SpotygramApp, auth: AuthState, onLocal: () -> Unit, onBack: 
                     label = {
                         Text(
                             if (phone) tr(R.string.phone_number)
-                            else if (password) tr(R.string.telegram_password)
+                            else if (password) tr(R.string.password)
                             else if (auth.type == "authorizationStateWaitEmailAddress") "Email"
                             else tr(R.string.code)
                         )
