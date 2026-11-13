@@ -1,6 +1,6 @@
 # MLib — persistence and multi-device synchronisation
 
-**Status:** source audit completed against `feat/mlib-independent-identity` at `e5719091c00c171d6777dba8748872ac84f34466`. Runtime multi-device acceptance is still pending.
+**Status:** persistence and sync source audit completed. Encrypted protocol v4 and recovery-key pairing are implemented in source. Automated CI and real two-device acceptance remain pending.
 
 ## Decision
 
@@ -8,28 +8,39 @@ MLib remains local-first. Android and desktop keep independent SQLite databases 
 
 The synchronisation channel is not a music source, an MCat destination, or the Spotygram CloudSync channel.
 
-## What already exists
+## Local persistence
 
-### Local persistence
-
-- The library is stored in the local SQLite database named `library.db`.
-- The current library schema version is 8.
-- Tracks, sources, profiles, playlists and playlist membership are represented in the existing catalogue.
+- The library is stored in the local SQLite database named `library.db`, currently schema version 8.
+- Tracks, sources, profiles, playlists and playlist membership are represented in the catalogue.
 - Playback progress has a local `playback_progress` table.
-- Android opens the database through its private application storage. Desktop uses a local SQLite file with WAL and a busy timeout.
+- Android and desktop maintain independent databases.
 - TDLib file identifiers are cleared when a client lifetime changes; durable Telegram message/document references remain in the catalogue.
 
-### CloudSync
+## CloudSync protocol
 
 - `LibrarySync` stores account-scoped records in SQLite tables `sync_meta` and `sync_values`.
-- Local changes are journalled transactionally with the user operation. Pending records remain pending until Telegram confirms the send and the matching local revision is acknowledged.
+- Local changes are journalled transactionally. Pending records remain pending until Telegram confirms the send and the matching local revision is acknowledged.
 - A stable per-installation writer UUID and logical clock support deterministic conflict resolution.
 - `CloudSync` uses the already authenticated TDLib client. It does not create a second Telegram client or copy a TDLib session to another device.
-- The remote store is an MLib-owned private broadcast supergroup, identified by `mlib-storage/1` and `mlib-sync/3`. It is muted, archived and configured without message auto-deletion.
-- Snapshots and incremental records are gzip-compressed, size-bounded and checked with SHA-256 before being accepted.
+- The remote store is an MLib-owned private broadcast supergroup, identified by `mlib-storage/1` and the `mlib-sync/4` protocol. It is muted, archived and configured without message auto-deletion.
+- New snapshots and deltas are gzip-compressed and then encrypted with AES-256-GCM. A fresh 96-bit nonce is generated for each payload and protocol metadata (account, payload kind and snapshot cursor) is authenticated as additional data.
+- The encrypted envelope is size-bounded and checked with SHA-256 before decryption. GCM authentication is mandatory; failed decryption is an error and is never treated as an empty library.
+- Protocol versions 1–3 remain readable for migration. All new writes use encrypted version 4. Once an encrypted snapshot is confirmed, normal snapshot compaction can remove covered legacy messages.
 - The receiver merges records into its own SQLite database and materialises the resulting library state. It does not copy or replace the sender's database.
 
-### Data currently synchronised
+## Encryption key and device pairing
+
+- The first trusted device creates a random 256-bit key from a cryptographically secure random generator.
+- MLib displays a Base64URL recovery code. The user must transfer it manually to every additional device through a trusted channel. It is not posted to Telegram and is not included in the sync payload.
+- Android wraps the key with a dedicated AES key held by Android Keystore. Desktop stores it in the operating-system keyring. The raw shared key is not written to ordinary preferences or the SQLite database.
+- A device without a key is held in `key_required` state and does not discover/create a storage channel or upload plaintext/new-format data.
+- Importing a recovery code validates its length and refuses to silently replace a different key already installed on that device.
+- Losing the recovery code and all devices holding the key means the encrypted remote data cannot be recovered. Export and store the code safely before adding devices or replacing hardware.
+- Every device must run a build that understands protocol v4 and import the same recovery code before encrypted sync is enabled. Older MLib builds cannot consume v4 messages.
+- The shared key provides confidentiality and integrity against parties that do not possess it. All paired devices share the same key; this is not per-device sender attribution or protection against a compromised paired device.
+- Telegram can still observe channel membership and message metadata such as timing, size, account identifier, payload kind and cursor. The payload contents are encrypted.
+
+## Data synchronised
 
 - Track descriptors and Telegram references needed to identify remote media.
 - Library source enablement and titles.
@@ -40,76 +51,51 @@ The synchronisation channel is not a music source, an MCat destination, or the S
 
 Actual audio files, local filesystem paths and TDLib authorisation/session data are not part of the sync records.
 
-### Data deliberately kept per device
+## Data deliberately kept per device
 
 - Playback queue and current playback position/progress.
 - Playback speed, order and repeat mode.
 - Download/cache files and temporary audio.
 - TDLib client state, local database encryption/key material and device-specific runtime state.
 
-This separation is intentional: a second device reconstructs the catalogue and can resolve Telegram media references, but it does not inherit the first device's local audio cache or active playback session.
+A second device reconstructs the catalogue and can resolve Telegram media references, but it does not inherit the first device's local audio cache or active playback session.
 
-## Conflict behaviour observed in source
+## Conflict behaviour
 
 - Records are keyed by logical identity and merged using logical clock, then writer UUID as a deterministic tie-break.
-- Playlist membership is represented as independent per-track boolean records, so additions/removals of different tracks can merge independently.
+- Playlist membership is represented as independent per-track boolean records.
 - Playlist order is a separate last-writer-wins value. Concurrent reorder operations do not currently have a user-facing conflict resolver.
 - Deletion tombstones take precedence over live values. Track tombstones do not delete a locally downloaded file; a local track with a non-empty path is retained.
 - The receiver applies a batch transactionally and reloads the library after material changes.
 
-These rules are source observations, not yet proof of correct behaviour under concurrent real-device operation.
+These rules still require concurrent real-device validation.
 
-## Gaps and risks
+## Automated validation
 
-1. **No end-to-end two-device validation has been recorded.** A successful build and a successful Telegram login do not prove remote channel discovery, snapshot transfer, incremental sync, conflict handling or recovery.
-2. **No dedicated sync unit tests existed at the audited revision.** This change adds JVM tests for record validation, canonical encoding, legacy-field exclusion, deterministic tie-breaking and tombstones. They do not replace integration tests.
-3. **Remote payloads are not encrypted by MLib.** Gzip and SHA-256 provide compression and integrity checking, not confidentiality or sender authentication. The Telegram channel is private to the account, but Telegram cloud-channel content is not end-to-end encrypted.
-4. **Local playback state is not cross-device state.** Queue and playback progress are deliberately excluded. They remain local and must be verified for persistence across app restart/upgrades.
-5. **Account switching and first-run races need real-device tests.** In particular, simultaneous first login on two devices may create more than one MLib storage channel; the implementation contains discovery logic for this case, but it has not been exercised here.
-6. **Schema upgrades need regression testing.** The current database is version 8 and has upgrade paths that install/migrate sync tables. Existing user databases must survive upgrades without data loss.
-7. **The supported settings set must remain aligned with the product locales and current UI.** Sync validation must reject unsupported or obsolete values rather than applying invalid preferences.
+The JVM test suite covers:
+- Record validation, canonical encoding, duplicate/unsupported keys, legacy-field exclusion, deterministic tie-breaking and tombstones.
+- Populated schema-7 to schema-8 database migration and preservation of library and sync journal.
+- AES-GCM round-trip, fresh nonces, wrong-key rejection, ciphertext tampering, AAD mismatch, malformed envelope and invalid key length.
 
-## Encryption decision to implement before production use
+These tests do not replace Telegram integration or physical-device acceptance.
 
-Do not put a shared encryption key in the same Telegram channel as the encrypted payload and call that end-to-end encryption.
-
-The no-server design needs an explicit device-pairing/recovery mechanism. Candidate direction:
-
-- Generate a random MLib sync key on the first trusted device.
-- Let the user transfer it to another device through a QR code or a high-entropy recovery code, with an explicit confirmation step.
-- Store the key locally wrapped by each platform's protected keystore/keyring.
-- Encrypt and authenticate each snapshot/delta with an authenticated cipher (for example AES-256-GCM), using a fresh nonce and authenticated protocol metadata.
-- Version the envelope and support a deliberate migration from the current plaintext format. Never silently interpret a failed decrypt as an empty library or overwrite remote state.
-- Provide a recovery/export path before the user changes or loses all paired devices.
-
-This design is not implemented by this change. It needs its own review, format version and compatibility tests.
-
-## Acceptance plan
-
-### Automated
-
-- Validate record schema, size limits, unsupported keys and duplicate keys.
-- Verify canonical JSON encoding is independent of object field order.
-- Verify deterministic conflict tie-breaks and deletion-tombstone precedence.
-- Verify legacy queue/progress/playback fields are ignored.
-- Add database migration tests for a populated pre-sync database and an existing sync-enabled database.
-- Add protocol tests for snapshot/delta envelope parsing, compression limits, digest/authentication failure and interrupted send/ack behaviour.
-
-### Two physical Android devices
+## Two-device acceptance plan
 
 Use the same Telegram user account but separate MLib installations, TDLib sessions and local databases.
 
-1. Install the same MLib build on devices A and B and sign in on both.
-2. Confirm each discovers the same MLib sync storage and neither discovers or changes Spotygram's channel.
-3. Add/enable a source, favourite a track and create a playlist on A; confirm the records appear on B.
-4. Rename the playlist, reorder it and change membership on B; confirm the result returns to A without duplicate entries.
-5. Make independent changes on both devices while offline; reconnect in both orders and confirm deterministic convergence.
-6. Interrupt connectivity during an upload, force-stop the app and restart; confirm pending changes are retried and not duplicated or lost.
-7. Restart both devices and confirm library, favourites, playlists and settings remain present.
-8. Confirm local queue, playback progress and downloaded files remain local and are not deleted or overwritten by sync.
-9. Test sign-out/account switch and verify that one Telegram account's records are not materialised into another account's library.
-10. Repeat first-run setup with both devices initially offline, then connect them in turn; verify that duplicate storage channels are detected and reconciled safely.
+1. Update both devices to a v4-capable build. Do not pair a device running an older protocol.
+2. On device A, connect Telegram, open Settings → Chave de cifragem e recuperação, create the first key and securely save the recovery code outside Telegram.
+3. On device B, connect Telegram and import the exact same recovery code before sync starts.
+4. Confirm both devices discover the same MLib storage and neither discovers or changes Spotygram's channel.
+5. Add/enable a source, favourite a track and create a playlist on A; confirm the records appear on B.
+6. Rename the playlist, reorder it and change membership on B; confirm the result returns to A without duplicate entries.
+7. Make independent changes on both devices while offline; reconnect in both orders and confirm deterministic convergence.
+8. Interrupt connectivity during an upload, force-stop the app and restart; confirm pending changes are retried and not duplicated or lost.
+9. Restart both devices and confirm library, favourites, playlists and settings remain present.
+10. Confirm local queue, playback progress and downloaded files remain local and are not deleted or overwritten by sync.
+11. Test sign-out/account switch and verify that one Telegram account's records are not materialised into another account's library.
+12. Verify that a device without a recovery key remains blocked and that an incorrect recovery code fails without changing its existing key.
 
-### Release gate
+## Release gate
 
-Do not declare multi-device support complete until the automated checks pass, the encryption/pairing decision is implemented and reviewed, and the two-device acceptance plan has been completed with recorded evidence.
+Do not declare multi-device support complete until CI passes, the encrypted protocol has passed review, and the two-device acceptance plan has been completed with recorded evidence. No merge or release is authorised by this implementation work.
