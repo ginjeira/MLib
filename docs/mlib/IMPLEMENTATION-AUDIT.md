@@ -275,7 +275,7 @@ The following work was added to `feat/mlib-independent-identity` after the histo
 
 - Added original MLib artwork: an M-shaped audio waveform in mint, a coral pulse and a deep-navy launcher field. Android now has vector adaptive foreground/background resources, a monochrome icon and MLib notification artwork.
 - Replaced the inherited Spotygram mark/wordmark on the authentication screen. Desktop window and generated PNG/ICO/ICNS package icons now use the MLib launcher artwork and filenames.
-- Kept the old artwork and its notice in the repository; the new MLib-branded surfaces no longer reference it.
+- Removed the unused inherited launcher, mark and silhouette artwork from active resources; retained the separate Takopi artwork notice for legal traceability.
 - Reused the existing single TDLib client and authorization state machine for phone number, Telegram verification code and optional two-step verification password. QR and email fallback states remain available.
 - Phone input now accepts either an international number or a national number interpreted using the device's default region and normalized to E.164 before submitting to TDLib.
 - No second Telegram client, separate MCat login, Spotygram data access, or MCat production changes were introduced.

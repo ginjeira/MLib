@@ -41,7 +41,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - The artwork is authored as MLib resources; Android uses vector foreground/background assets, a monochrome adaptive icon and a dedicated notification silhouette.
 - The authentication screen and Desktop window use MLib artwork and wordmark.
 - Desktop package icons are generated as MLib-named PNG, ICO and ICNS assets from the original MLib launcher image.
-- Legacy Takopi/Spotygram artwork and its notice remain in the repository for traceability; the new MLib launcher, authentication and Desktop icons no longer reference it.
+- The unused inherited Takopi/Spotygram launcher, mark and silhouette assets have been removed from active resources. The separate Takopi artwork notice remains in the repository for legal traceability.
 - Desktop installers and signed release publication remain disabled as described above.
 
 ## Telegram sign-in (implementation; device validation pending)
