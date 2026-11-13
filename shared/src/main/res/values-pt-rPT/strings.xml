@@ -103,7 +103,7 @@
     <string name="stop">Parar</string>
     <string name="system_default">Predefinição do sistema</string>
     <string name="telegram_login">Iniciar sessão no Telegram</string>
-    <string name="telegram_password">Palavra-passe do Telegram</string>
+    <string name="telegram_password">Palavra-passe de verificação em dois passos do Telegram</string>
     <string name="title_or_artist">Título ou artista</string>
     <string name="track_actions">Acções da faixa</string>
     <string name="undo">Anular</string>
@@ -243,7 +243,7 @@
     <string name="email_code">Código enviado por correio electrónico</string>
     <string name="email_code_sent">Código enviado para %1$s</string>
     <string name="enter_code_help">Introduza o código enviado através do método seleccionado pelo Telegram.</string>
-    <string name="enter_phone_help">Introduza o seu número do Telegram em formato internacional: + seguido do indicativo do país e do número.</string>
+    <string name="enter_phone_help">Introduza o número de telemóvel no formato local do dispositivo ou em formato internacional, com + e o indicativo do país.</string>
 
 
     <string name="favorites_empty_help">Toque no coração junto a uma música para a encontrar aqui.</string>
@@ -286,10 +286,10 @@
     <string name="not_selected">Não seleccionado</string>
     <string name="open_local_music">Abrir música local</string>
     <string name="password">Palavra-passe</string>
-    <string name="password_help">A sua palavra-passe da verificação em dois passos.</string>
+    <string name="password_help">Introduza a palavra-passe que configurou na verificação em dois passos do Telegram.</string>
     <string name="password_hint"> Dica: %1$s</string>
     <string name="password_invalid">Palavra-passe de verificação em dois passos incorrecta.</string>
-    <string name="phone_invalid">Introduza um número de telefone com indicativo do país, por exemplo +351…</string>
+    <string name="phone_invalid">Introduza um número de telemóvel válido para a região do dispositivo ou utilize o formato internacional com indicativo do país.</string>
     <string name="phone_number">Número de telefone</string>
     <string name="playback_failed">Não foi possível reproduzir esta faixa. Toque em Reproduzir para tentar novamente.</string>
     <string name="player_connecting">A ligar ao leitor…</string>

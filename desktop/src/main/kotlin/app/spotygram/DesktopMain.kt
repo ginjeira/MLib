@@ -156,7 +156,7 @@ fun main(arguments: Array<String>) {
                 title = "MLib",
                 state = windowState,
                 visible = visible,
-                icon = painterResource(R.drawable.spotygram_launcher),
+                icon = painterResource(R.drawable.mlib_launcher),
                 onPreviewKeyEvent = { event ->
                     if (event.type != KeyEventType.KeyDown) false
                     else when {

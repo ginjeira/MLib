@@ -1,4 +1,3 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:inset="24%">
-    <bitmap android:src="@drawable/spotygram_mark" android:gravity="fill" />
-</inset>
+    android:drawable="@drawable/mlib_mark_vector"
+    android:inset="0%" />

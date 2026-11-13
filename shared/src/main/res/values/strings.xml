@@ -177,7 +177,7 @@
     <string name="email_code">"Email code"</string>
     <string name="email_code_sent">"Code sent to %1$s"</string>
     <string name="enter_code_help">"Enter the code sent using the method selected by Telegram."</string>
-    <string name="enter_phone_help">"Enter your Telegram number in international format: + followed by the country code and number."</string>
+    <string name="enter_phone_help">"Enter your mobile number in your device’s local format, or use international format with + and the country code."</string>
     <string name="favorites">"Favorites"</string>
     <string name="favorites_empty_help">"Tap the heart next to a song to find it here."</string>
     <string name="favorites_empty_title">"Keep what you love"</string>
@@ -229,11 +229,11 @@
     <string name="open_in_telegram">"Open in Telegram"</string>
     <string name="open_local_music">"Open local music"</string>
     <string name="password">"Password"</string>
-    <string name="password_help">"Your two-step verification password."</string>
+    <string name="password_help">"Enter the password you configured for Telegram two-step verification."</string>
     <string name="password_hint">" Hint: %1$s"</string>
     <string name="password_invalid">"Incorrect two-step verification password."</string>
     <string name="pause">"Pause"</string>
-    <string name="phone_invalid">"Enter a phone number with country code, for example +44…"</string>
+    <string name="phone_invalid">"Enter a valid mobile number for your device region, or use international format with the country code."</string>
     <string name="phone_number">"Phone number"</string>
     <string name="play">"Play"</string>
     <string name="play_all">"Play all"</string>
@@ -303,7 +303,7 @@
     <string name="telegram_access_help">"Your selection limits this music library, not the permissions of your Telegram session."</string>
     <string name="telegram_connecting">"Connecting to Telegram…"</string>
     <string name="telegram_login">"Sign in to Telegram"</string>
-    <string name="telegram_password">"Telegram password"</string>
+    <string name="telegram_password">"Telegram two-step verification password"</string>
     <string name="telegram_required">"Connect Telegram first"</string>
     <string name="telegram_timeout">"Telegram did not respond. Check your connection and try again."</string>
     <string name="telegram_updating">"Updating Telegram…"</string>

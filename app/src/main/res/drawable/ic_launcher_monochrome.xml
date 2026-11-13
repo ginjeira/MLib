@@ -1,2 +1,3 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/spotygram_silhouette" android:inset="24%" />
+    android:drawable="@drawable/mlib_monochrome"
+    android:inset="0%" />

@@ -35,6 +35,23 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - The desktop image-only build now uses the MLib application image paths; the legacy Spotygram package generator and release workflow are disabled.
 - **Desktop installer/release publication remains disabled.** The inherited packaging scripts, signed bundle manifest and updater still contain Spotygram assumptions. They must be migrated together, including a fresh MLib Ed25519 key pair and trusted public key, before a desktop installer can be distributed. The build script explicitly refuses to package/publish a desktop release until that work is complete.
 
+## Visual identity (implemented 13 Nov 2026)
+
+- MLib now has an original geometric audio-mark: a rounded waveform forming an M, in mint on a deep-navy field with a restrained coral pulse.
+- The artwork is authored as MLib resources; Android uses vector foreground/background assets, a monochrome adaptive icon and a dedicated notification silhouette.
+- The authentication screen and Desktop window use MLib artwork and wordmark.
+- Desktop package icons are generated as MLib-named PNG, ICO and ICNS assets from the original MLib launcher image.
+- Legacy Takopi/Spotygram artwork and its notice remain in the repository for traceability; the new MLib launcher, authentication and Desktop icons no longer reference it.
+- Desktop installers and signed release publication remain disabled as described above.
+
+## Telegram sign-in (implementation; device validation pending)
+
+- MLib reuses the inherited single TDLib client and authorization state machine; no second Telegram client or separate MCat login is introduced.
+- The sign-in flow supports a phone number, the verification code delivered by the method selected by Telegram, and the Telegram two-step verification password when TDLib requests it. Existing email/QR fallback states remain supported.
+- Phone numbers may be entered in the device's local region format or in international format. Local numbers are normalized to E.164 using the device locale country; international numbers retain their explicit country code.
+- TDLib's database and file directories are rooted in MLib's own Android private files directory (telegram/db and telegram/files), while the package sandbox and MLib database-key alias remain independent of Spotygram.
+- Build-time Telegram API ID/hash are application credentials, not the user's phone number, verification code or two-step password. The latter are supplied at sign-in and remain handled by TDLib.
+
 ## Compatibility boundaries
 
 - Do not import, copy, open or mutate Spotygram's private database, TDLib files, keyring entries, preferences or media directories.
@@ -48,7 +65,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - Run the Android baseline workflow on this branch and confirm two non-empty ABI APKs.
 - Inspect the APK manifest to verify release/debug application IDs.
 - Install MLib debug alongside Spotygram and verify both launch independently.
-- Verify separate app storage, Android Keystore key, TDLib login, SQLite catalogue, downloads, playback and CloudSync channel.
+- Verify separate app storage, Android Keystore key, TDLib login by local and international phone formats, verification code, optional two-step password, session persistence after force-stop/restart, SQLite catalogue, downloads, playback and CloudSync channel.
 - Generate and securely retain the new Android release key before creating signed release APKs.
 - Complete desktop installer identity, update manifest, trusted-key and package-name migration; then test MLib and Spotygram side by side on each supported OS.
 - Do not claim runtime coexistence or release readiness until the relevant device/desktop tests pass.

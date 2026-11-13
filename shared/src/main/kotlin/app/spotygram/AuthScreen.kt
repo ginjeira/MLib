@@ -76,13 +76,13 @@ fun AuthScreen(app: SpotygramApp, auth: AuthState, onLocal: () -> Unit, onBack: 
             Spacer(Modifier.height(20.dp))
             if (!phone && auth.canChangePhone) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Image(painterResource(R.drawable.spotygram_mark), null, Modifier.size(40.dp))
-                    Text("spotygram", style = MaterialTheme.typography.headlineSmall)
+                    Image(painterResource(R.drawable.mlib_mark), null, Modifier.size(40.dp))
+                    Text("MLib", style = MaterialTheme.typography.headlineSmall)
                 }
             } else {
-                Image(painterResource(R.drawable.spotygram_mark), null, Modifier.size(64.dp))
+                Image(painterResource(R.drawable.mlib_mark), null, Modifier.size(64.dp))
                 Spacer(Modifier.height(16.dp))
-                Text("spotygram", style = MaterialTheme.typography.headlineLarge)
+                Text("MLib", style = MaterialTheme.typography.headlineLarge)
             }
             Spacer(Modifier.height(12.dp))
         }
@@ -175,7 +175,7 @@ fun AuthScreen(app: SpotygramApp, auth: AuthState, onLocal: () -> Unit, onBack: 
                     label = {
                         Text(
                             if (phone) tr(R.string.phone_number)
-                            else if (password) tr(R.string.password)
+                            else if (password) tr(R.string.telegram_password)
                             else if (auth.type == "authorizationStateWaitEmailAddress") "Email"
                             else tr(R.string.code)
                         )

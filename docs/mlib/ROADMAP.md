@@ -38,12 +38,12 @@ Acceptance:
 Tasks:
 - Decide whether MLib installs alongside Spotygram or replaces/migrates it.
 - Decide application ID, signing and update-channel strategy before publishing an APK.
-- Review/replace inherited visual assets only where needed and rights are clear.
-- Update product-facing text deliberately.
+- Create and use original MLib logo/launcher artwork; keep inherited Takopi artwork and its notice out of MLib-branded surfaces unless rights are independently established.
+- Update product-facing text, authentication branding, launcher, notification and Desktop window/package icons deliberately.
 - Keep existing Spotygram screens, library and playback behaviour intact.
 
 Acceptance:
-- MLib identity is consistent in intentionally changed surfaces.
+- MLib identity is consistent across Android launcher/adaptive/monochrome/notification icons, authentication screen and Desktop window/package icons.
 - Existing critical library, Telegram, playback, playlist and update flows pass regression checks.
 - Upgrade/data-retention behaviour is tested for the chosen package identity.
 - No unlicensed upstream artwork is shipped.
@@ -131,7 +131,7 @@ Acceptance:
 **Goal:** make Android dependable before expanding platforms.
 
 Tasks:
-- Exercise large libraries and long-running acquisition jobs.
+- Exercise phone-number login in local and international formats, verification-code submission, optional two-step password, invalid/expired code and password errors, force-stop/restart session recovery, large libraries and long-running acquisition jobs.
 - Test offline/online transitions, process death, restart and account changes.
 - Test concurrent/repeated requests within bot limits.
 - Validate media formats, file integrity, playback, queue and storage cleanup.
@@ -186,12 +186,12 @@ Acceptance:
 ## Initial execution order
 
 1. Finish Phase 0 audit and baseline.
-2. Complete MCat live protocol validation and prove destination-message correlation.
-3. Decide identity/package migration before creating distributable MLib builds.
-4. Implement track acquisition end-to-end.
-5. Add albums/playlists and automatic playlist creation.
-6. Add library album identification and completion.
-7. Stabilise Android.
-8. Only then start Web and evaluate Auto/TV.
+2. Complete original MLib identity and branding resources (implementation started 13 Nov 2026).
+3. Validate Android installation, coexistence, phone/code/2FA sign-in and session persistence on a physical device.
+4. Validate CloudSync isolation and persistence.
+5. Complete MCat live protocol validation and prove destination-message correlation.
+6. Implement track acquisition end-to-end, then albums/playlists and automatic playlist creation.
+7. Add library album identification and completion.
+8. Stabilise Android; only then start Web and evaluate Auto/TV.
 
 Update this document with dated evidence. Planned, in-progress and validated work must remain distinct. Code written does not by itself make a checklist item complete.

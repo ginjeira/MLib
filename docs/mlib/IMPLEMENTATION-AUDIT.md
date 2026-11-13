@@ -267,3 +267,17 @@ This section supersedes the earlier statements in this audit that the current in
 - MCat authentication, acquisition, job-to-destination-message correlation and import.
 
 A successful CI compile is a build baseline only. It is not a functional acceptance test or a production-release approval.
+
+
+## Branch implementation update — 13 Nov 2026
+
+The following work was added to `feat/mlib-independent-identity` after the historical `main`-branch snapshot above. It is source implementation evidence, not runtime validation:
+
+- Added original MLib artwork: an M-shaped audio waveform in mint, a coral pulse and a deep-navy launcher field. Android now has vector adaptive foreground/background resources, a monochrome icon and MLib notification artwork.
+- Replaced the inherited Spotygram mark/wordmark on the authentication screen. Desktop window and generated PNG/ICO/ICNS package icons now use the MLib launcher artwork and filenames.
+- Kept the old artwork and its notice in the repository; the new MLib-branded surfaces no longer reference it.
+- Reused the existing single TDLib client and authorization state machine for phone number, Telegram verification code and optional two-step verification password. QR and email fallback states remain available.
+- Phone input now accepts either an international number or a national number interpreted using the device's default region and normalized to E.164 before submitting to TDLib.
+- No second Telegram client, separate MCat login, Spotygram data access, or MCat production changes were introduced.
+
+**Not yet validated:** Android resource/build checks for these changes, Desktop image build after icon migration, physical installation, real Telegram sign-in, 2FA, force-stop/restart session persistence, or coexistence with Spotygram. These remain explicit acceptance tests; a successful baseline build before this commit is not evidence for this update.

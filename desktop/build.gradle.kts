@@ -117,7 +117,7 @@ val prepareIcons = tasks.register<JavaExec>("prepareDesktopIcons") {
     mainClass.set("app.spotygram.DesktopMainKt")
     args("--write-icons", icons.get().asFile.absolutePath)
     jvmArgs("-Djava.awt.headless=true", "-Xmx128m")
-    inputs.file(rootProject.file("shared/src/main/res/drawable-nodpi/spotygram_launcher.png"))
+    inputs.file(rootProject.file("shared/src/main/res/drawable-nodpi/mlib_launcher.png"))
     outputs.dir(icons)
 }
 
@@ -152,14 +152,14 @@ compose.desktop {
             packageVersion = rootProject.version.toString()
             modules("java.sql", "jdk.crypto.ec", "java.net.http", "jdk.unsupported", "jdk.security.auth")
             appResourcesRootDir.set(nativeDirectory.parentFile)
-            linux { iconFile.set(icons.get().asFile.resolve("spotygram.png")) }
-            windows { iconFile.set(icons.get().asFile.resolve("spotygram.ico")) }
+            linux { iconFile.set(icons.get().asFile.resolve("mlib.png")) }
+            windows { iconFile.set(icons.get().asFile.resolve("mlib.ico")) }
             macOS {
                 // jpackage requires a positive major; the final app bundle keeps our public version.
                 packageVersion = rootProject.version.toString().split('.').let {
                     "${it[0].toInt() + 1}.${it[1]}.${it[2]}"
                 }
-                iconFile.set(icons.get().asFile.resolve("spotygram.icns"))
+                iconFile.set(icons.get().asFile.resolve("mlib.icns"))
                 bundleID = "pt.ginjeira.mlib"
             }
             outputBaseDir.set(layout.buildDirectory.dir("distributions"))
