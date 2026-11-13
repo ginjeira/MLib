@@ -152,7 +152,7 @@ class CloudSync(private val app: SpotygramApp) {
     }
 
     fun importRecoveryCode(code: String) {
-        val normalized = code.trim().replace(" ", "").replace("-", "")
+        val normalized = code.trim().replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
         val key = Base64.getUrlDecoder().decode(normalized)
         require(key.size == 32) { "O código de recuperação MLib é inválido." }
         val existing = app.platform.syncEncryptionKey()
