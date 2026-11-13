@@ -41,6 +41,17 @@ class LibrarySyncProtocolTest {
     }
 
     @Test
+    fun languageValidationMatchesSupportedLocales() {
+        val portuguese = JSONArray().put(row("setting/language", 1, writerA, "pt"))
+        val english = JSONArray().put(row("setting/language", 2, writerB, "en"))
+        val unsupported = JSONArray().put(row("setting/language", 3, writerA, "ru"))
+
+        assertEquals("pt", JSONObject(LibrarySync.decode(portuguese).single().value).getString("v"))
+        assertEquals("en", JSONObject(LibrarySync.decode(english).single().value).getString("v"))
+        assertTrue(runCatching { LibrarySync.decode(unsupported) }.isFailure)
+    }
+
+    @Test
     fun decodeRejectsDuplicateKeys() {
         val packet = JSONArray()
             .put(row("setting/theme", 1, writerA, "dark"))
