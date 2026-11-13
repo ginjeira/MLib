@@ -60,10 +60,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build gperf perl git python3
       - uses: gradle/actions/setup-gradle@v6
+      - name: Validate Telegram API credentials
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${TELEGRAM_API_ID:-}" =~ ^[0-9]+$ ]] || [[ "${TELEGRAM_API_ID}" == "0" ]]; then
+            echo "::error::TELEGRAM_API_ID is missing or invalid. Configure the repository Actions secret."
+            exit 1
+          fi
+          if [[ -z "${TELEGRAM_API_HASH:-}" ]]; then
+            echo "::error::TELEGRAM_API_HASH is missing. Configure the repository Actions secret."
+            exit 1
+          fi
       - name: Build TDLib, OpenSSL and Android debug APKs
         env:
-          TELEGRAM_API_ID: '0'
-          TELEGRAM_API_HASH: ''
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           MLIB_JOBS: '2'
         run: bash tools/build.sh debug
       - name: Verify both ABI APK outputs
