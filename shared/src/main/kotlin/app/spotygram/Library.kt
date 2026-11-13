@@ -365,6 +365,10 @@ class Library(private val platform: Platform) : AutoCloseable {
                     "chat=?",
                     arrayOf(id.toString()),
                 )
+                sync.edit(
+                    this,
+                    mapOf("source/$id" to JSONObject().put("enabled", true).put("title", title.take(256))),
+                )
             }
             reload()
         }
@@ -391,6 +395,19 @@ class Library(private val platform: Platform) : AutoCloseable {
                     },
                     "id=?",
                     arrayOf(profile.id.toString()),
+                )
+                val selected = rawQuery(
+                    "SELECT selected FROM profiles WHERE id=?",
+                    arrayOf(profile.id.toString()),
+                ).use { it.moveToFirst() && it.getInt(0) == 1 }
+                sync.edit(
+                    this,
+                    mapOf(
+                        "profile/${profile.id}" to JSONObject()
+                            .put("enabled", selected)
+                            .put("title", profile.title.take(256))
+                            .put("username", profile.username.take(64)),
+                    ),
                 )
             }
             reload()

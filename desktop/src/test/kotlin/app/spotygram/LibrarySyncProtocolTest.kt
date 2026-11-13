@@ -52,6 +52,15 @@ class LibrarySyncProtocolTest {
     }
 
     @Test
+    fun sourceAndProfileMetadataAcceptSupportedDescriptors() {
+        val packet = JSONArray()
+            .put(row("source/-100123", 1, writerA, JSONObject().put("enabled", true).put("title", "Music")))
+            .put(row("profile/12345", 2, writerB, JSONObject().put("enabled", false).put("title", "Archive").put("username", "archive")))
+
+        assertEquals(2, LibrarySync.decode(packet).size)
+    }
+
+    @Test
     fun decodeRejectsDuplicateKeys() {
         val packet = JSONArray()
             .put(row("setting/theme", 1, writerA, "dark"))
