@@ -342,9 +342,11 @@ fun SettingsSheet(
                                     }
                                 )
                             Text(
-                                if (syncState.phase == "error" && syncState.error.isNotBlank())
-                                    "$status\n${syncState.error}"
-                                else status
+                                when {
+                                    syncState.phase == "key_required" -> "A sincronização está suspensa até criares ou importares a chave de recuperação."
+                                    syncState.phase == "error" && syncState.error.isNotBlank() -> "$status\n${syncState.error}"
+                                    else -> status
+                                }
                             )
                         },
                         leadingContent = {
