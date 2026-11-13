@@ -3,6 +3,8 @@ package app.spotygram
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
 import java.util.UUID
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -79,6 +81,10 @@ class CloudSync(private val app: SpotygramApp) {
                                 /* Coalesce a burst of library and native events. */
                             }
                             try {
+                                if (app.platform.syncEncryptionKey() == null) {
+                                    state.value = SyncState("key_required")
+                                    continue
+                                }
                                 synchronize()
                                 failures = 0
                                 retry?.cancel()
@@ -128,6 +134,40 @@ class CloudSync(private val app: SpotygramApp) {
         retryAt = 0
         signal()
     }
+
+    /** Returns a portable recovery code; it is never sent to Telegram. */
+    fun recoveryCode(): String? =
+        app.platform.syncEncryptionKey()?.let {
+            Base64.getUrlEncoder().withoutPadding().encodeToString(it)
+        }
+
+    /** First device creates the shared key. Other devices must import this exact code. */
+    fun createRecoveryCode(): String {
+        val existing = app.platform.syncEncryptionKey()
+        if (existing != null) return Base64.getUrlEncoder().withoutPadding().encodeToString(existing)
+        val key = ByteArray(32).also(SecureRandom()::nextBytes)
+        app.platform.storeSyncEncryptionKey(key)
+        signal()
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(key)
+    }
+
+    fun importRecoveryCode(code: String) {
+        val normalized = code.trim().replace(" ", "").replace("-", "")
+        val key = Base64.getUrlDecoder().decode(normalized)
+        require(key.size == 32) { "O código de recuperação MLib é inválido." }
+        val existing = app.platform.syncEncryptionKey()
+        require(existing == null || existing.contentEquals(key)) {
+            "Este dispositivo já está associado a outra chave MLib. Não vou substituí-la automaticamente."
+        }
+        if (existing == null) app.platform.storeSyncEncryptionKey(key)
+        signal()
+    }
+
+    private fun requireSyncKey(): ByteArray =
+        app.platform.syncEncryptionKey() ?: error("A chave de recuperação MLib ainda não foi configurada.")
+
+    private fun associatedData(kind: String, through: Long): ByteArray =
+        "mlib-sync/4|undefined|$kind|$through".toByteArray(Charsets.UTF_8)
 
     suspend fun stop() {
         connected = false
@@ -528,8 +568,13 @@ class CloudSync(private val app: SpotygramApp) {
             require(bytes.size == file.getLong("size").toInt() && digest(bytes) == parts[4]) {
                 tr(R.string.sync_invalid_data)
             }
+            val compressed =
+                if (format == 4) {
+                    val through = parts[5].toLong()
+                    SyncCrypto.decrypt(bytes, requireSyncKey(), associatedData(parts[2], through))
+                } else bytes
             val plain =
-                GZIPInputStream(bytes.inputStream()).use { input ->
+                GZIPInputStream(compressed.inputStream()).use { input ->
                     val output = ByteArrayOutputStream()
                     val buffer = ByteArray(32 * 1024)
                     while (true) {
@@ -575,10 +620,11 @@ class CloudSync(private val app: SpotygramApp) {
                 .put("records", JSONArray().apply { for (r in records) put(r.json()) })
         val plain = packet.toString().toByteArray(Charsets.UTF_8)
         require(plain.size <= maxExpanded) { tr(R.string.sync_invalid_data) }
-        val bytes =
+        val compressed =
             ByteArrayOutputStream()
                 .also { output -> GZIPOutputStream(output).use { it.write(plain) } }
                 .toByteArray()
+        val bytes = SyncCrypto.encrypt(compressed, requireSyncKey(), associatedData(kind, through))
         require(bytes.size <= maxCompressed) { tr(R.string.sync_invalid_data) }
         val directory = File(app.cacheDir, "sync").apply { check(isDirectory || mkdirs()) }
         val file = File(directory, "mlib-$token.mlib")
