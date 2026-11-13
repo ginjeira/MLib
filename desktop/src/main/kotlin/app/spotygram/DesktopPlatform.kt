@@ -94,6 +94,25 @@ class DesktopPlatform : Platform, AutoCloseable {
         }
         return secret
     }
+    override fun syncEncryptionKey(): ByteArray? {
+        val account = MessageDigest.getInstance("SHA-256").digest(filesDir.canonicalPath.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val encoded = runCatching { keyring.getPassword("pt.ginjeira.mlib.sync", account) }.getOrNull()
+        if (encoded.isNullOrBlank()) return null
+        return Base64.getDecoder().decode(encoded).also {
+            require(it.size == 32) { "Invalid MLib sync encryption key in desktop keyring" }
+        }
+    }
+    override fun storeSyncEncryptionKey(key: ByteArray) {
+        require(key.size == 32) { "Invalid MLib sync encryption key" }
+        val account = MessageDigest.getInstance("SHA-256").digest(filesDir.canonicalPath.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val encoded = Base64.getEncoder().encodeToString(key)
+        keyring.setPassword("pt.ginjeira.mlib.sync", account, encoded)
+        check(keyring.getPassword("pt.ginjeira.mlib.sync", account) == encoded) {
+            "MLib sync encryption key could not be stored in desktop keyring"
+        }
+    }
     override fun observeNetwork(onType: (String) -> Unit): AutoCloseable {
         // TDLib owns desktop reconnection; never park it in networkTypeNone without an OS observer.
         onType("networkTypeOther")
