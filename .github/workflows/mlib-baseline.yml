@@ -141,6 +141,8 @@ jobs:
         with:
           python-version: '3.12'
       - uses: gradle/actions/setup-gradle@v6
+      - name: Run shared sync protocol unit tests
+        run: ./gradlew :desktop:test --no-daemon --console=plain
       - name: Install Linux packaging prerequisites
         run: |
           sudo apt-get update

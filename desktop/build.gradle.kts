@@ -141,6 +141,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("dev.nucleusframework:nucleus.media-control:2.5.0")
     implementation("org.slf4j:slf4j-nop:2.0.17")
+    testImplementation("junit:junit:4.13.2")
 }
 
 compose.desktop {
