@@ -33,7 +33,9 @@ internal fun AcquisitionSheet(
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
-        destinations = runCatching { app.searchChats("GinjMusic", onServer = true) }.getOrDefault(emptyList())
+        val localMatches = runCatching { app.searchChats("GinjMusic") }.getOrDefault(emptyList())
+        destinations = if (localMatches.isNotEmpty()) localMatches else
+            runCatching { app.searchChats("GinjMusic", onServer = true) }.getOrDefault(emptyList())
         if (destinations.none { it.id == destinationId }) {
             // Never silently fall back to an arbitrary chat: an acquisition could
             // otherwise forward music to the wrong conversation.
