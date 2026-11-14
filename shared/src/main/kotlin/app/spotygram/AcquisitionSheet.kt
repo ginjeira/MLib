@@ -35,9 +35,11 @@ internal fun AcquisitionSheet(
     suspend fun loadDestinations() {
         destinations = runCatching { app.searchChats("GinjMusic", onServer = true) }.getOrDefault(emptyList())
         if (destinations.none { it.id == destinationId }) {
+            // Never silently fall back to an arbitrary chat: an acquisition could
+            // otherwise forward music to the wrong conversation.
             destinationId = destinations.firstOrNull {
                 it.title.contains("GinjMusic", ignoreCase = true)
-            }?.id ?: destinations.firstOrNull()?.id ?: 0L
+            }?.id ?: 0L
         }
     }
 
