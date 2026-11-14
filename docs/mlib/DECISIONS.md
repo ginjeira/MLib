@@ -68,12 +68,11 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Question:** Should MLib install alongside Spotygram as a separate app, or replace/migrate an existing Spotygram installation?  
 **Impact:** Application ID, signing identity, update channel, package naming and data migration depend on this. Do not change inherited identity/signing until decided.
 
-## D-012 — MCat bot protocol and service surface
+## D-012 — MCat bot protocol and acquisition behaviour
 
-**Status:** Partially investigated; live validation still required  
-**Finding:** Static inspection of ginjeira/MCat confirms a Telethon-based Telegram user session, bot-driven search, a FastAPI Web API, SQLite job records and forwarding of acquired Telegram media to a configured destination chat. The Web API does not return audio bytes or per-track destination message IDs. The Telegram session and destination are shared by the MCat installation; a single lock and worker serialise its Telegram operations.  
-**Remaining work:** Verify the deployed revision and live request/response behaviour, confirm destination access from MLib's Telegram account, and establish reliable per-job media correlation.  
-**Impact:** A client adapter must respect the shared execution lane and cannot assume direct media delivery or independent Telegram sessions per Web user.
+**Status:** Accepted as a functional reference  
+**Finding:** MCat uses a Telegram user session to interact with the music bot, collect audio messages and forward them to a destination. MCat Player contains the richer user-facing workflow for search filters, numbered result selection, collection acquisition, deduplication and playlist/album handling.  
+**Impact:** These behaviours are to be ported into MLib; neither repository's service/session/API is a runtime dependency. See D-019.
 
 ## D-013 — Desktop product support
 
@@ -106,9 +105,17 @@ Record decisions and unresolved questions here. Add new decisions rather than si
 **Decision:** Both the MCat acquisition system and the separate MCat Player project are sources of functionality and technical knowledge for MLib. Spotygram remains the initial codebase.  
 **Rationale:** MCat supplies the working acquisition workflow; MCat Player supplies additional user-facing capabilities and lessons. The feature matrix records candidate carry-forward decisions.
 
-## D-018 — Candidate MCat integration path
+## D-018 — MCat HTTP/API integration
 
-**Status:** Candidate; requires end-to-end proof  
-**Decision direction:** Investigate using the existing MCat FastAPI service for search/job orchestration and the configured Telegram destination as the media delivery channel. MLib would ingest forwarded messages through its existing TDLib/Spotygram source pipeline.  
-**Rationale:** Reuses both existing systems and avoids implementing a second Telegram bot workflow or media-transfer engine.  
-**Conditions:** Confirm the MLib Telegram account can read the destination, secure native-client authentication, establish per-job message correlation, and verify partial/failure/retry behaviour. The current API is an MVP and lacks per-track destination message IDs. Do not modify the production MCat service or rely on this path as final architecture until the proof succeeds.
+**Status:** Rejected / superseded  
+**Decision:** MLib will not use the MCat FastAPI service, Web credentials, job endpoints or shared server-side Telegram session.  
+**Rationale:** MLib must implement the acquisition behaviour directly using its own authenticated TDLib client. This avoids an operational dependency on MCat and preserves MLib independence.
+
+## D-019 — Native MLib acquisition engine
+
+**Status:** Accepted  
+**Decision:** Port the MCat and MCat Player acquisition behaviour into MLib using its existing TDLib session and native SQLite/library pipeline. The MLib client communicates directly with `@MusicsHuntersbot`, uses TDLib callbacks to select filters/results, collects the bot's audio messages, forwards them to the selected Telegram destination and imports the forwarded messages into its own library.  
+**Explicit exclusions:** No MCat HTTP API, Web login, Telethon/GramJS client, MCat session, server process, shared jobs or MCat production changes.  
+**Rationale:** MCat and MCat Player are functional references, not runtime services required by MLib.  
+**Implementation constraints:** Serialize bot operations; correlate messages using a pre-selection message cursor; preserve partial successes; deduplicate conservatively; never delete existing media automatically. GinjMusic is the currently confirmed destination.  
+**Validation:** Source implementation is in progress. CI, live bot interaction, destination forwarding, duplicate retry, playlist acquisition and playback must pass before the feature is considered validated.
