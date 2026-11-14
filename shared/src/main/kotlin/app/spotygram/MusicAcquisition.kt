@@ -38,6 +38,7 @@ data class AcquisitionOutcome(
     val failed: Int,
     val playlistId: Long? = null,
     val collectionTitle: String = "",
+    val note: String = "",
 )
 
 data class AcquisitionState(
@@ -191,7 +192,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
             var playlistId: Long? = null
             if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
-                for (item in completed.filter { it.error.isEmpty() && it.tracks.isNotEmpty() }) {
+                for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val existing = app.library.state.value.playlists.firstOrNull {
                         normalizeMusicText(it.name) == normalizeMusicText(item.option.title)
@@ -213,6 +214,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 playlistId = playlistId,
                 collectionTitle = completed.filter { it.tracks.isNotEmpty() }
                     .joinToString(", ") { it.option.title },
+                note = when (session.search.contentType) {
+                    AcquisitionContentType.ALBUM ->
+                        "As faixas foram adicionadas à biblioteca; o modelo de álbuns do MLib ainda está por implementar."
+                    AcquisitionContentType.ARTIST ->
+                        "As faixas seleccionadas foram adicionadas; a aquisição integral e organização por artista ainda precisa de validação."
+                    else -> ""
+                },
             )
             state.value = state.value.copy(
                 acquiring = false,
@@ -254,6 +262,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             multiTrack = multiTrack,
         )
         if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
+        var partialError =
+            if (expectedCount > 0 && audioMessages.size < expectedCount)
+                "O bot enviou ${audioMessages.size} de ${expectedCount} faixas."
+            else ""
 
         val parsedPairs = audioMessages.mapNotNull { message ->
             app.parseTrack(message, "Music bot")?.let { message to it }
@@ -313,12 +325,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (importedTracks.isEmpty()) {
                 error("O Telegram não confirmou a entrega do áudio ao destino.")
             }
+            if (importedTracks.size < pendingMessages.size) {
+                val missing = pendingMessages.size - importedTracks.size
+                partialError = listOf(partialError, "$missing mensagens não foram confirmadas no destino.")
+                    .filter { it.isNotBlank() }.joinToString(" ")
+            }
         }
 
         val byId = app.library.state.value.byId
         val tracks = orderedIds.filterNotNull().distinct().mapNotNull { id -> byId[id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
-        return AcquiredItem(option, tracks, importedIds)
+        return AcquiredItem(option, tracks, importedIds, partialError)
     }
 
     private suspend fun collectAudioMessages(
@@ -354,8 +371,16 @@ class MusicAcquisition(private val app: SpotygramApp) {
         return collected.values.sortedBy { it.getLong("id") }
     }
 
-    private suspend fun resolveBot(): JSONObject =
-        app.telegram.request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
+    private suspend fun resolveBot(): JSONObject {
+        val bot = app.telegram.request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
+        val account = app.telegram.request(json("getMe"))
+        val startedKey = "music_bot_started_${account.getLong("id")}"
+        if (!app.prefs.getBoolean(startedKey, false)) {
+            sendText(bot.getLong("id"), "/start")
+            app.prefs.edit().putBoolean(startedKey, true).apply()
+        }
+        return bot
+    }
 
     private suspend fun sendText(chatId: Long, text: String): JSONObject =
         app.telegram.sendConfirmed(
@@ -548,7 +573,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         var query = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC)
         query = query.replace(Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE), " ")
         query = query.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
-        query = query.replace(Regex("[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}]", RegexOption.IGNORE_CASE), " ")
+        query = query.replace(Regex("[\\p{So}\\p{Sk}]"), " ")
         query = query.replace(Regex("[()\\[\\]{}【】《》〔〕「」『』]"), " ")
         query = query.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
         return query.replace(Regex("\\s+"), " ").trim()
