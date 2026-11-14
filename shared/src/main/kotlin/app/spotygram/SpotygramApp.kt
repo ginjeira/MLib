@@ -65,6 +65,7 @@ class SpotygramApp(val platform: Platform) {
     val cloudSync by lazy { CloudSync(this) }
     val profiles by lazy { Profiles(this) }
     val sharing by lazy { Sharing(this) }
+    val acquisition by lazy { MusicAcquisition(this) }
     var suppressCloudWrites = false
     val playbackMode =
         MutableStateFlow(
@@ -521,7 +522,7 @@ class SpotygramApp(val platform: Platform) {
         }
     }
 
-    private fun parseTrack(message: JSONObject, title: String): Track? {
+    internal fun parseTrack(message: JSONObject, title: String): Track? {
         val content = message.optJSONObject("content") ?: return null
         val document = content.kind() == "messageDocument"
         val audio = content.optJSONObject(if (document) "document" else "audio") ?: return null
