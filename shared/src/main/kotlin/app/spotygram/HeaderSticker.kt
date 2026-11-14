@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** The MLib brand mark shown in the application header. */
 class HeaderSticker(@Suppress("UNUSED_PARAMETER") preferences: Preferences) {
-    private val image = MutableStateFlow(R.drawable.mlib_mark_vector)
+    private val image = MutableStateFlow(R.drawable.mlib_mark)
     val drawable = image.asStateFlow()
 
     /** Kept for compatibility with the existing platform visibility callbacks. */
