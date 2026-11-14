@@ -1,119 +1,81 @@
-# MLib — source projects and feature-porting matrix
+# MLib — matriz de fontes funcionais e portabilidade
 
-**Status:** initial functional inventory, 2026-11-12  
-**Purpose:** make explicit that both MCat and MCat Player are knowledge and feature sources for MLib, while keeping their roles distinct.
+**Actualizado:** 14-11-2026
 
-## 1. Source-project roles
+## 1. Papel de cada projecto
 
-MLib draws on two separate projects:
-
-| Source | Role in MLib | What it contributes |
+| Projecto | Papel | O que MLib aproveita |
 | --- | --- | --- |
-| Spotygram | Technical foundation | Kotlin/Compose application, TDLib integration, SQLite library, Media3 playback, local files, playlists, downloads, device playback controls |
-| MCat | Acquisition system and operational knowledge | Telegram bot interaction, track/album/playlist search and collection, media forwarding to GinjMusic, playlist lifecycle, destination indexing, deduplication, job orchestration, current Web MVP |
-| MCat Player | Functional reference and product knowledge | User-facing music acquisition workflows, multiple Telegram sources, source/history indexing, unified library concepts, playlists/albums, duplicate review, background processing, streaming/cache lessons, MediaSession/Android Auto lessons |
+| Spotygram | Base técnica do MLib | Kotlin/Compose, TDLib, SQLite, Media3, biblioteca, playlists, downloads, CloudSync e integração Android |
+| MCat | Referência da lógica original de aquisição | Protocolo de pesquisa no bot, filtros, selecção de resultados, recolha de áudio, encaminhamento e deduplicação |
+| MCat Player | Referência funcional principal | UX de pesquisa/seleção, execução sequencial de aquisições, recolha de faixas, deduplicação, playlists/álbuns e lições de produto |
+| MLib | Produto independente | Portabilidade nativa da lógica para TDLib e integração na sua biblioteca |
 
-These are different repositories and different systems. MCat is not MCat Player. Neither replaces Spotygram as the initial Android codebase.
+**Não existe dependência operacional entre MLib e MCat/MCat Player.** MLib não utiliza API HTTP do MCat, sessões Telethon/GramJS, bases de dados, jobs ou servidores desses projectos. O código de aquisição é implementado dentro do MLib e usa a sessão TDLib que já existe.
 
-## 2. Candidate functionality to carry into MLib
+## 2. Matriz de capacidades
 
-| Capability | Spotygram baseline | MCat knowledge/capability | MCat Player reference | MLib direction |
-| --- | --- | --- | --- | --- |
-| Telegram user sign-in and personal sources | Existing TDLib integration | Telethon user session is used by MCat service | Telegram authentication and multiple sources | Preserve Spotygram account/source behaviour; do not share its user session with MCat service |
-| Search tracks | Not the primary acquisition path | Existing bot-backed search | Implemented workflow reference | Integrate through MCat |
-| Search albums | Library metadata may exist | Existing bot-backed search | Album workflows/reference | Integrate through MCat; compare against local library |
-| Search playlists | Local playlist management | Existing bot-backed search | Playlist acquisition workflow | Integrate through MCat |
-| Acquire/forward media | Existing Telegram source and local import | Forwards Telegram media to GinjMusic | Acquisition and processing reference | Reuse MCat delivery; import through Spotygram/MLib pipeline |
-| Multiple Telegram sources | Existing source browsing | Configured service bot/destination/dedup sources | Multiple source support | Preserve source selection; distinguish personal sources from shared MCat destination |
-| Unified library | SQLite catalogue | MCat stores acquisition/job/dedup metadata, not the MLib library | Unified library concept | Keep Spotygram SQLite library authoritative for MLib tracks |
-| Playlist management | Existing playlists | Playlist collection, ordering and forwarding lifecycle | Playlist and album workflows | Preserve native playlists; optionally create playlist from MCat playlist acquisition |
-| Album grouping/completion | Must be inspected in current fork | Search can return album results | Library/album concepts and workflows | Add local album analysis and missing-track completion |
-| Deduplication | Existing behaviour must be audited | Document ID plus metadata comparison against destination | Document identity and destination-aware duplicate handling | Combine source identity and metadata matching; no silent deletion |
-| Duplicate audit/cleanup | Not assumed | MCat avoids forwarding duplicates; destination index | Review-before-delete concepts and selective duplicate management | Provide review/audit only; no automatic destructive cleanup |
-| Background jobs | Existing download/background behaviour | Single worker, queued jobs, interruption marked on restart | Background acquisition and recovery lessons | Persist MLib jobs and recover safely; MCat service limitations must be respected |
-| Audio playback | Media3 on Android | Telegram media remains in destination | Player and streaming/cache lessons | Reuse Media3 and library; do not introduce a second streaming engine without need |
-| Streaming/cache | Existing playback/storage implementation to inspect | Telegram-forwarded media | Cache and streaming implementation reference | Inspect inherited mechanisms; retain only what improves reliability |
-| MediaSession / Android Auto | Android playback integration to verify | Not the primary role | Previous Android Auto attempt/reference | Implement/validate native Media3 media browsing after core Android stability |
-| Synchronisation | Existing Telegram-based library sync | Shared service destination | Cross-device sync concepts | Preserve Spotygram sync; design future Web separately |
-| Web client | Not in current Android/desktop target | FastAPI Web MVP exists | Web/product interaction reference | Web phase later; MCat Web API is a candidate control plane, not yet a stable public contract |
-| Android TV / Google TV | Shared application/core potential | Not the primary role | Player UX reference only | Dedicated remote-first UI after Android core is stable |
+| Capacidade | MCat | MCat Player | Direcção MLib |
+| --- | --- | --- | --- |
+| Pesquisa por faixa | Bot Telegram | UI e fluxo completos | Portar para TDLib |
+| Pesquisa por álbum | Bot Telegram | UI e fluxo de aquisição | Portar pesquisa; criar modelo de álbum próprio numa fase posterior |
+| Pesquisa por playlist | Bot Telegram | UI e aquisição multi-faixa | Portar e criar/actualizar playlist SQLite |
+| Pesquisa por artista | Bot Telegram | Tipo de pesquisa suportado | Portar filtro; validar semântica de aquisição |
+| Fornecedor Deezer | Bot Telegram | Filtro UI e callback | Portar callback TDLib |
+| Fornecedor SoundCloud | Bot Telegram | Filtro UI e callback | Portar callback TDLib |
+| Resultados numerados | Mensagem Telegram | Parse e selecção múltipla | Parser nativo MLib |
+| Selecção de resultado | Botões inline | Callback via GramJS | `getCallbackQueryAnswer` TDLib |
+| Recepção de áudio | Conversa bot | Monitorização do histórico | `getChatHistory` TDLib |
+| Detecção de conclusão | Mensagens e contagens | Contagem, sinal final e silêncio | Estado de aquisição MLib |
+| Encaminhamento | Destino configurado | Destino seleccionável | `forwardMessages` TDLib para GinjMusic ou destino escolhido |
+| Deduplicação | Documento e metadata | Destino/fontes e metadata | fileKey + metadata conservadora; nunca destrutiva |
+| Biblioteca | Índice operacional MCat | Biblioteca do player | SQLite MLib como catálogo autoritativo |
+| Playlist local | Não é o catálogo do player | Criação/actualização automática | Reutilizar `Library.createPlaylist` e `addToPlaylist` |
+| Álbum local | Metadados/fluxos do MCat | Gestão e conclusão de álbuns | Modelo de álbum separado ainda por implementar |
+| Jobs e recuperação | Worker e estado próprios | Estado e progresso UI | Jobs MLib persistentes são trabalho futuro; primeira fatia usa estado em memória |
+| Reprodução | Fora do foco principal | Player/MediaSession | Reutilizar Media3 e pipeline TDLib MLib |
+| CloudSync | Não é o sync MLib | Referências de produto | Protocolo MLib independente; não sincronizar áudio/cache |
+| Android Auto | Não é o foco | Lições de integração | Avaliar após estabilização Android |
 
-This table is a candidate porting inventory. It does not assert that every MCat Player feature is present in MLib or should be copied unchanged.
+## 3. Regras de portabilidade
 
-## 3. Important MCat capabilities to preserve or reuse
+- Portar comportamento, não copiar a arquitectura de servidor do MCat Player.
+- Usar TDLib já autenticada; não criar segundo cliente ou login.
+- Usar callbacks inline do Telegram com os payloads exactos recebidos do TDLib.
+- Serializar operações de bot, porque pesquisa e aquisição partilham uma conversa com estado.
+- Usar o parser `parseTrack` e o catálogo `Library` existentes.
+- Encaminhar a mensagem Telegram recebida; não descarregar e reenviar áudio sem necessidade.
+- Indexar o destino antes de deduplicar quando o histórico ainda não está completo.
+- Distinguir identidade de mensagem/documento, identidade da gravação e identidade da entrada na biblioteca.
+- Não apagar nem substituir automaticamente faixas existentes.
+- Preservar sucessos parciais e permitir recuperação/repetição segura.
+- Manter o serviço MCat de produção inalterado.
 
-The MCat source inspection confirms these behaviours in the existing acquisition system:
+## 4. Estado da primeira fatia MLib
 
-- Bot-backed searches for tracks, albums, playlists and artists.
-- Selection of numbered search results through Telegram inline buttons.
-- Collection of media messages after a selected result is started.
-- Playlist lifecycle detection using start/finish messages.
-- Track metadata capture, including Telegram document ID, title, performer, duration and file size.
-- Destination indexing and duplicate checks.
-- Duplicate recognition by Telegram document ID and a normalised metadata tuple.
-- Forwarding of non-duplicate messages to the configured destination.
-- Web login, search, queued jobs and job status endpoints.
-- A single serialised Telegram worker and a shared installation-level Telegram session/destination.
+Implementado no branch `feat/mlib-independent-identity`:
+- `MusicAcquisition.kt`: pesquisa no bot, filtros inline, parsing de resultados, aquisição sequencial, recolha de áudio, encaminhamento, deduplicação e integração SQLite.
+- `AcquisitionSheet.kt`: interface inicial de pesquisa, selecção e destino.
+- `SpotygramApp.kt`: serviço de aquisição ligado à aplicação e parser de faixas disponibilizado internamente.
+- `SpotygramUI.kt` / `SettingsSheet.kt`: acesso à funcionalidade.
+- Strings em inglês e português de Portugal.
 
-The MCat integration assessment explains the current API and its limitations. Do not fork or rewrite this workflow inside MLib before proving that the existing service can be reused safely.
+Ainda não validado:
+- Build CI desta implementação.
+- Comunicação real com o bot e callbacks.
+- Aquisição de faixa e playlist.
+- Deduplicação em GinjMusic e reprodução.
+- Recuperação após interrupção.
+- Álbum e artista de ponta a ponta.
 
-## 4. Important MCat Player lessons and candidate features
+## 5. Decisões futuras
 
-The MCat Player audit and earlier product work identify these candidate features:
+1. Persistir jobs e estados de aquisição em SQLite, com recuperação segura após reinício.
+2. Implementar política de cancelamento local e tratamento de aquisições que continuam no bot.
+3. Modelar álbuns e edições/releases, sem confundir álbuns com playlists.
+4. Completar gestão de artistas e aquisição em lote apenas depois de validar os resultados reais do bot.
+5. Adicionar revisão explícita para duplicados ambíguos.
+6. Tornar configurável a criação automática de playlists.
+7. Avaliar cache/offline e Android Auto depois de estabilizar a aquisição Android.
 
-- Telegram authentication.
-- Search and acquisition of music.
-- Multiple Telegram sources and source/history indexing, including the music-check workflow.
-- Unified music library.
-- Playlists and albums.
-- Deduplication by Telegram document identity, with separate treatment of duplicate tracks within a playlist and tracks already present in the destination GinjMusic.
-- Duplicate audit and selective cleanup, with review and confirmation before deletion.
-- Background processing and recovery requirements.
-- Audio format handling, streaming and cache behaviour.
-- MediaSession and Android Auto integration lessons.
-
-The exact MCat Player code paths are not automatically reusable. Its audit identified architectural and security limitations, including in-memory state, weak job isolation, shared Telegram conversation concurrency, cache isolation concerns and incomplete native Android Auto integration. MLib should carry forward useful behaviour and lessons, not reproduce those weaknesses.
-
-## 5. Deduplication model
-
-MLib must keep three identity layers separate:
-
-1. **Telegram object identity:** stable Telegram document/message identity. This identifies the same delivered object.
-2. **Recording identity:** whether two different media objects contain the same recording. Metadata/audio comparison may be needed and can be uncertain.
-3. **Library identity:** one MLib track record and its album/playlist relationships.
-
-For playlist acquisition:
-- Avoid duplicate entries within the imported playlist.
-- Reuse a library track already present when the match is sufficiently reliable.
-- Distinguish a track already in GinjMusic from a duplicate inside the source playlist.
-- Preserve the audit trail of why a result was treated as present/duplicate.
-- Send ambiguous cases to review.
-- Never delete an existing track or Telegram message automatically.
-
-If a future cleanup feature is added, it must first show the full duplicate set, identify the retained item, explain the matching evidence and require explicit confirmation for each destructive action.
-
-## 6. Confirmed destination access
-
-The user has confirmed that the Telegram account intended for MLib has access to the GinjMusic group, where MCat forwards acquired music.
-
-This satisfies the user-side access precondition for the proposed integration route. It does **not** yet prove:
-- that the account can read every required message/media type;
-- that TDLib sees new forwarded messages with the required metadata;
-- that MLib can correlate a destination message to a specific MCat job;
-- that the deployed MCat revision matches the inspected source.
-
-These points require a controlled end-to-end test.
-
-## 7. Next technical proof
-
-1. Identify the deployed MCat revision/configuration without exposing credentials.
-2. Verify the MLib TDLib account can enumerate and read the GinjMusic group.
-3. Submit one controlled track acquisition through the current MCat Web API.
-4. Record the job ID, selected result, status transitions and destination message(s).
-5. Verify the same message(s) are observable through the MLib/TDLib account.
-6. Test a reliable correlation strategy between job and destination messages.
-7. Import one test track into the Spotygram library pipeline and verify playback.
-8. Repeat the same import to confirm idempotency.
-9. Only then finalise the MCat adapter and expand to albums/playlists.
-
-No production MCat configuration or code should be changed for this proof unless separately approved.
+Esta matriz descreve direcção e estado observado. Uma capacidade só passa a validada após testes de execução documentados.
