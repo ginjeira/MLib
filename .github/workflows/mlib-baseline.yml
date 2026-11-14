@@ -59,6 +59,37 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build gperf perl git python3
+      - name: Configure stable MLib debug signing when available
+        env:
+          MLIB_ANDROID_KEYSTORE_BASE64: ${{ secrets.MLIB_ANDROID_KEYSTORE_BASE64 }}
+          MLIB_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MLIB_ANDROID_KEYSTORE_PASSWORD }}
+          MLIB_ANDROID_KEY_ALIAS: ${{ secrets.MLIB_ANDROID_KEY_ALIAS }}
+          MLIB_ANDROID_KEY_PASSWORD: ${{ secrets.MLIB_ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${MLIB_ANDROID_KEYSTORE_BASE64:-}" &&
+                -z "${MLIB_ANDROID_KEYSTORE_PASSWORD:-}" &&
+                -z "${MLIB_ANDROID_KEY_ALIAS:-}" &&
+                -z "${MLIB_ANDROID_KEY_PASSWORD:-}" ]]; then
+            echo "MLIB_SIGNING_READY=false" >> "$GITHUB_ENV"
+            echo "::warning::No MLib signing key configured. Build validation will run, but no installable APK artifact will be uploaded because the default CI debug key changes between runners."
+            exit 0
+          fi
+          test -n "${MLIB_ANDROID_KEYSTORE_BASE64:-}"
+          test -n "${MLIB_ANDROID_KEYSTORE_PASSWORD:-}"
+          test -n "${MLIB_ANDROID_KEY_ALIAS:-}"
+          test -n "${MLIB_ANDROID_KEY_PASSWORD:-}"
+          mkdir -p "$MLIB_STATE"
+          printf '%s' "$MLIB_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$MLIB_STATE/mlib-release.jks"
+          chmod 600 "$MLIB_STATE/mlib-release.jks"
+          printf 'storePassword=%s\\nkeyAlias=%s\\nkeyPassword=%s\\n' \\
+            "$MLIB_ANDROID_KEYSTORE_PASSWORD" "$MLIB_ANDROID_KEY_ALIAS" "$MLIB_ANDROID_KEY_PASSWORD" \\
+            > "$MLIB_STATE/signing.properties"
+          chmod 600 "$MLIB_STATE/signing.properties"
+          keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \\
+            -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
+          echo "MLIB_SIGNING_READY=true" >> "$GITHUB_ENV"
       - uses: gradle/actions/setup-gradle@v6
       - name: Validate Telegram API credentials
         env:
@@ -90,8 +121,12 @@ jobs:
           test "${#APKS[@]}" -eq 2
           AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
           VERSION=$(sed -nE 's/^version = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' build.gradle.kts)
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           for APK in "${APKS[@]}"; do
             test -s "$APK"
+            if [[ "${MLIB_SIGNING_READY:-false}" == "true" ]]; then
+              "$APKSIGNER" verify --verbose --print-certs "$APK"
+            fi
             BADGING=$("$AAPT" dump badging "$APK")
             grep -F "package: name='pt.ginjeira.mlib.dev'" <<< "$BADGING"
             grep -F "versionName='$VERSION'" <<< "$BADGING"
@@ -115,6 +150,7 @@ jobs:
           cp "$X86_64_APK" "$RUNNER_TEMP/mlib-apks/MLib-debug-x86_64.apk"
 
       - name: Upload Android debug APK artifacts
+        if: env.MLIB_SIGNING_READY == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: MLib-Android-debug
