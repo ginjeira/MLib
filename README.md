@@ -1,6 +1,6 @@
 # MLib
 
-**MLib is an independent music library for Telegram.** It is being developed from the Spotygram codebase, with MCat as its music-acquisition service and MCat Player as a source of product and workflow ideas.
+**MLib is an independent music library for Telegram.** It is being developed from the Spotygram codebase, with native Telegram-bot music acquisition inspired by the MCat and MCat Player projects.
 
 <blockquote>
 <strong>Development status:</strong> MLib is not yet ready for general use. The Android application has a separate package identity and private storage from Spotygram. Builds, Telegram sign-in, playback, acquisition and data isolation must pass the documented validation gates before a first functional release.
@@ -13,7 +13,7 @@ MLib aims to let users collect, organise, discover, complete and play music:
 - Connect a Telegram account and select personal chats, channels and profile sources.
 - Maintain a searchable local music library, favourites and playlists.
 - Play music with queue, background playback and offline storage.
-- Search MCat for tracks, albums and playlists, then import acquired music into the library.
+- Search the Telegram music bot for tracks, albums and playlists, then import acquired music into the library.
 - Optionally create a local playlist from an acquired MCat playlist.
 - Identify likely albums in the existing library and offer to find missing tracks.
 - Review ambiguous matches; never silently delete or overwrite existing media.
@@ -26,10 +26,10 @@ The application interface is intended to support **Portuguese (Portugal) and Eng
 | --- | --- |
 | MLib | The independent application and library |
 | Spotygram | Third-party technical starting point; must coexist with MLib |
-| MCat | Existing music acquisition service; its production configuration must not be changed by MLib |
-| MCat Player | Non-production functional reference; not a runtime dependency |
+| MCat | Reference for the original bot-acquisition protocol; no runtime dependency |
+| MCat Player | Main functional reference for search, acquisition, deduplication and collection workflows; not a runtime dependency |
 
-MCat currently forwards acquired Telegram media to its configured destination. MLib must verify the job-to-message relationship before importing results. Creating a new Telegram group does not change MCat's production destination.
+MLib implements the bot workflow directly through its own authenticated TDLib session and forwards received media to the destination selected in the app. It does not call the MCat service/API, share its sessions, or require an MCat server. The MCat production system remains unchanged.
 
 ## Platforms
 
