@@ -48,63 +48,62 @@ Acceptance:
 - Upgrade/data-retention behaviour is tested for the chosen package identity.
 - No unlicensed upstream artwork is shipped.
 
-## Phase 2 — MCat protocol discovery and adapter design
+## Phase 2 — audit and native TDLib acquisition design
 
-**Goal:** understand the existing MCat workflow and reconcile it with the feature/lessons inventory from MCat Player before writing integration code.
-
-Tasks:
-- Inspect MCat bot implementation and current production interaction. (Initial static inspection completed against ginjeira/MCat.)
-- Review MCat Player feature inventory and classify each item as reuse, reimplement, redesign or exclude.
-- Validate the deployed revision and document commands, message formats, response correlation, media delivery, concurrency, limits, errors and retry behaviour.
-- Verify the existing FastAPI endpoints and whether they can serve as a stable native-client integration surface.
-- Prove how MLib can correlate an MCat job with the messages forwarded to the configured destination.
-- Map track, album and playlist workflows.
-- Identify stable IDs and metadata for deduplication.
-- Define adapter contract and acquisition state machine.
-- Define credential handling and operational boundaries.
-
-Acceptance:
-- Protocol document is based on source and/or observed exchanges, not assumptions.
-- A request is correlated to its own result without mixing concurrent operations.
-- Failure, timeout, partial-result and retry semantics are documented.
-- No production MCat changes are required unless separately approved.
-
-## Phase 3 — MCat track acquisition
-
-**Goal:** obtain individual tracks into the existing library.
+**Goal:** port the MCat / MCat Player acquisition behaviour into MLib without runtime dependency on either project.
 
 Tasks:
-- Implement adapter behind a service boundary.
-- Add track search and selection.
-- Implement progress and error reporting.
-- Import acquired media into existing library/download storage.
-- Make imports idempotent and recoverable.
-- Add focused tests for correlation, duplicates and failures.
+- Audit the MCat bot protocol and the MCat Player user workflow/source code.
+- Classify behaviours as port, adapt, redesign or defer.
+- Map GramJS operations to TDLib equivalents: sendMessage, getChatHistory, getMessage, getCallbackQueryAnswer and forwardMessages.
+- Define message cursoring, callback handling, audio detection, completion detection and bot conversation serialization.
+- Define destination indexing, recording identity and conservative deduplication.
+- Keep MCat production, its HTTP API, credentials and sessions outside MLib.
+- Document all bot assumptions and live validation gates.
 
 Acceptance:
-- User can search, select and import a track through MCat.
-- Result appears and plays through existing library/player flows.
-- Retrying the same result does not create duplicate library entries.
-- Interrupted/failed work is accurately reported and safely retryable where supported.
-- Existing Telegram-source and local-file workflows still work.
+- The acquisition protocol document identifies source files and TDLib equivalents.
+- No MCat HTTP/API, Telethon or GramJS runtime dependency is introduced.
+- Bot operations are serialized and results are correlated to the selected message cursor.
+- No production MCat changes are required.
 
-## Phase 4 — MCat album and playlist acquisition
+## Phase 3 — native track acquisition
 
-**Goal:** acquire multi-track collections.
+**Goal:** search and import individual tracks through MLib's own TDLib session.
 
 Tasks:
-- Implement album and playlist search/acquisition.
-- Preserve source ordering and metadata where available.
-- Support partial success and per-track failure.
-- Add optional automatic local playlist creation after playlist acquisition.
-- Prevent duplicate playlist entries on retry.
+- Implement bot resolution, search text, inline filter callbacks and numbered result parsing.
+- Add search and selection UI.
+- Capture the bot message cursor before selecting an option.
+- Collect audio messages and forward them to the selected Telegram destination.
+- Parse forwarded messages with the existing MLib parser and upsert into SQLite.
+- Index the destination before duplicate checks where required.
+- Add tests for parsing, callbacks, cursoring, duplicates and partial failures.
 
 Acceptance:
-- Album and playlist requests complete with full or partial outcomes.
-- Source ordering is retained when reliably supplied.
-- Automatic playlist creation can be enabled/disabled in Settings.
-- Failed tracks do not erase successful tracks or the playlist.
-- Reprocessing the same results is idempotent.
+- User can search and select a track without MCat service credentials or server.
+- The forwarded message appears in the MLib library and plays through existing playback.
+- Repeating the same acquisition reuses an existing track instead of creating a duplicate.
+- Existing Telegram sources, local imports and playback still work.
+
+## Phase 4 — native playlist, album and artist acquisition
+
+**Goal:** support collection workflows while preserving collection semantics.
+
+Tasks:
+- Complete playlist acquisition, preserving message order and partial outcomes.
+- Make automatic playlist creation configurable.
+- Add a distinct album model/grouping layer; do not represent albums as playlists.
+- Add album matching and missing-track completion using local metadata and MCat bot results.
+- Validate artist search and define whether it means artist metadata, a set of albums or a set of tracks.
+- Persist acquisition jobs and recover interrupted work safely.
+
+Acceptance:
+- Playlist acquisitions create/update local playlists without duplicate memberships.
+- Album acquisitions populate a distinct album representation with edition-aware matching.
+- Partial failures preserve successful tracks and report missing items.
+- Retrying a job is idempotent.
+- Interrupted work is accurately represented; no false completed state is shown.
 
 ## Phase 5 — library intelligence and album completion
 
