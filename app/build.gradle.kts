@@ -62,6 +62,15 @@ android {
     }
     buildTypes {
         debug {
+            // CI debug APKs must retain a stable signer across runs so Android
+            // can update an installed MLib test build without uninstalling it.
+            // Local builds without the MLib keystore keep the normal local
+            // Android debug signing configuration.
+            if (file("$buildState/mlib-release.jks").isFile &&
+                file("$buildState/signing.properties").isFile
+            ) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             applicationIdSuffix = ".dev"
             buildConfigField(
                 "boolean",
