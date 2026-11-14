@@ -93,7 +93,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             state.value = state.value.copy(progress = "A aguardar resposta do bot…")
 
             val botChatId = bot.getLong("id")
-            val resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
+            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
                 !it.optBoolean("is_outgoing") &&
                     (messageText(it).contains("searching for", ignoreCase = true) ||
                         hasInlineKeyboard(it))
@@ -197,7 +197,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     completed += AcquiredItem(option, emptyList(), error = friendly(error))
                 }
             }
-
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
             val importedCount = completed.sumOf { it.importedIds.size }
             val reusedCount = (allTrackIds.size - importedCount).coerceAtLeast(0)
@@ -397,8 +396,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private suspend fun sendText(chatId: Long, text: String): JSONObject =
         app.telegram.sendConfirmed(
             json(
-                "sendMessage",
-                "chat_id" to chatId,
+                "sendMessage",                "chat_id" to chatId,
                 "input_message_content" to
                     json(
                         "inputMessageText",
