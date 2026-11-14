@@ -87,8 +87,18 @@ jobs:
             "$MLIB_ANDROID_KEYSTORE_PASSWORD" "$MLIB_ANDROID_KEY_ALIAS" "$MLIB_ANDROID_KEY_PASSWORD" \
             > "$MLIB_STATE/signing.properties"
           chmod 600 "$MLIB_STATE/signing.properties"
-          keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
-            -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
+          if ! keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
+            -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" >/dev/null 2>"$MLIB_STATE/keystore-check.err"; then
+            echo "::error::Keystore could not be opened. Check MLIB_ANDROID_KEYSTORE_BASE64 and MLIB_ANDROID_KEYSTORE_PASSWORD."
+            cat "$MLIB_STATE/keystore-check.err"
+            exit 1
+          fi
+          if ! keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
+            -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null 2>"$MLIB_STATE/alias-check.err"; then
+            echo "::error::The configured MLIB_ANDROID_KEY_ALIAS was not found in the keystore."
+            cat "$MLIB_STATE/alias-check.err"
+            exit 1
+          fi
           echo "MLIB_SIGNING_READY=true" >> "$GITHUB_ENV"
       - uses: gradle/actions/setup-gradle@v6
       - name: Validate Telegram API credentials
@@ -187,6 +197,6 @@ jobs:
         run: python3 tools/build-desktop.py --image-only
       - name: Verify desktop launcher and runtime image
         run: |
-          test -x "$MLIB_STATE/build/desktop/distributions/main/app/MLib/bin/MLib"
-          test -s "$MLIB_STATE/build/desktop/distributions/main/app/MLib/lib/app/MLib.cfg"
-          find "$MLIB_STATE/build/desktop/distributions/main/app/MLib" -maxdepth 2 -type f | head -40
+          test -x "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/bin/MLib"
+          test -s "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/lib/app/MLib.cfg"
+          find "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram" -maxdepth 2 -type f | head -40
