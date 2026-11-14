@@ -68,6 +68,7 @@ fun SettingsSheet(
     onResume: () -> Unit,
     onCache: () -> Unit,
     onSharing: () -> Unit,
+    onAcquisition: () -> Unit,
     onClose: () -> Unit,
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
@@ -91,6 +92,16 @@ fun SettingsSheet(
                 ),
             contentPadding = PaddingValues(horizontal = 20.dp),
         ) {
+            item(key = "acquisition") {
+                ListItem(
+                    headlineContent = { Text(tr(R.string.music_acquisition)) },
+                    supportingContent = { Text(tr(R.string.acquisition_help)) },
+                    leadingContent = { Icon(Icons.Rounded.Search, null) },
+                    trailingContent = { Icon(Icons.Rounded.ChevronRight, null) },
+                    modifier = Modifier.clickable(onClick = onAcquisition),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
             item(key = "appearance") {
                 Text(
                     tr(R.string.appearance),
