@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -110,7 +111,7 @@ internal fun AcquisitionSheet(
                 OutlinedButton(
                     onClick = { destinationMenu = true },
                     enabled = destinations.isNotEmpty() && !state.acquiring,
-                ) { Text(tr(R.string.choose)) }
+                ) { Text(tr(R.string.acquisition_choose_destination)) }
                 DropdownMenu(
                     expanded = destinationMenu,
                     onDismissRequest = { destinationMenu = false },
@@ -127,7 +128,7 @@ internal fun AcquisitionSheet(
                 }
             }
             IconButton(onClick = { scope.launch { loadDestinations() } }) {
-                Icon(Icons.Rounded.Refresh, tr(R.string.refresh))
+                Icon(Icons.Rounded.Refresh, tr(R.string.acquisition_refresh))
             }
         }
 
@@ -178,7 +179,7 @@ internal fun AcquisitionSheet(
                             }
                         },
                     ) {
-                        Text(tr(if (selected.size == search.results.size) R.string.deselect_all else R.string.select_all))
+                        Text(tr(if (selected.size == search.results.size) R.string.acquisition_deselect_all else R.string.acquisition_select_all))
                     }
                 }
                 search.results.forEach { result ->
