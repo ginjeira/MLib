@@ -28,7 +28,7 @@ class LibraryMigrationTest {
             db.execSQL("INSERT INTO sync_meta(key,value) VALUES('device',?),('clock','4'),('account','123')", arrayOf(writer))
             db.execSQL("INSERT INTO sources(id,title) VALUES(123,'GinjMusic')")
             db.execSQL("INSERT INTO tracks(id,chat,message,file,title,artist,duration,size,source,date,liked,available,document,file_key,remote_id,saved,cloud) VALUES('123:456',123,456,0,'Test Track','Test Artist',180,4000000,'GinjMusic',1700000000,1,1,0,'','',1,1)")
-            db.execSQL("INSERT INTO sync_values(account,key,clock,writer,value,pending) VALUES(?,?,?,?,?,0)", arrayOf(123L, "favorite/123:456", 4L, writer, """{"v":true}"""))
+            db.execSQL("INSERT INTO sync_values(account,key,clock,writer,value,pending) VALUES(?,?,?,?,?,0)", arrayOf<Any?>(123L, "favorite/123:456", 4L, writer, """{"v":true}"""))
             db.execSQL("PRAGMA user_version=7")
         }
 
