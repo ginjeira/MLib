@@ -86,7 +86,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val query = sanitizeSearchQuery(rawQuery)
         require(query.length >= 2) { "Introduz pelo menos dois caracteres para pesquisar." }
 
-        state.value = state.value.copy(searching = true, acquiring = false, error = "", outcome = null)
+        state.value = state.value.copy(searching = true, acquiring = false, progress = "", error = "", search = null, outcome = null)
         try {
             val bot = resolveBot()
             val sent = sendText(bot.getLong("id"), query)
@@ -509,11 +509,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         history(chatId, 20).maxOfOrNull { it.optLong("id") } ?: 0L
 
     private fun parseResults(text: String): List<AcquisitionOption> =
-        text.lineSequence().mapNotNull { line ->
-            Regex("^\\s*(\\d+)\\.\\s*(.+)$").find(line)?.let { match ->
-                AcquisitionOption(match.groupValues[1].toInt(), match.groupValues[2].trim())
-            }
-        }.distinctBy { it.number }.toList()
+        MusicAcquisitionRules.parseResults(text)
 
     private fun messageText(message: JSONObject): String {
         val content = message.optJSONObject("content") ?: return ""
@@ -547,37 +543,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
         ).any(text::contains)
     }
 
-    private fun isSameRecording(candidate: Track, existing: Track): Boolean {
-        if (candidate.fileKey.isNotBlank() && existing.fileKey.isNotBlank() &&
-            candidate.fileKey == existing.fileKey
-        ) return true
-        val candidateTitle = normalizeMusicText(candidate.title)
-        val existingTitle = normalizeMusicText(existing.title)
-        if (candidateTitle.isEmpty() || candidateTitle != existingTitle) return false
-        val candidateArtist = normalizeMusicText(candidate.artist)
-        val existingArtist = normalizeMusicText(existing.artist)
-        if (candidateArtist.isNotEmpty() && existingArtist.isNotEmpty() &&
-            candidateArtist != existingArtist
-        ) return false
-        return candidate.duration <= 0 || existing.duration <= 0 ||
-            kotlin.math.abs(candidate.duration - existing.duration) <= 3
-    }
+    private fun isSameRecording(candidate: Track, existing: Track): Boolean =
+        MusicAcquisitionRules.isSameRecording(candidate, existing)
 
     private fun normalizeMusicText(value: String): String =
-        java.text.Normalizer.normalize(value.lowercase(), java.text.Normalizer.Form.NFKD)
-            .replace(Regex("[\\u0300-\\u036f]"), "")
-            .replace(Regex("[^a-z0-9]+"), " ")
-            .trim()
+        MusicAcquisitionRules.normalizeMusicText(value)
 
-    private fun sanitizeSearchQuery(value: String): String {
-        var query = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC)
-        query = query.replace(Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE), " ")
-        query = query.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
-        query = query.replace(Regex("[\\p{So}\\p{Sk}]"), " ")
-        query = query.replace(Regex("[()\\[\\]{}【】《》〔〕「」『』]"), " ")
-        query = query.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
-        return query.replace(Regex("\\s+"), " ").trim()
-    }
+    private fun sanitizeSearchQuery(value: String): String =
+        MusicAcquisitionRules.sanitizeSearchQuery(value)
 
     private fun checkTelegramReady() {
         check(app.telegram.auth.value.type == "authorizationStateReady") {
