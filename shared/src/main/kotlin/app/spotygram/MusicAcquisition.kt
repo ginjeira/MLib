@@ -197,6 +197,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     completed += AcquiredItem(option, emptyList(), error = friendly(error))
                 }
             }
+
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
             val importedCount = completed.sumOf { it.importedIds.size }
             val reusedCount = (allTrackIds.size - importedCount).coerceAtLeast(0)
@@ -209,7 +210,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val existing = app.library.state.value.playlists.firstOrNull {
                         normalizeMusicText(it.name) == normalizeMusicText(item.option.title)
                     }
-                    playlistId =                        if (existing != null) {
+                    playlistId =
+                        if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)
                             existing.id
                         } else {
@@ -396,7 +398,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private suspend fun sendText(chatId: Long, text: String): JSONObject =
         app.telegram.sendConfirmed(
             json(
-                "sendMessage",                "chat_id" to chatId,
+                "sendMessage",
+                "chat_id" to chatId,
                 "input_message_content" to
                     json(
                         "inputMessageText",
@@ -407,7 +410,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
 
     private suspend fun clickButton(message: JSONObject, keyword: String): Boolean {
-        val markup = message.optJSONObject("reply_markup") ?: return false        if (markup.kind() != "replyMarkupInlineKeyboard") return false
+        val markup = message.optJSONObject("reply_markup") ?: return false
+        if (markup.kind() != "replyMarkupInlineKeyboard") return false
         val rows = markup.optJSONArray("rows") ?: return false
         for (rowIndex in 0 until rows.length()) {
             val buttons = rows.optJSONArray(rowIndex) ?: continue
