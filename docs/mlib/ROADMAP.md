@@ -69,6 +69,8 @@ Acceptance:
 
 ## Phase 3 — native track acquisition
 
+**Status (14 Nov 2026):** first implementation is present in `MusicAcquisition.kt` and `AcquisitionSheet.kt`; automated rule tests have been added. CI and live Telegram validation are pending.
+
 **Goal:** search and import individual tracks through MLib's own TDLib session.
 
 Tasks:
@@ -87,6 +89,8 @@ Acceptance:
 - Existing Telegram sources, local imports and playback still work.
 
 ## Phase 4 — native playlist, album and artist acquisition
+
+**Status (14 Nov 2026):** initial playlist acquisition and create/update flow are present in the first implementation. A distinct album model, artist semantics, configurable playlist creation and persistent job recovery remain unimplemented. Playlist behaviour is not yet validated against the live bot.
 
 **Goal:** support collection workflows while preserving collection semantics.
 
@@ -188,9 +192,34 @@ Acceptance:
 2. Complete original MLib identity and branding resources (implementation started 13 Nov 2026).
 3. Validate Android installation, coexistence, phone/code/2FA sign-in and session persistence on a physical device.
 4. Validate CloudSync isolation and persistence.
-5. Complete MCat live protocol validation and prove destination-message correlation.
-6. Implement track acquisition end-to-end, then albums/playlists and automatic playlist creation.
+5. Validate the native TDLib bot protocol live using the MLib account; no MCat HTTP/API, server or session is involved.
+6. Complete track and playlist acquisition end-to-end, then implement a distinct album model, album completion and validated artist workflows.
 7. Add library album identification and completion.
 8. Stabilise Android; only then start Web and evaluate Auto/TV.
 
 Update this document with dated evidence. Planned, in-progress and validated work must remain distinct. Code written does not by itself make a checklist item complete.
+
+
+## Native acquisition implementation update — 14 Nov 2026
+
+The MLib branch now contains a native acquisition implementation based on the MCat bot workflow and the MCat Player product flow. MLib uses its own existing TDLib session and communicates directly with the Telegram bot; neither MCat's service/API nor MCat Player's GramJS session is a runtime dependency.
+
+Implemented in source:
+- Search by term, content type (track/album/playlist/artist) and provider (Deezer/SoundCloud).
+- Inline callback selection and numbered result parsing.
+- Multiple result selection and Telegram destination selection, preferring GinjMusic without silently selecting an unrelated chat.
+- Sequential acquisition, message cursoring, audio collection, completion/silence handling and TDLib forwarding.
+- Reuse of the existing MLib parser and SQLite library; conservative duplicate matching and partial-result reporting.
+- Initial playlist creation/update for playlist searches.
+- Unit tests for result parsing, query sanitisation and duplicate matching.
+
+Still NOT VALIDATED or incomplete:
+- CI for the latest acquisition commits (in progress at the time of this update).
+- Real Telegram search, callback execution, track/playlist acquisition, forwarding, duplicate retry and playback.
+- Long playlist completeness, FloodWait/reconnect behaviour and process-death recovery.
+- Persistent acquisition jobs and safe resume.
+- Distinct album entity/model and album matching/completion.
+- Semantics of artist acquisition.
+- User setting for automatic playlist creation.
+
+Do not treat source implementation or a successful compile as proof of live acquisition. The next acceptance gate is a real Android test with the MLib Telegram account, starting with one track, then a small playlist, followed by repeat-acquisition deduplication and playback.
