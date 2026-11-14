@@ -249,7 +249,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
 
         val parsedPairs = audioMessages.mapNotNull { message ->
-            app.parseAcquisitionMessage(message, "Music bot")?.let { message to it }
+            app.parseTrack(message, "Music bot")?.let { message to it }
         }
         if (parsedPairs.isEmpty()) error("As mensagens recebidas não contêm áudio compatível.")
 
@@ -294,7 +294,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val count = minOf(messages.length(), pendingPositions.size)
             for (i in 0 until count) {
                 val message = messages.optJSONObject(i) ?: continue
-                val track = app.parseAcquisitionMessage(message, destinationTitle) ?: continue
+                val track = app.parseTrack(message, destinationTitle) ?: continue
                 importedTracks += track
                 orderedIds[pendingPositions[i]] = track.id
                 importedIds += track.id
