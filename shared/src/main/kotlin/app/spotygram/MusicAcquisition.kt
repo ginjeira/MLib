@@ -92,10 +92,23 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val sent = sendText(bot.getLong("id"), query)
             state.value = state.value.copy(progress = "A aguardar resposta do bot…")
 
-            var resultMessage = waitForBotMessage(bot.getLong("id"), sent.getLong("id"), 12_000) {
-                messageText(it).contains("searching for", ignoreCase = true) ||
-                    hasInlineKeyboard(it)
-            } ?: error("O bot de música não respondeu à pesquisa dentro do tempo esperado.")
+            val botChatId = bot.getLong("id")
+            val resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
+                !it.optBoolean("is_outgoing") &&
+                    (messageText(it).contains("searching for", ignoreCase = true) ||
+                        hasInlineKeyboard(it))
+            } ?: run {
+                val reply = history(botChatId, 50)
+                    .asSequence()
+                    .filter { it.optLong("id") > sent.getLong("id") }
+                    .filter { !it.optBoolean("is_outgoing") }
+                    .maxByOrNull { it.optLong("id") }
+                val replyText = reply?.let(::messageText)?.trim().orEmpty()
+                if (replyText.isNotBlank()) {
+                    error("Resposta do bot não reconhecida: ${replyText.take(180)}")
+                }
+                error("O bot de música não respondeu à pesquisa em 30 segundos.")
+            }
 
             val typeMarker = "in '${contentType.wireValue}'"
             if (!messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
@@ -197,8 +210,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val existing = app.library.state.value.playlists.firstOrNull {
                         normalizeMusicText(it.name) == normalizeMusicText(item.option.title)
                     }
-                    playlistId =
-                        if (existing != null) {
+                    playlistId =                        if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)
                             existing.id
                         } else {
@@ -397,8 +409,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
 
     private suspend fun clickButton(message: JSONObject, keyword: String): Boolean {
-        val markup = message.optJSONObject("reply_markup") ?: return false
-        if (markup.kind() != "replyMarkupInlineKeyboard") return false
+        val markup = message.optJSONObject("reply_markup") ?: return false        if (markup.kind() != "replyMarkupInlineKeyboard") return false
         val rows = markup.optJSONArray("rows") ?: return false
         for (rowIndex in 0 until rows.length()) {
             val buttons = rows.optJSONArray(rowIndex) ?: continue
