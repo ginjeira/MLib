@@ -33,7 +33,7 @@ internal fun AcquisitionSheet(
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
-        destinations = runCatching { app.searchChats("GinjMusic") }.getOrDefault(emptyList())
+        destinations = runCatching { app.searchChats("GinjMusic", onServer = true) }.getOrDefault(emptyList())
         if (destinations.none { it.id == destinationId }) {
             destinationId = destinations.firstOrNull {
                 it.title.contains("GinjMusic", ignoreCase = true)
@@ -231,6 +231,9 @@ internal fun AcquisitionSheet(
                     tr(R.string.acquisition_playlist_created, outcome.collectionTitle),
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+            if (outcome.note.isNotBlank()) {
+                Text(outcome.note, style = MaterialTheme.typography.bodySmall)
             }
         }
 
