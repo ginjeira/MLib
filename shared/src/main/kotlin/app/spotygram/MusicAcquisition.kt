@@ -110,15 +110,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 error("O bot de música não respondeu à pesquisa em 30 segundos.")
             }
 
-            // The bot's collection search is entered through its track-search
-            // conversation: choose Track, choose the provider, switch the result
-            // keyboard to Album/Playlist, then submit the query again. Sending
-            // "album"/"playlist" as the initial content type skips that callback
-            // state transition and can leave the bot showing no usable results.
-            val initialType = if (
-                contentType == AcquisitionContentType.ALBUM ||
-                contentType == AcquisitionContentType.PLAYLIST
-            ) AcquisitionContentType.TRACK else contentType
+            // Playlist search is a special bot workflow: choose Track first,
+            // then activate Playlist on the result keyboard and repeat the query.
+            // Album remains a distinct initial content type; it has no equivalent
+            // collection model in MLib yet.
+            val initialType = if (contentType == AcquisitionContentType.PLAYLIST)
+                AcquisitionContentType.TRACK else contentType
             val typeMarker = "in '${initialType.wireValue}'"
             if (!messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
                 state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
@@ -141,14 +138,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 } ?: error("O bot não confirmou o fornecedor ${provider.wireValue}.")
             }
 
-            if (contentType == AcquisitionContentType.ALBUM ||
-                contentType == AcquisitionContentType.PLAYLIST
-            ) {
+            if (contentType == AcquisitionContentType.PLAYLIST) {
                 val collectionLabel = contentType.wireValue
-                state.value = state.value.copy(
-                    progress = if (contentType == AcquisitionContentType.ALBUM)
-                        "A activar pesquisa de álbuns…" else "A activar pesquisa de playlists…"
-                )
+                state.value = state.value.copy(progress = "A activar pesquisa de playlists…")
                 check(clickButton(resultMessage, collectionLabel)) {
                     "O bot não apresentou a opção ${collectionLabel} na pesquisa."
                 }
