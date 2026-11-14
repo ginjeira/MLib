@@ -83,11 +83,11 @@ jobs:
           mkdir -p "$MLIB_STATE"
           printf '%s' "$MLIB_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$MLIB_STATE/mlib-release.jks"
           chmod 600 "$MLIB_STATE/mlib-release.jks"
-          printf 'storePassword=%s\\nkeyAlias=%s\\nkeyPassword=%s\\n' \\
-            "$MLIB_ANDROID_KEYSTORE_PASSWORD" "$MLIB_ANDROID_KEY_ALIAS" "$MLIB_ANDROID_KEY_PASSWORD" \\
+          printf 'storePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$MLIB_ANDROID_KEYSTORE_PASSWORD" "$MLIB_ANDROID_KEY_ALIAS" "$MLIB_ANDROID_KEY_PASSWORD" \
             > "$MLIB_STATE/signing.properties"
           chmod 600 "$MLIB_STATE/signing.properties"
-          keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \\
+          keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
             -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
           echo "MLIB_SIGNING_READY=true" >> "$GITHUB_ENV"
       - uses: gradle/actions/setup-gradle@v6
