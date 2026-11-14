@@ -4,7 +4,7 @@
 
 ## 1. Product vision
 
-MLib is a music library that lets users collect, organise, discover, complete and play music. It combines the existing Spotygram library/player experience with MCat, the separately developed Telegram-bot-based system for obtaining music, and selectively carries forward useful features and lessons from the separate MCat Player project.
+MLib is a music library that lets users collect, organise, discover, complete and play music. It combines the inherited Spotygram library/player experience with a native TDLib implementation of Telegram-bot music acquisition. The MCat and MCat Player repositories are functional references only; neither is a runtime dependency.
 
 The distinguishing workflow is not merely downloading a track. MLib should understand the user's collection, identify incomplete albums and make it straightforward to obtain missing music through MCat. Both MCat and MCat Player are functional/knowledge sources: MCat for the actual acquisition engine and its playlist/deduplication logic; MCat Player for user-facing workflows, source management, library concepts, duplicate review and playback/MediaSession lessons. See [Source projects and feature matrix](SOURCE-FEATURE-MATRIX.md).
 
@@ -12,7 +12,7 @@ The distinguishing workflow is not merely downloading a track. MLib should under
 
 1. **Preserve before extending:** retain existing Spotygram functionality unless a change is intentional and documented.
 2. **Local-first Android:** the app must remain useful without depending on a new central MLib backend.
-3. **Separate acquisition from library management:** MCat obtains media; MLib manages tracks, albums, playlists and playback.
+3. **Separate acquisition from library management:** MLib performs acquisition directly through its own Telegram session and manages tracks, albums, playlists and playback.
 4. **Recoverable operations:** long-running acquisition/import work should survive ordinary lifecycle changes and recover safely from interruption where possible.
 5. **No destructive automation:** matching and deduplication must not silently delete, overwrite or replace user files.
 6. **Honest status:** distinguish requested, queued, downloading, imported, failed and completed work.
