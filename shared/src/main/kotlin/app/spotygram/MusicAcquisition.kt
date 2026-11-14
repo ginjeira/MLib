@@ -110,22 +110,59 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 error("O bot de música não respondeu à pesquisa em 30 segundos.")
             }
 
-            val typeMarker = "in '${contentType.wireValue}'"
+            // The bot's collection search is entered through its track-search
+            // conversation: choose Track, choose the provider, switch the result
+            // keyboard to Album/Playlist, then submit the query again. Sending
+            // "album"/"playlist" as the initial content type skips that callback
+            // state transition and can leave the bot showing no usable results.
+            val initialType = if (
+                contentType == AcquisitionContentType.ALBUM ||
+                contentType == AcquisitionContentType.PLAYLIST
+            ) AcquisitionContentType.TRACK else contentType
+            val typeMarker = "in '${initialType.wireValue}'"
             if (!messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
                 state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
-                clickButton(resultMessage, contentType.wireValue)
-                resultMessage = waitForEditedMessage(bot.getLong("id"), resultMessage.getLong("id"), 8_000) {
+                check(clickButton(resultMessage, initialType.wireValue)) {
+                    "O bot não disponibilizou a opção de conteúdo ${initialType.wireValue}."
+                }
+                resultMessage = waitForBotUpdate(botChatId, resultMessage.getLong("id"), 12_000) {
                     messageText(it).contains(typeMarker, ignoreCase = true)
-                } ?: error("O bot não confirmou o tipo de conteúdo ${contentType.wireValue}.")
+                } ?: error("O bot não confirmou o tipo de conteúdo ${initialType.wireValue}.")
             }
 
             val providerMarker = "from '${provider.wireValue}'"
             if (!messageText(resultMessage).contains(providerMarker, ignoreCase = true)) {
                 state.value = state.value.copy(progress = "A seleccionar o fornecedor…")
-                clickButton(resultMessage, provider.wireValue)
-                resultMessage = waitForEditedMessage(bot.getLong("id"), resultMessage.getLong("id"), 8_000) {
+                check(clickButton(resultMessage, provider.wireValue)) {
+                    "O bot não disponibilizou o fornecedor ${provider.wireValue}."
+                }
+                resultMessage = waitForBotUpdate(botChatId, resultMessage.getLong("id"), 12_000) {
                     messageText(it).contains(providerMarker, ignoreCase = true)
                 } ?: error("O bot não confirmou o fornecedor ${provider.wireValue}.")
+            }
+
+            if (contentType == AcquisitionContentType.ALBUM ||
+                contentType == AcquisitionContentType.PLAYLIST
+            ) {
+                val collectionLabel = contentType.wireValue
+                state.value = state.value.copy(
+                    progress = if (contentType == AcquisitionContentType.ALBUM)
+                        "A activar pesquisa de álbuns…" else "A activar pesquisa de playlists…"
+                )
+                check(clickButton(resultMessage, collectionLabel)) {
+                    "O bot não apresentou a opção ${collectionLabel} na pesquisa."
+                }
+                // The callback changes the bot's search mode. A fresh query is
+                // required to obtain results for that collection type.
+                val callbackMessageId = resultMessage.getLong("id")
+                waitForBotUpdate(botChatId, callbackMessageId, 8_000) {
+                    messageText(it).contains(collectionLabel, ignoreCase = true)
+                }
+                val repeatedQuery = sendText(botChatId, query)
+                resultMessage = waitForBotMessage(botChatId, repeatedQuery.getLong("id"), 30_000) {
+                    !it.optBoolean("is_outgoing") && hasInlineKeyboard(it) &&
+                        messageText(it).isNotBlank()
+                } ?: error("O bot não devolveu resultados para a pesquisa de ${collectionLabel}.")
             }
 
             val options = parseResults(messageText(resultMessage))
@@ -497,6 +534,38 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 app.telegram.request(json("getMessage", "chat_id" to chatId, "message_id" to messageId))
             }.getOrNull()
             if (message != null && predicate(message)) return message
+            delay(400)
+        }
+        return null
+    }
+
+    /**
+     * A Telegram bot may edit the message carrying its inline keyboard or send
+     * a replacement message after a callback. Accept both forms, but only after
+     * the callback's message ID so stale keyboards cannot satisfy the wait.
+     */
+    private suspend fun waitForBotUpdate(
+        chatId: Long,
+        previousMessageId: Long,
+        timeoutMs: Long,
+        predicate: (JSONObject) -> Boolean,
+    ): JSONObject? {
+        val started = System.currentTimeMillis()
+        while (System.currentTimeMillis() - started < timeoutMs) {
+            val edited = runCatching {
+                app.telegram.request(
+                    json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId)
+                )
+            }.getOrNull()
+            if (edited != null && predicate(edited)) return edited
+
+            val replacement = history(chatId, 50)
+                .asSequence()
+                .filter { it.optLong("id") > previousMessageId }
+                .filter { !it.optBoolean("is_outgoing") }
+                .filter(predicate)
+                .maxByOrNull { it.optLong("id") }
+            if (replacement != null) return replacement
             delay(400)
         }
         return null
