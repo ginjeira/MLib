@@ -45,7 +45,7 @@ class AppUpdates(private val app: SpotygramApp) {
         val version = state.value.version
         if (newer(version).isEmpty()) return
         try {
-            app.platform.openUrl("https://github.com/Krablante/spotygram/releases/tag/v$version")
+            app.platform.openUrl("https://github.com/ginjeira/MLib/releases/tag/v$version")
         } catch (_: Exception) {
             app.notices.tryEmit(tr(R.string.update_no_browser))
         }
@@ -92,7 +92,7 @@ class AppUpdates(private val app: SpotygramApp) {
 
     private fun fetch(now: Long): String {
         val connection =
-            URL("https://api.github.com/repos/Krablante/spotygram/releases/latest").openConnection()
+            URL("https://api.github.com/repos/ginjeira/MLib/releases/latest").openConnection()
                 as HttpURLConnection
         try {
             connection.connectTimeout = 5_000
@@ -100,7 +100,7 @@ class AppUpdates(private val app: SpotygramApp) {
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Accept", "application/vnd.github+json")
             connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
-            connection.setRequestProperty("User-Agent", "Spotygram/${BuildConfig.VERSION_NAME}")
+            connection.setRequestProperty("User-Agent", "MLib/${BuildConfig.VERSION_NAME}")
             prefs
                 .getString("etag", null)
                 ?.takeIf { asset != null }

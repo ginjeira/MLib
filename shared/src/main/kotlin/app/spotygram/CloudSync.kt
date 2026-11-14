@@ -3,6 +3,8 @@ package app.spotygram
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
 import java.util.UUID
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
@@ -39,8 +41,8 @@ class CloudSync(private val app: SpotygramApp) {
     private val telegram
         get() = app.telegram
 
-    private val prefix = "spotygram-sync/${LibrarySync.FORMAT}"
-    private val marker = "spotygram-storage/1"
+    private val prefix = "mlib-sync/${LibrarySync.FORMAT}"
+    private val marker = "mlib-storage/1"
     private val settleMillis = 60_000L
     private val maxTail = 16
     private val heads = mutableMapOf<Long, List<JSONObject>>()
@@ -79,6 +81,10 @@ class CloudSync(private val app: SpotygramApp) {
                                 /* Coalesce a burst of library and native events. */
                             }
                             try {
+                                if (app.platform.syncEncryptionKey() == null) {
+                                    state.value = SyncState("key_required")
+                                    continue
+                                }
                                 synchronize()
                                 failures = 0
                                 retry?.cancel()
@@ -128,6 +134,40 @@ class CloudSync(private val app: SpotygramApp) {
         retryAt = 0
         signal()
     }
+
+    /** Returns a portable recovery code; it is never sent to Telegram. */
+    fun recoveryCode(): String? =
+        app.platform.syncEncryptionKey()?.let {
+            Base64.getUrlEncoder().withoutPadding().encodeToString(it)
+        }
+
+    /** First device creates the shared key. Other devices must import this exact code. */
+    fun createRecoveryCode(): String {
+        val existing = app.platform.syncEncryptionKey()
+        if (existing != null) return Base64.getUrlEncoder().withoutPadding().encodeToString(existing)
+        val key = ByteArray(32).also(SecureRandom()::nextBytes)
+        app.platform.storeSyncEncryptionKey(key)
+        signal()
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(key)
+    }
+
+    fun importRecoveryCode(code: String) {
+        val normalized = code.trim().replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+        val key = Base64.getUrlDecoder().decode(normalized)
+        require(key.size == 32) { "O código de recuperação MLib é inválido." }
+        val existing = app.platform.syncEncryptionKey()
+        require(existing == null || existing.contentEquals(key)) {
+            "Este dispositivo já está associado a outra chave MLib. Não vou substituí-la automaticamente."
+        }
+        if (existing == null) app.platform.storeSyncEncryptionKey(key)
+        signal()
+    }
+
+    private fun requireSyncKey(): ByteArray =
+        app.platform.syncEncryptionKey() ?: error("A chave de recuperação MLib ainda não foi configurada.")
+
+    private fun associatedData(kind: String, through: Long): ByteArray =
+        "mlib-sync/4|${store.account}|$kind|$through".toByteArray(Charsets.UTF_8)
 
     suspend fun stop() {
         connected = false
@@ -285,7 +325,7 @@ class CloudSync(private val app: SpotygramApp) {
         val caption =
             message.getJSONObject("content").optJSONObject("caption")?.optString("text").orEmpty()
         return (1..LibrarySync.FORMAT).any {
-            caption.startsWith("spotygram-sync/$it ${store.account} ")
+            caption.startsWith("mlib-sync/$it ${store.account} ")
         }
     }
 
@@ -305,7 +345,7 @@ class CloudSync(private val app: SpotygramApp) {
         }
         val search =
             telegram
-                .request(json("searchChatsOnServer", "query" to "spotygram", "limit" to 100))
+                .request(json("searchChatsOnServer", "query" to "mlib", "limit" to 100))
                 .getJSONArray("chat_ids")
         for (i in 0 until search.length()) candidates += search.getLong(i)
         candidates += telegram.channelChats
@@ -337,7 +377,7 @@ class CloudSync(private val app: SpotygramApp) {
                     throw e
                 }
             val description = full.getString("description")
-            if (!description.startsWith("spotygram-storage/")) continue
+            if (!description.startsWith("mlib-storage/")) continue
             require(description.startsWith("$marker\n")) { tr(R.string.sync_newer_version) }
             val identity = JSONObject(description.substringAfter('\n'))
             if (
@@ -354,7 +394,7 @@ class CloudSync(private val app: SpotygramApp) {
                 telegram.request(
                     json(
                         "createNewSupergroupChat",
-                        "title" to "spotygram-${uid.replace("-", "").take(12)}",
+                        "title" to "mlib-${uid.replace("-", "").take(12)}",
                         "is_forum" to false,
                         "is_channel" to true,
                         "description" to
@@ -450,9 +490,9 @@ class CloudSync(private val app: SpotygramApp) {
                 val content = message.getJSONObject("content")
                 if (content.kind() == "messageSupergroupChatCreate") break@history
                 val caption = content.optJSONObject("caption")?.optString("text").orEmpty()
-                if (!caption.startsWith("spotygram-sync/")) continue
+                if (!caption.startsWith("mlib-sync/")) continue
                 val format =
-                    caption.substringBefore(' ').removePrefix("spotygram-sync/").toIntOrNull()
+                    caption.substringBefore(' ').removePrefix("mlib-sync/").toIntOrNull()
                 require(format != null && format in 1..LibrarySync.FORMAT) {
                     tr(R.string.sync_newer_version)
                 }
@@ -495,7 +535,7 @@ class CloudSync(private val app: SpotygramApp) {
 
     private suspend fun download(content: JSONObject, caption: String): JSONObject {
         val parts = caption.split(' ')
-        val format = parts.firstOrNull()?.substringAfter("spotygram-sync/")?.toIntOrNull()
+        val format = parts.firstOrNull()?.substringAfter("mlib-sync/")?.toIntOrNull()
         require(
             parts.size == 6 &&
                 format != null &&
@@ -528,8 +568,13 @@ class CloudSync(private val app: SpotygramApp) {
             require(bytes.size == file.getLong("size").toInt() && digest(bytes) == parts[4]) {
                 tr(R.string.sync_invalid_data)
             }
+            val compressed =
+                if (format == 4) {
+                    val through = parts[5].toLong()
+                    SyncCrypto.decrypt(bytes, requireSyncKey(), associatedData(parts[2], through))
+                } else bytes
             val plain =
-                GZIPInputStream(bytes.inputStream()).use { input ->
+                GZIPInputStream(compressed.inputStream()).use { input ->
                     val output = ByteArrayOutputStream()
                     val buffer = ByteArray(32 * 1024)
                     while (true) {
@@ -575,13 +620,14 @@ class CloudSync(private val app: SpotygramApp) {
                 .put("records", JSONArray().apply { for (r in records) put(r.json()) })
         val plain = packet.toString().toByteArray(Charsets.UTF_8)
         require(plain.size <= maxExpanded) { tr(R.string.sync_invalid_data) }
-        val bytes =
+        val compressed =
             ByteArrayOutputStream()
                 .also { output -> GZIPOutputStream(output).use { it.write(plain) } }
                 .toByteArray()
+        val bytes = SyncCrypto.encrypt(compressed, requireSyncKey(), associatedData(kind, through))
         require(bytes.size <= maxCompressed) { tr(R.string.sync_invalid_data) }
         val directory = File(app.cacheDir, "sync").apply { check(isDirectory || mkdirs()) }
-        val file = File(directory, "spotygram-$token.spotygram")
+        val file = File(directory, "mlib-$token.mlib")
         file.writeBytes(bytes)
         try {
             return telegram.sendConfirmed(

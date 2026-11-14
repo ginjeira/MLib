@@ -32,6 +32,9 @@ interface Platform {
         opened: (SqlDatabase) -> Unit,
     ): SqlDatabase
     fun databaseKey(): String
+    /** Device-local protected storage for the shared MLib CloudSync encryption key. */
+    fun syncEncryptionKey(): ByteArray? = null
+    fun storeSyncEncryptionKey(key: ByteArray) { error("Secure sync-key storage is unavailable") }
     fun observeNetwork(onType: (String) -> Unit): AutoCloseable
     fun metadata(path: String, name: String = ""): AudioMetadata
     fun openUrl(url: String)

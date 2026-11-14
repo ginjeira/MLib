@@ -37,7 +37,7 @@ class LibrarySync(
     }
 
     companion object {
-        const val FORMAT = 3
+        const val FORMAT = 4
         private val localPlaybackSettings =
             setOf("setting/speed", "setting/order", "setting/repeat")
         val settings =
@@ -177,7 +177,7 @@ class LibrarySync(
                     require(parts.size == 2 && parts[1] in settings)
                     when (parts[1]) {
                         "theme" -> require(value in listOf("system", "light", "dark"))
-                        "language" -> require(value in listOf("system", "en", "ru"))
+                        "language" -> require(value in listOf("system", "en", "pt"))
                         "resume_minutes" -> require(value is Number && value.toInt() > 0)
                         else -> require(value is Boolean)
                     }

@@ -44,7 +44,7 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
     override val locale
         get() =
             when (preferences("settings").getString("language", "system")) {
-                "ru" -> Locale.forLanguageTag("ru")
+                "pt" -> Locale.forLanguageTag("pt-PT")
                 "en" -> Locale.ENGLISH
                 else -> context.resources.configuration.locales[0]
             }
@@ -222,17 +222,59 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
 
     override fun installer(app: SpotygramApp): UpdateInstallation = UpdateInstaller(context)
 
-    override fun assetName(version: String, abi: String) = "spotygram-$version-$abi.apk"
+    override fun assetName(version: String, abi: String) = "mlib-$version-$abi.apk"
 
     override fun logPlaybackError(code: String) {
-        android.util.Log.w("SpotygramPlayback", "Playback failed: $code")
+        android.util.Log.w("MLibPlayback", "Playback failed: $code")
+    }
+
+    @android.annotation.SuppressLint("ApplySharedPref")
+    override fun syncEncryptionKey(): ByteArray? {
+        val encoded = preferences("settings").getString("sync_encryption_key", null) ?: return null
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val key = store.getKey("mlib.sync.encryption", null) as? SecretKey
+            ?: error("MLib sync encryption key is unavailable in Android Keystore")
+        val data = Base64.decode(encoded, Base64.NO_WRAP)
+        require(data.size > 12)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, data.copyOfRange(0, 12)))
+        return cipher.doFinal(data.copyOfRange(12, data.size)).also {
+            require(it.size == 32) { "Invalid MLib sync encryption key" }
+        }
+    }
+
+    @android.annotation.SuppressLint("ApplySharedPref")
+    override fun storeSyncEncryptionKey(key: ByteArray) {
+        require(key.size == 32) { "Invalid MLib sync encryption key" }
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val alias = "mlib.sync.encryption"
+        val wrapping = (store.getKey(alias, null) as? SecretKey)
+            ?: KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+                .apply {
+                    init(
+                        KeyGenParameterSpec.Builder(
+                            alias,
+                            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                        )
+                            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                            .build()
+                    )
+                }
+                .generateKey()
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, wrapping)
+        val saved = Base64.encodeToString(cipher.iv + cipher.doFinal(key), Base64.NO_WRAP)
+        check(preferences("settings").edit().putString("sync_encryption_key", saved).commit()) {
+            "MLib sync encryption key could not be stored"
+        }
     }
 
     @android.annotation.SuppressLint("ApplySharedPref")
     override fun databaseKey(): String {
         val prefs = preferences("settings")
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        val alias = "spotygram.database"
+        val alias = "mlib.database"
         val saved = prefs.getString("database_key", null)
         val existing = store.getKey(alias, null) as? SecretKey
         check(

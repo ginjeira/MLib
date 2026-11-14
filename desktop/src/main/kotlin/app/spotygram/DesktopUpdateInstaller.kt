@@ -130,7 +130,7 @@ class DesktopUpdateInstaller(private val app: SpotygramApp) : UpdateInstallation
             connection.instanceFollowRedirects = false
             connection.connectTimeout = 8_000
             connection.readTimeout = 30_000
-            connection.setRequestProperty("User-Agent", "Spotygram/${BuildConfig.VERSION_NAME}")
+            connection.setRequestProperty("User-Agent", "MLib/${BuildConfig.VERSION_NAME}")
             if (offset > 0) connection.setRequestProperty("Range", "bytes=$offset-")
             if (connection.responseCode !in setOf(301, 302, 303, 307, 308)) return connection
             val next = connection.getHeaderField("Location")

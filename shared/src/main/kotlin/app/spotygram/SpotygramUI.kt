@@ -371,6 +371,7 @@ fun SpotygramUI(
                     },
                     onCache = { sheet = "cache" },
                     onSharing = { sheet = "sharingSettings" },
+                    onAcquisition = { sheet = "acquisition" },
                     onClose = ::closeSheet,
                 )
             "sharingSettings" ->
@@ -673,7 +674,7 @@ fun SpotygramUI(
                                                 Modifier.size(28.dp),
                                             )
                                             Text(
-                                                "spotygram",
+                                                "MLib",
                                                 Modifier.weight(1f).padding(start = 8.dp),
                                                 style = MaterialTheme.typography.titleMedium,
                                             )
@@ -1003,6 +1004,7 @@ fun SpotygramUI(
                                     "settings",
                                     "sharingSettings",
                                     "cache" -> settingsContent()
+                                    "acquisition" -> AcquisitionSheet(app, onClose = ::closeSheet)
                                     "share" -> shareContent(Modifier, null)
                                     "chats" ->
                                         SourcePicker(

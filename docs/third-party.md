@@ -1,6 +1,6 @@
 # Third-party software
 
-[Documentation](README.md) · **English** · [Русский](third-party.ru.md)
+[Documentation](README.md) · **English**
 
 | Component | Version / source | License |
 | --- | --- | --- |

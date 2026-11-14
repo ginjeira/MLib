@@ -1,0 +1,129 @@
+name: MLib Android release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing MLib tag to build (must match build.gradle.kts version)
+        required: true
+        type: string
+      publish_draft:
+        description: Create a GitHub draft release after signing and verifying both APKs
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlib-android-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  android-release:
+    name: Build and verify signed MLib APKs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      MLIB_STATE: ${{ runner.temp }}/mlib-release-state
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      MLIB_JOBS: '2'
+      TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+      TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+      MLIB_ANDROID_KEYSTORE_BASE64: ${{ secrets.MLIB_ANDROID_KEYSTORE_BASE64 }}
+      MLIB_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MLIB_ANDROID_KEYSTORE_PASSWORD }}
+      MLIB_ANDROID_KEY_ALIAS: ${{ secrets.MLIB_ANDROID_KEY_ALIAS }}
+      MLIB_ANDROID_KEY_PASSWORD: ${{ secrets.MLIB_ANDROID_KEY_PASSWORD }}
+      PUBLISH_DRAFT: ${{ inputs.publish_draft }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install pinned Android SDK components
+        run: |
+          sdkmanager --install "platforms;android-37.0" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1" "platform-tools"
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build gperf perl git
+      - name: Validate tag, Telegram app credentials and MLib signing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -nE 's/^version = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' build.gradle.kts)
+          test -n "$VERSION"
+          test "$RELEASE_TAG" = "v$VERSION"
+          test -n "$TELEGRAM_API_ID"
+          test -n "$TELEGRAM_API_HASH"
+          test -n "$MLIB_ANDROID_KEYSTORE_BASE64"
+          test -n "$MLIB_ANDROID_KEYSTORE_PASSWORD"
+          test -n "$MLIB_ANDROID_KEY_ALIAS"
+          test -n "$MLIB_ANDROID_KEY_PASSWORD"
+          mkdir -p "$MLIB_STATE"
+          printf '%s' "$MLIB_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$MLIB_STATE/mlib-release.jks"
+          chmod 600 "$MLIB_STATE/mlib-release.jks"
+          printf 'storePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$MLIB_ANDROID_KEYSTORE_PASSWORD" "$MLIB_ANDROID_KEY_ALIAS" "$MLIB_ANDROID_KEY_PASSWORD" \
+            > "$MLIB_STATE/signing.properties"
+          chmod 600 "$MLIB_STATE/signing.properties"
+          keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
+            -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
+          echo "MLIB_VERSION=$VERSION" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build signed Android release APKs
+        run: bash tools/build.sh release
+      - name: Verify package, version, ABI and signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK_DIR="$MLIB_STATE/build/app/outputs/apk/release"
+          OUTPUT="$MLIB_STATE/releases/$MLIB_VERSION"
+          mkdir -p "$OUTPUT"
+          shopt -s nullglob
+          APKS=("$APK_DIR"/*.apk)
+          test "${#APKS[@]}" -eq 2
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          for APK in "${APKS[@]}"; do
+            BADGING=$("$AAPT" dump badging "$APK")
+            grep -F "package: name='pt.ginjeira.mlib'" <<< "$BADGING"
+            grep -F "versionName='$MLIB_VERSION'" <<< "$BADGING"
+            "$APKSIGNER" verify --verbose --print-certs "$APK"
+            if grep -q "native-code:.*arm64-v8a" <<< "$BADGING"; then
+              cp "$APK" "$OUTPUT/mlib-$MLIB_VERSION-arm64.apk"
+            elif grep -q "native-code:.*x86_64" <<< "$BADGING"; then
+              cp "$APK" "$OUTPUT/mlib-$MLIB_VERSION-x86_64.apk"
+            else
+              echo "Unexpected or missing ABI in $APK" >&2
+              exit 1
+            fi
+          done
+          test -s "$OUTPUT/mlib-$MLIB_VERSION-arm64.apk"
+          test -s "$OUTPUT/mlib-$MLIB_VERSION-x86_64.apk"
+          sha256sum "$OUTPUT"/*.apk | tee "$OUTPUT/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlib-android-${{ inputs.release_tag }}
+          path: ${{ runner.temp }}/mlib-release-state/releases/${{ env.MLIB_VERSION }}/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Create GitHub draft release
+        if: ${{ inputs.publish_draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-arm64.apk" \
+            "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-x86_64.apk" \
+            "$MLIB_STATE/releases/$MLIB_VERSION/SHA256SUMS.txt" \
+            --draft --title "MLib $MLIB_VERSION" \
+            --notes "MLib Android release candidate. Both APKs were checked for package identity, version, ABI, APK signature and SHA-256. Desktop release is not included."
