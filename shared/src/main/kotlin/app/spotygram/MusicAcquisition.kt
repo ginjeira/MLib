@@ -163,6 +163,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
             val destinationChoice = app.telegram.rememberChat(destination)
             app.library.source(destinationChoice, true)
+            if (app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed != true) {
+                state.value = state.value.copy(progress = "A indexar o histórico de música do destino para evitar duplicados…")
+                app.refresh()
+                check(app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed == true) {
+                    "Não foi possível indexar completamente o destino. A aquisição foi interrompida para evitar duplicados."
+                }
+            }
 
             val completed = mutableListOf<AcquiredItem>()
             selected.forEachIndexed { index, option ->
@@ -532,14 +539,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private fun normalizeMusicText(value: String): String =
-        value.lowercase()
-            .normalize(java.text.Normalizer.Form.NFKD)
+        java.text.Normalizer.normalize(value.lowercase(), java.text.Normalizer.Form.NFKD)
             .replace(Regex("[\\u0300-\\u036f]"), "")
             .replace(Regex("[^a-z0-9]+"), " ")
             .trim()
 
     private fun sanitizeSearchQuery(value: String): String {
-        var query = value.trim().normalize(java.text.Normalizer.Form.NFKC)
+        var query = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC)
         query = query.replace(Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE), " ")
         query = query.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
         query = query.replace(Regex("[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}]", RegexOption.IGNORE_CASE), " ")
