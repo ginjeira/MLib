@@ -58,6 +58,7 @@ private data class SearchSession(
 private data class AcquiredItem(
     val option: AcquisitionOption,
     val tracks: List<Track>,
+    val importedIds: Set<String> = emptySet(),
     val error: String = "",
 )
 
@@ -169,42 +170,42 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     progress = "A obter opção ${index + 1}/${selected.size}: ${option.title}",
                 )
                 try {
-                    val tracks = acquireOption(session, option, destinationChatId, destinationTitle)
-                    completed += AcquiredItem(option, tracks)
+                    completed += acquireOption(session, option, destinationChatId, destinationTitle)
                 } catch (error: Throwable) {
                     if (error is CancellationException) throw error
-                    completed += AcquiredItem(option, emptyList(), friendly(error))
+                    completed += AcquiredItem(option, emptyList(), error = friendly(error))
                 }
             }
 
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
-            val imported = completed.sumOf { item -> item.tracks.count { track ->
-                track.date >= acquisitionStartedAt(item) // overwritten below by the exact imported/reused sets
-            } }
-            val reusedCount = completed.sumOf { item -> item.tracks.size } - imported
-            val failedCount = completed.sumOf { item -> if (item.error.isNotEmpty()) 1 else 0 }
+            val importedCount = completed.sumOf { it.importedIds.size }
+            val reusedCount = (allTrackIds.size - importedCount).coerceAtLeast(0)
+            val failedCount = completed.count { it.error.isNotEmpty() }
 
             var playlistId: Long? = null
-            val collectionTitle = selected.firstOrNull()?.title.orEmpty()
-            if (session.search.contentType == AcquisitionContentType.PLAYLIST && allTrackIds.isNotEmpty()) {
-                val existing = app.library.state.value.playlists.firstOrNull {
-                    normalizeMusicText(it.name) == normalizeMusicText(collectionTitle)
-                }
-                playlistId =
-                    if (existing != null) {
-                        app.library.addToPlaylist(existing.id, allTrackIds)
-                        existing.id
-                    } else {
-                        app.library.createPlaylist(collectionTitle, allTrackIds)
+            if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
+                for (item in completed.filter { it.error.isEmpty() && it.tracks.isNotEmpty() }) {
+                    val ids = item.tracks.map { it.id }.distinct()
+                    val existing = app.library.state.value.playlists.firstOrNull {
+                        normalizeMusicText(it.name) == normalizeMusicText(item.option.title)
                     }
+                    playlistId =
+                        if (existing != null) {
+                            app.library.addToPlaylist(existing.id, ids)
+                            existing.id
+                        } else {
+                            app.library.createPlaylist(item.option.title, ids)
+                        }
+                }
             }
 
             val outcome = AcquisitionOutcome(
-                imported = completed.sumOf { item -> item.tracks.count { it.id in newlyImportedIds } },
-                reused = allTrackIds.size - completed.sumOf { item -> item.tracks.count { it.id in newlyImportedIds } },
+                imported = importedCount,
+                reused = reusedCount,
                 failed = failedCount,
                 playlistId = playlistId,
-                collectionTitle = collectionTitle,
+                collectionTitle = completed.filter { it.tracks.isNotEmpty() }
+                    .joinToString(", ") { it.option.title },
             )
             state.value = state.value.copy(
                 acquiring = false,
@@ -221,15 +222,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
     }
 
-    private val newlyImportedIds = mutableSetOf<String>()
-
     private suspend fun acquireOption(
         session: SearchSession,
         option: AcquisitionOption,
         destinationChatId: Long,
         destinationTitle: String,
-    ): List<Track> {
-        newlyImportedIds.clear()
+    ): AcquiredItem {
         val botChatId = session.botChatId
         val latestBeforeSelection = latestMessageId(botChatId)
         val searchMessage = app.telegram.request(
@@ -250,28 +248,34 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
         if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
 
-        val parsedBotTracks = audioMessages.mapNotNull { app.parseAcquisitionMessage(it, "Music bot") }
-        if (parsedBotTracks.isEmpty()) error("As mensagens recebidas não contêm áudio compatível.")
+        val parsedPairs = audioMessages.mapNotNull { message ->
+            app.parseAcquisitionMessage(message, "Music bot")?.let { message to it }
+        }
+        if (parsedPairs.isEmpty()) error("As mensagens recebidas não contêm áudio compatível.")
 
         val existingTracks = app.library.state.value.tracks
-        val resolvedIds = mutableListOf<String>()
-        val toForward = mutableListOf<JSONObject>()
+        val orderedIds = MutableList<String?>(parsedPairs.size) { null }
+        val pendingMessages = mutableListOf<JSONObject>()
+        val pendingPositions = mutableListOf<Int>()
         val seen = mutableSetOf<String>()
-        for ((index, sourceTrack) in parsedBotTracks.withIndex()) {
+        for ((index, pair) in parsedPairs.withIndex()) {
+            val sourceTrack = pair.second
             val recordingKey = sourceTrack.fileKey.ifBlank {
                 "${normalizeMusicText(sourceTrack.title)}|${normalizeMusicText(sourceTrack.artist)}|${sourceTrack.duration}"
             }
             if (!seen.add(recordingKey)) continue
             val existing = existingTracks.firstOrNull { isSameRecording(sourceTrack, it) }
             if (existing != null) {
-                resolvedIds += existing.id
+                orderedIds[index] = existing.id
             } else {
-                toForward += audioMessages[index]
+                pendingMessages += pair.first
+                pendingPositions += index
             }
         }
 
-        if (toForward.isNotEmpty()) {
-            val messageIds = toForward.map { it.getLong("id") }.distinct().sorted()
+        val importedIds = mutableSetOf<String>()
+        if (pendingMessages.isNotEmpty()) {
+            val messageIds = pendingMessages.map { it.getLong("id") }.distinct().sorted()
             val forwarded = app.telegram.request(
                 json(
                     "forwardMessages",
@@ -287,24 +291,27 @@ class MusicAcquisition(private val app: SpotygramApp) {
             )
             val messages = forwarded.optJSONArray("messages") ?: JSONArray()
             val importedTracks = mutableListOf<Track>()
-            for (i in 0 until messages.length()) {
+            val count = minOf(messages.length(), pendingPositions.size)
+            for (i in 0 until count) {
                 val message = messages.optJSONObject(i) ?: continue
                 val track = app.parseAcquisitionMessage(message, destinationTitle) ?: continue
                 importedTracks += track
-                resolvedIds += track.id
-                newlyImportedIds += track.id
+                orderedIds[pendingPositions[i]] = track.id
+                importedIds += track.id
             }
             if (importedTracks.isNotEmpty()) {
                 app.library.upsert(importedTracks)
                 app.library.reload()
             }
-            if (messages.length() == 0 || importedTracks.isEmpty()) {
+            if (importedTracks.isEmpty()) {
                 error("O Telegram não confirmou a entrega do áudio ao destino.")
             }
         }
 
         val byId = app.library.state.value.byId
-        return resolvedIds.distinct().mapNotNull { id -> byId[id] ?: app.library.state.value.byId[id] }
+        val tracks = orderedIds.filterNotNull().distinct().mapNotNull { id -> byId[id] }
+        if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
+        return AcquiredItem(option, tracks, importedIds)
     }
 
     private suspend fun collectAudioMessages(
