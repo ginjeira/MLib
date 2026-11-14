@@ -1,142 +1,151 @@
-# MLib — MCat integration assessment
+# MLib — portabilidade da lógica de aquisição MCat / MCat Player
 
-**Assessment date:** 2026-11-12  
-**Source inspected:** https://github.com/ginjeira/MCat, default branch main  
-**Assessment type:** static source/documentation inspection. No MCat service was started and no live Telegram exchange was performed.
+**Actualizado:** 14-11-2026  
+**Âmbito:** auditoria estática dos repositórios `ginjeira/MCat` e `ginjeira/MCat-Player`, mais implementação inicial no MLib.  
+**Decisão vinculativa:** MLib incorpora a lógica funcional; não utiliza o serviço, a API, a sessão ou a infraestrutura do MCat.
 
-## 1. Executive finding
+## 1. Decisão de arquitectura
 
-MCat is not currently a conventional media-download API. Its main workflow uses a Telegram user session through Telethon to interact with the Music Downloader bot, collect the resulting Telegram media messages and forward those messages to a configured Telegram destination.
+Os três projectos têm papéis diferentes:
 
-The MCat repository also contains a FastAPI Web MVP. It exposes authenticated search and job endpoints, but the media itself is still delivered through Telegram to the configured destination. The API returns search options and job status/summaries; it does not currently expose an audio-file download endpoint or a stable per-track list of destination message IDs.
-
-This creates a plausible integration route for MLib: use the MCat Web service as the search/acquisition control plane, then ingest the forwarded Telegram media through the existing Spotygram/MLib Telegram source and library pipeline. This is a candidate architecture, not yet validated end-to-end.
-
-## 2. Inspected implementation
-
-Relevant source files:
-
-- [MCat README](https://github.com/ginjeira/MCat/blob/main/README.md)
-- [Python package/dependencies](https://github.com/ginjeira/MCat/blob/main/pyproject.toml)
-- [Console Telegram workflow](https://github.com/ginjeira/MCat/blob/main/src/mcat/__main__.py)
-- [Playlist lifecycle and deduplication](https://github.com/ginjeira/MCat/blob/main/src/mcat/playlist_engine.py)
-- [FastAPI routes and web authentication](https://github.com/ginjeira/MCat/blob/main/src/mcat/web.py)
-- [Telegram Web service and job worker](https://github.com/ginjeira/MCat/blob/main/src/mcat/web_service.py)
-
-The project uses Python, Telethon, FastAPI, Uvicorn and SQLite. It uses a Telegram user session named by configuration (default: mcat_user_session) and a configured bot username and destination chat.
-
-## 3. Existing Web API
-
-The inspected FastAPI application currently exposes these relevant routes:
-
-| Route | Purpose |
+| Projecto | Papel |
 | --- | --- |
-| POST /api/login | Authenticate a Web user and issue a session cookie |
-| GET /api/me | Return current authentication state and CSRF token |
-| POST /api/search | Search the configured bot and return selectable options |
-| POST /api/jobs | Queue selected search options for acquisition/forwarding |
-| GET /api/jobs | List recent jobs for the authenticated Web user |
-| GET /api/jobs/{job_id} | Retrieve one job and its item results |
+| MCat | Referência da lógica original de pesquisa, selecção, obtenção e encaminhamento de áudio através do bot Telegram |
+| MCat Player | Referência funcional da experiência de pesquisa, selecção, aquisição, deduplicação, playlists/álbuns e integração com a biblioteca |
+| MLib | Implementação independente dessa lógica, usando o seu próprio código, catálogo SQLite e sessão TDLib |
 
-Search accepts a query, content type and provider. The inspected implementation supports track, album, playlist and artist content types, with Deezer and SoundCloud providers. It interacts with the bot's inline filters, parses numbered options and stores the search for 20 minutes.
+MLib **não**:
+- chama endpoints HTTP do MCat;
+- autentica com credenciais Web do MCat;
+- utiliza a sessão Telethon/GramJS do MCat ou do MCat Player;
+- depende de um servidor MCat em execução;
+- partilha jobs, estado, base de dados ou credenciais com esses projectos.
 
-A job accepts a search ID and selected option numbers. The service clicks each selected result, observes the bot's Telegram messages, collects media metadata and forwards the messages to the configured destination. Job results include per-option status and summary counts such as forwarded, duplicates, missing and expected tracks.
+MLib reutiliza a sessão TDLib que já possui. O motor de aquisição é código nativo do MLib e comunica directamente com o bot Telegram.
 
-The API uses a username/password login, an HttpOnly session cookie, a CSRF token and server-side session records. Passwords are stored as PBKDF2-SHA256 hashes. These are Web application credentials, not Telegram credentials.
+## 2. Auditoria do MCat Player
 
-## 4. Important operational constraints
+O MCat Player foi a referência funcional principal. Os pontos de entrada auditados incluem:
 
-The current Web service is multi-user at the Web login/job-record level, but its Telegram execution context is shared by the installation:
+- `src/components/views/SearchView.tsx`: interface de pesquisa, filtros, resultados numerados, selecção múltipla, destino Telegram e estado dos pedidos.
+- `server.ts`, `getMcatBotEntity`: resolução do bot `@MusicsHuntersbot`.
+- `server.ts`, `parseBotSearchResults`: extracção de resultados numerados.
+- `server.ts`, `clickButtonByKeyword`: selecção dos filtros através de botões inline.
+- `server.ts`, `processMcatJob`: selecção de resultados, recolha de mensagens de áudio, detecção de conclusão, deduplicação e encaminhamento.
+- `server.ts`, rotas `/api/mcat/search` e `/api/mcat/jobs`: lógica de pesquisa e criação/execução de pedidos na aplicação original.
 
-- One server-side Telethon user session is used.
-- One configured bot is used.
-- One configured TG_DESTINATION is used by all Web users.
-- Optional TG_DEDUP_SOURCES are used for duplicate checks.
-- A single asyncio lock serializes Telegram interactions.
-- A single worker processes queued jobs sequentially.
-- Search records and jobs are associated with the Web username.
-- On service restart, queued/running jobs are marked interrupted; the code does not automatically resume them.
+O MCat Player usa uma sessão Telegram própria através de GramJS/TelegramClient. Essa implementação não deve ser copiada como dependência: MLib já tem TDLib e deve traduzir as operações para a API TDLib.
 
-The README explicitly says not to run the console process and Web process simultaneously with the same Telegram session.
+### Comportamento funcional a preservar
 
-Consequently, MLib must not treat the current MCat service as an isolated Telegram session per MLib user, nor assume parallel acquisition jobs are supported. Any client integration must respect the single shared Telegram execution lane and the configured destination.
+1. Pesquisar um termo no bot.
+2. Seleccionar tipo de conteúdo: track, album, playlist ou artist.
+3. Seleccionar fornecedor: Deezer ou SoundCloud.
+4. Interpretar os resultados numerados devolvidos pelo bot.
+5. Permitir seleccionar uma ou várias opções.
+6. Seleccionar o destino Telegram.
+7. Para cada opção, seleccionar o botão correspondente no resultado.
+8. Recolher as mensagens de áudio emitidas pelo bot.
+9. Distinguir track individual de aquisição multi-faixa; usar contagem esperada quando disponível, sinal de conclusão e período de silêncio como fallback.
+10. Deduplicar antes de encaminhar, preservando a identidade do objecto Telegram e a identidade da gravação.
+11. Encaminhar as mensagens para o destino.
+12. Actualizar a biblioteca e, quando o resultado é uma playlist, criar/actualizar a playlist local.
 
-## 5. Media delivery semantics
+O código do MCat Player usa um limite de espera de 45 segundos para uma faixa e 240 segundos para colecções; consulta o histórico em intervalos de 2 segundos e usa 9 segundos sem novas faixas como fallback para terminar uma colecção sem contagem/sinal explícito. Estes valores são referências de comportamento, não garantias do bot.
 
-The current MCat code does not download, decode, convert or process audio bytes. It forwards the Telegram media message itself from the bot conversation to TG_DESTINATION.
+## 3. Tradução técnica para TDLib no MLib
 
-The playlist engine:
-- Detects playlist start from a message containing Total Tracks.
-- Detects completion from Finished.
-- Records source message IDs, Telegram document IDs and audio metadata.
-- Compares against configured destination/dedup-source indexes.
-- Deduplicates by Telegram document ID or by normalised title, performer, duration and file size.
-- Does not delete duplicate Telegram messages.
+A implementação MLib deve usar:
 
-This means the destination Telegram chat is currently the delivery channel for media. The MCat API does not return the audio file or, in the inspected response shape, a per-track destination message ID list.
+| Operação | TDLib |
+| --- | --- |
+| Resolver o bot | `searchPublicChat` |
+| Enviar termo/número | `sendMessage` + `inputMessageText` |
+| Ler conversa e cursor | `getChatHistory` |
+| Obter mensagem actualizada | `getMessage` |
+| Clicar botão inline callback | `getCallbackQueryAnswer` com `callbackQueryPayloadData` |
+| Encaminhar áudio | `forwardMessages` |
+| Interpretar áudio | `SpotygramApp.parseTrack` (parser existente) |
+| Actualizar catálogo | `Library.source`, `Library.upsert`, `Library.reload` |
+| Criar playlist | `Library.createPlaylist` / `Library.addToPlaylist` |
 
-## 6. Destination access confirmed by user
+Os dados `bytes` dos callbacks são transportados pelo JSON TDLib em Base64. MLib deve usar os dados exactos do botão devolvido pelo Telegram; não deve reconstruir nem adivinhar payloads.
 
-The user has confirmed that the Telegram account intended for MLib has access to the GinjMusic group, where MCat forwards acquired music. This satisfies the user-side access precondition for investigating destination ingestion. It does not yet prove that TDLib can enumerate/read all required media or that MLib can correlate individual destination messages with an MCat job. Those remain end-to-end validation items.
+A autenticação continua a ser a autenticação Telegram já existente no MLib. Não existe um segundo login nem uma sessão separada para aquisição.
 
-## 7. Candidate MLib integration flow
+## 4. Fluxo implementado no MLib
 
-The least disruptive first design to investigate is:
+Ficheiros:
+- `shared/src/main/kotlin/app/spotygram/MusicAcquisition.kt`
+- `shared/src/main/kotlin/app/spotygram/AcquisitionSheet.kt`
+- integração em `SpotygramApp.kt`, `SpotygramUI.kt` e `SettingsSheet.kt`
 
-1. MLib authenticates to the existing MCat Web service using a dedicated MCat Web account.
-2. MLib submits a search through the existing search endpoint.
-3. MLib displays returned options and lets the user select one or more.
-4. MLib creates a job and displays progress/status from the job endpoints.
-5. MCat forwards acquired Telegram media to its configured destination.
-6. MLib ingests those Telegram messages through the existing TDLib source/library machinery.
-7. MLib reconciles the resulting tracks and, where requested, creates a local playlist or completes an album.
+Fluxo actual:
+1. O utilizador abre **Descobrir música** nas definições.
+2. MLib resolve `@MusicsHuntersbot` através da conta Telegram autenticada.
+3. Envia a pesquisa e selecciona os filtros por callbacks TDLib.
+4. Apresenta os resultados numerados para selecção.
+5. O utilizador escolhe o destino Telegram; por defeito, MLib procura o grupo GinjMusic.
+6. Antes de adquirir, MLib adiciona o destino às fontes e tenta indexar o seu histórico completo para que a deduplicação use o catálogo existente.
+7. MLib selecciona sequencialmente cada opção, recolhe mensagens de áudio novas e encaminha-as para o destino.
+8. As mensagens encaminhadas são interpretadas pelo parser existente e gravadas no catálogo SQLite.
+9. Para resultados do tipo playlist, MLib cria ou actualiza uma playlist local com as faixas obtidas.
 
-This reuses the existing MCat workflow and the Spotygram Telegram/library pipeline rather than adding a second media-transfer implementation.
+A conversa com o bot é serializada por um `Mutex` único. Isto evita que pesquisas e aquisições iniciadas no MLib misturem callbacks e respostas. As pesquisas mantêm validade local de 20 minutos.
 
-### Preconditions to validate
+## 5. Destino e biblioteca
 
-- The Telegram account signed into MLib must be able to read the configured MCat destination chat.
-- The destination must be suitable as a source for MLib and should not contain unrelated traffic that makes job reconciliation ambiguous.
-- The MLib client must be able to securely authenticate to the MCat Web service over HTTPS.
-- MLib must not store MCat passwords or session cookies in plain preferences/logs.
-- Only one MCat acquisition operation should be active at a time until the service exposes reliable job correlation and capacity guarantees.
-- The current API does not expose destination message IDs. A robust per-job import therefore needs a reliable correlation mechanism.
+O utilizador confirmou que a conta Telegram autenticada no MLib tem acesso ao grupo `GinjMusic`.
 
-## 8. API gaps for a first-class MLib client
+O destino de aquisição é distinto do canal privado usado pelo CloudSync MLib. Não confundir:
+- `GinjMusic`: destino de áudio;
+- canal `mlib-sync`: transporte privado de sincronização de metadata;
+- conversa privada com o bot: origem temporária dos resultados de aquisição.
 
-The current Web API is an MVP, not yet a versioned public integration contract. Before relying on it from MLib, evaluate:
+O MLib encaminha mensagens Telegram; não descarrega o áudio para voltar a enviá-lo como ficheiro local. O catálogo guarda a identidade da mensagem no destino e o player continua a usar o mecanismo TDLib/Media3 já existente.
 
-- Versioned API contract and compatibility policy.
-- Dedicated client authentication or token/session lifecycle suitable for native clients.
-- Explicit per-item result identifiers.
-- Destination chat ID and destination message IDs for successfully forwarded items.
-- Per-item metadata and delivery outcome.
-- Job cancellation and safe retry semantics.
-- Idempotency keys for client retries.
-- A way to distinguish media forwarded by a given job from unrelated messages in the destination.
-- Service availability and maintenance reporting.
-- Rate limits and a clear single-worker/concurrency contract.
+## 6. Deduplicação e segurança dos dados
 
-Do not expose the MCat Telegram user session or bot credentials to MLib. The native client should only communicate with a narrowly scoped authenticated service interface.
+A identidade do objecto Telegram e a identidade da gravação são diferentes.
 
-## 9. What should not be done yet
+A implementação inicial compara:
+- `fileKey` TDLib quando disponível;
+- título normalizado;
+- artista normalizado quando ambos os lados o têm;
+- duração, com tolerância curta.
 
-- Do not replace the current MCat bot interaction with a new protocol.
-- Do not change or deploy modifications to the existing MCat production service as part of this MLib documentation phase.
-- Do not assume MCat returns audio bytes directly.
-- Do not assume a successful MCat job automatically means MLib has imported every forwarded track.
-- Do not run a second Telethon client using the same MCat session file.
-- Do not assume multiple simultaneous searches/jobs are safe.
-- Do not automatically delete or overwrite existing MLib tracks based on MCat duplicate summaries.
+A indexação do destino é feita antes da aquisição quando ainda não está completa. A deduplicação é conservadora: não elimina mensagens nem gravações e não substitui metadata de forma destrutiva. Casos ambíguos devem ser encaminhados para revisão numa fase posterior.
 
-## 10. Validation still required
+Para playlists:
+- a ordenação das faixas recebidas é preservada;
+- faixas já existentes podem ser reutilizadas;
+- a playlist local é criada/actualizada sem duplicar IDs;
+- falhas parciais não apagam as faixas já obtidas.
 
-This assessment is based on source inspection only. It does not establish that the current deployed MCat service is running this exact revision, that the Web endpoints are reachable from MLib, or that the configured destination is accessible to the MLib Telegram account.
+## 7. Limitações conhecidas da primeira implementação
 
-Next technical proof:
-1. Identify the actual deployed MCat revision and configuration without exposing secrets.
-2. Confirm the MLib Telegram account can read the MCat destination.
-3. Exercise one small search and one small acquisition through the existing MCat Web API in a controlled test.
-4. Record the job response and the corresponding destination messages.
-5. Verify MLib can ingest those messages through the existing Spotygram source flow without duplicates.
-6. Only then define the stable adapter contract.
+- Estado das pesquisas e jobs ainda reside em memória; uma terminação do processo exige nova pesquisa e não retoma automaticamente uma aquisição interrompida.
+- Não existe cancelamento remoto do processamento iniciado no bot.
+- A serialização protege operações iniciadas pelo MLib, mas uma interacção manual simultânea com o mesmo bot/conversa pode interferir.
+- O protocolo do bot é inferido a partir de texto, botões e mensagens Telegram; alterações do bot podem exigir ajustes.
+- A criação automática de playlists está implementada no fluxo inicial; o modelo SQLite actual do MLib não tem ainda uma entidade de álbum separada.
+- Pesquisa por artista está disponível como filtro do bot, mas a semântica de aquisição de um artista inteiro precisa de validação funcional.
+- A indexação completa de GinjMusic pode demorar, dependendo do histórico existente.
+- Não foi ainda realizado um teste live de pesquisa, callback, aquisição, encaminhamento, deduplicação e reprodução.
+
+## 8. Critérios de validação
+
+A integração só deve ser considerada funcional depois de todos estes testes:
+
+1. Pesquisar uma faixa com Deezer e SoundCloud.
+2. Confirmar que os filtros são aplicados no bot, não apenas apresentados na interface.
+3. Seleccionar um resultado e receber áudio.
+4. Confirmar encaminhamento para GinjMusic.
+5. Confirmar que a mensagem encaminhada aparece na biblioteca e reproduz.
+6. Repetir a aquisição e confirmar que não é criada uma segunda entrada para a mesma gravação.
+7. Adquirir uma playlist pequena e confirmar contagem, ordem, importação e playlist local.
+8. Testar uma aquisição parcialmente falhada e confirmar que as faixas válidas permanecem.
+9. Testar expiração de pesquisa, timeout, FloodWait e perda de ligação.
+10. Confirmar que o canal CloudSync MLib e os dados do Spotygram não são afectados.
+
+**Estado:** implementação inicial de código submetida à branch em 14-11-2026; CI e testes Telegram reais ainda não validados.
