@@ -673,7 +673,7 @@ fun SpotygramUI(
                                                 Modifier.size(28.dp),
                                             )
                                             Text(
-                                                "spotygram",
+                                                "MLib",
                                                 Modifier.weight(1f).padding(start = 8.dp),
                                                 style = MaterialTheme.typography.titleMedium,
                                             )
