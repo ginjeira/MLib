@@ -167,7 +167,7 @@ class CloudSync(private val app: SpotygramApp) {
         app.platform.syncEncryptionKey() ?: error("A chave de recuperação MLib ainda não foi configurada.")
 
     private fun associatedData(kind: String, through: Long): ByteArray =
-        "mlib-sync/4|undefined|$kind|$through".toByteArray(Charsets.UTF_8)
+        "mlib-sync/4|${store.account}|$kind|$through".toByteArray(Charsets.UTF_8)
 
     suspend fun stop() {
         connected = false
