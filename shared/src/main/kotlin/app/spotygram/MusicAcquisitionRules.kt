@@ -4,6 +4,8 @@ package app.spotygram
  * Pure parsing and matching rules shared by the native TDLib acquisition flow.
  * Kept separate so the bot protocol can be regression-tested without a live account.
  */
+internal data class ParsedMusicName(val artist: String, val title: String)
+
 internal object MusicAcquisitionRules {
     fun parseResults(text: String): List<AcquisitionOption> =
         text.lineSequence().mapNotNull { line ->
@@ -26,6 +28,23 @@ internal object MusicAcquisitionRules {
             )
             .trim()
         return cleaned.ifBlank { value.trim() }
+    }
+
+    fun parseArtistAndTitle(raw: String): ParsedMusicName {
+        val clean = cleanCollectionTitle(raw)
+            .replace(Regex("^\\s*\\d+[.)-]\\s*"), "")
+            .trim()
+        val by = Regex("^(.*?)\\s+by\\s+(.*?)$", RegexOption.IGNORE_CASE).matchEntire(clean)
+        if (by != null && by.groupValues[1].isNotBlank() && by.groupValues[2].isNotBlank()) {
+            return ParsedMusicName(by.groupValues[2].trim(), by.groupValues[1].trim())
+        }
+        val separator = Regex("\\s+[-–—]\\s+").find(clean)
+        if (separator != null) {
+            val artist = clean.substring(0, separator.range.first).trim()
+            val title = clean.substring(separator.range.last + 1).trim()
+            if (artist.isNotBlank() && title.isNotBlank()) return ParsedMusicName(artist, title)
+        }
+        return ParsedMusicName("", clean)
     }
 
     fun sanitizeSearchQuery(value: String): String {
