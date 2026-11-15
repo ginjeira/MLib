@@ -268,13 +268,19 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (session.search.contentType == AcquisitionContentType.ALBUM) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val first = item.tracks.first()
-                    val title = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
+                    val targetAlbum = session.targetAlbumId?.let { id ->
+                        app.library.state.value.albums.firstOrNull { it.id == id }
+                    }
+                    val title = targetAlbum?.title
+                        ?: MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
+                    val artist = targetAlbum?.artist?.takeIf(String::isNotBlank) ?: first.artist
                     val albumId = app.library.createOrUpdateAlbum(
                         title = title,
-                        artist = first.artist,
+                        artist = artist,
                         tracks = item.tracks.map { it.id },
-                        year = "",
-                        coverUrl = first.art,
+                        year = targetAlbum?.year.orEmpty(),
+                        coverUrl = targetAlbum?.coverUrl?.takeIf(String::isNotBlank) ?: first.art,
+                        genre = targetAlbum?.genre.orEmpty(),
                         targetAlbumId = session.targetAlbumId,
                     )
                     acquiredAlbums += albumId
@@ -308,9 +314,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 note = when (session.search.contentType) {
                     AcquisitionContentType.ALBUM ->
                         if (acquiredAlbums.isEmpty()) "Não foi possível criar um álbum com as faixas recebidas."
-                        else "${acquiredAlbums.size} álbum(ns) criado(s) na biblioteca."
+                        else "${acquiredAlbums.size} álbum(ns) actualizado(s) na biblioteca; as faixas já existentes foram reutilizadas."
                     AcquisitionContentType.ARTIST ->
-                        "As faixas seleccionadas foram adicionadas; a aquisição integral e organização por artista ainda precisa de validação."
+                        "A pesquisa por artista devolve opções de faixas. As faixas seleccionadas foram importadas individualmente; não é criado um álbum ou uma playlist fictícios."
                     AcquisitionContentType.PLAYLIST ->
                         if (autoCreatePlaylist) "" else "As faixas foram adicionadas à biblioteca sem criar uma playlist local."
                     else -> ""
