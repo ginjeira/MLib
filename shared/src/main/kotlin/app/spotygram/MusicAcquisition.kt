@@ -441,7 +441,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .put("destination_chat_id", job.destinationChatId)
             .put("target_album_id", job.targetAlbumId ?: JSONObject.NULL)
             .put("updated_at", System.currentTimeMillis())
-        app.prefs.edit().putString(pendingJobKey, json.toString()).apply()
+        check(app.prefs.edit().putString(pendingJobKey, json.toString()).commit()) {
+            "Não foi possível guardar o estado da aquisição interrompida."
+        }
         state.value = state.value.copy(pendingJob = job)
     }
 
@@ -450,7 +452,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private fun clearPendingJob() {
-        app.prefs.edit().remove(pendingJobKey).apply()
+        check(app.prefs.edit().remove(pendingJobKey).commit()) {
+            "Não foi possível limpar o registo da aquisição."
+        }
         state.value = state.value.copy(pendingJob = null)
     }
 
