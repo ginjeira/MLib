@@ -1,6 +1,6 @@
 # MLib — portabilidade da lógica de aquisição MCat / MCat Player
 
-**Actualizado:** 14-11-2026  
+**Actualizado:** 15-11-2026  
 **Âmbito:** auditoria estática dos repositórios `ginjeira/MCat` e `ginjeira/MCat-Player`, mais implementação inicial no MLib.  
 **Decisão vinculativa:** MLib incorpora a lógica funcional; não utiliza o serviço, a API, a sessão ou a infraestrutura do MCat.
 
@@ -87,9 +87,13 @@ Fluxo actual:
 4. Apresenta os resultados numerados para selecção.
 5. O utilizador escolhe o destino Telegram; por defeito, MLib procura o grupo GinjMusic.
 6. Antes de adquirir, MLib adiciona o destino às fontes e tenta indexar o seu histórico completo para que a deduplicação use o catálogo existente.
-7. MLib selecciona sequencialmente cada opção, recolhe mensagens de áudio novas e encaminha-as para o destino.
-8. As mensagens encaminhadas são interpretadas pelo parser existente e gravadas no catálogo SQLite.
-9. Para resultados do tipo playlist, MLib cria ou actualiza uma playlist local com as faixas obtidas.
+7. MLib actualiza o histórico do destino antes de cada aquisição para que a deduplicação inclua mensagens novas desde a última indexação.
+8. MLib selecciona sequencialmente cada opção, recolhe mensagens de áudio novas (com paginação do histórico), e encaminha-as para o destino.
+9. As mensagens encaminhadas são interpretadas pelo parser existente e gravadas no catálogo SQLite.
+10. Para resultados do tipo playlist, MLib cria/actualiza uma playlist local com ordem preservada; a criação automática é configurável e fica activa por defeito.
+11. Para resultados do tipo álbum, MLib cria/actualiza uma entidade de álbum separada. O botão de completar álbum encaminha o resultado para o álbum escolhido, reutilizando faixas já existentes na biblioteca e acrescentando as restantes.
+12. Para resultados do tipo artista, o bot devolve opções de faixas individuais; as opções seleccionadas são importadas como faixas, sem criar um álbum ou playlist fictícios.
+13. O trabalho seleccionado é guardado nas preferências MLib. Após reinício, a pesquisa é reconstruída, o destino é actualizado e as opções são repetidas de forma idempotente através da deduplicação.
 
 A conversa com o bot é serializada por um `Mutex` único. Isto evita que pesquisas e aquisições iniciadas no MLib misturem callbacks e respostas. As pesquisas mantêm validade local de 20 minutos.
 
@@ -124,13 +128,15 @@ Para playlists:
 
 ## 7. Limitações conhecidas da primeira implementação
 
-- Estado das pesquisas e jobs ainda reside em memória; uma terminação do processo exige nova pesquisa e não retoma automaticamente uma aquisição interrompida.
-- Não existe cancelamento remoto do processamento iniciado no bot.
+- O trabalho pendente é persistido nas preferências MLib e pode ser retomado; a pesquisa do bot é reconstruída e as faixas encaminhadas antes de uma falha são recuperadas através da actualização do destino e da deduplicação. O registo é um journal de retoma, não uma transacção distribuída com o Telegram.
+- Não existe cancelamento remoto do processamento já iniciado no bot.
 - A serialização protege operações iniciadas pelo MLib, mas uma interacção manual simultânea com o mesmo bot/conversa pode interferir.
 - O protocolo do bot é inferido a partir de texto, botões e mensagens Telegram; alterações do bot podem exigir ajustes.
-- A criação automática de playlists está implementada no fluxo inicial; o modelo SQLite actual do MLib não tem ainda uma entidade de álbum separada.
-- Pesquisa por artista está disponível como filtro do bot, mas a semântica de aquisição de um artista inteiro precisa de validação funcional.
-- A indexação completa de GinjMusic pode demorar, dependendo do histórico existente.
+- FloodWait tem espera e repetição limitada; limites superiores a 15 minutos deixam o trabalho pendente para retoma manual.
+- A recolha pagina até 2.000 mensagens por opção; colecções maiores exigem validação/limite adicional.
+- A pesquisa por artista é definida como pesquisa de faixas associadas ao artista: cada opção seleccionada é uma faixa individual. Não representa uma aquisição integral de discografia.
+- A conclusão de um álbum existente reutiliza faixas já presentes na biblioteca e acrescenta as faixas recebidas. Ainda não existe uma pré-visualização por faixa com uma lista de ausências para aprovação individual.
+- A indexação do destino pode demorar, dependendo do histórico existente.
 - Não foi ainda realizado um teste live de pesquisa, callback, aquisição, encaminhamento, deduplicação e reprodução.
 
 ## 8. Critérios de validação
@@ -148,4 +154,4 @@ A integração só deve ser considerada funcional depois de todos estes testes:
 9. Testar expiração de pesquisa, timeout, FloodWait e perda de ligação.
 10. Confirmar que o canal CloudSync MLib e os dados do Spotygram não são afectados.
 
-**Estado:** implementação inicial de código submetida à branch em 14-11-2026; CI e testes Telegram reais ainda não validados.
+**Estado em 15-11-2026:** implementação nativa ampliada com retoma de trabalhos, actualização obrigatória do destino, paginação do histórico, FloodWait limitado, deduplicação intra-resposta, correspondência conservadora de títulos, playlists configuráveis, álbuns distintos/completar álbum e semântica explícita de artista. Os testes automatizados e o build do último commit ainda aguardam execução CI; os testes Telegram reais continuam por fazer.
