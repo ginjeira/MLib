@@ -93,13 +93,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
             state.value = state.value.copy(progress = "A aguardar resposta do bot…")
 
             val botChatId = bot.getLong("id")
-            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 45_000) {
-                // Do not assume the bot's first response contains a specific
-                // English phrase or an inline keyboard. MCat's Telethon flow
-                // accepts the first incoming bot message and then follows edits
-                // and replacement messages until the expected keyboard appears.
+            // Match the MCat Player protocol: the bot first acknowledges the
+            // query with "Searching for", then the same inline message is used
+            // to select content type and provider. Do not invent a separate
+            // Track -> Playlist -> resend-query sequence.
+            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
                 !it.optBoolean("is_outgoing") &&
-                    (messageText(it).isNotBlank() || hasInlineKeyboard(it))
+                    (messageText(it).contains("searching for", ignoreCase = true) ||
+                        hasInlineKeyboard(it))
             } ?: run {
                 val reply = history(botChatId, 50)
                     .asSequence()
@@ -110,64 +111,33 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (replyText.isNotBlank()) {
                     error("Resposta do bot não reconhecida: ${replyText.take(180)}")
                 }
-                error("O bot de música não respondeu à pesquisa em 45 segundos.")
+                error("O bot de música não respondeu à pesquisa em 30 segundos.")
             }
 
-            // The bot can send a textual acknowledgement first and attach or
-            // replace its inline keyboard afterwards. Follow both edit and
-            // replacement-message paths before trying to click any button.
-            if (!hasInlineKeyboard(resultMessage)) {
-                val firstMessageId = resultMessage.getLong("id")
-                resultMessage = waitForBotUpdate(botChatId, firstMessageId, 20_000) {
-                    hasInlineKeyboard(it) || messageText(it).contains("in '", ignoreCase = true)
-                } ?: resultMessage
-            }
-
-            // Playlist search is a special bot workflow: choose Track first,
-            // then activate Playlist on the result keyboard and repeat the query.
-            // Album remains a distinct initial content type; it has no equivalent
-            // collection model in MLib yet.
-            val initialType = if (contentType == AcquisitionContentType.PLAYLIST)
-                AcquisitionContentType.TRACK else contentType
-            val typeMarker = "in '${initialType.wireValue}'"
+            val typeMarker = "in '${contentType.wireValue}'"
             if (!messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
                 state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
-                check(clickButton(resultMessage, initialType.wireValue)) {
-                    "O bot não disponibilizou a opção de conteúdo ${initialType.wireValue}."
+                if (clickButton(resultMessage, contentType.wireValue)) {
+                    resultMessage = waitForBotUpdate(
+                        botChatId, resultMessage.getLong("id"), 12_000,
+                    ) { messageText(it).contains(typeMarker, ignoreCase = true) } ?: resultMessage
                 }
-                resultMessage = waitForBotUpdate(botChatId, resultMessage.getLong("id"), 12_000) {
-                    messageText(it).contains(typeMarker, ignoreCase = true)
-                } ?: error("O bot não confirmou o tipo de conteúdo ${initialType.wireValue}.")
+            }
+            check(messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
+                "O bot não confirmou o tipo de conteúdo ${contentType.wireValue}."
             }
 
             val providerMarker = "from '${provider.wireValue}'"
             if (!messageText(resultMessage).contains(providerMarker, ignoreCase = true)) {
                 state.value = state.value.copy(progress = "A seleccionar o fornecedor…")
-                check(clickButton(resultMessage, provider.wireValue)) {
-                    "O bot não disponibilizou o fornecedor ${provider.wireValue}."
+                if (clickButton(resultMessage, provider.wireValue)) {
+                    resultMessage = waitForBotUpdate(
+                        botChatId, resultMessage.getLong("id"), 12_000,
+                    ) { messageText(it).contains(providerMarker, ignoreCase = true) } ?: resultMessage
                 }
-                resultMessage = waitForBotUpdate(botChatId, resultMessage.getLong("id"), 12_000) {
-                    messageText(it).contains(providerMarker, ignoreCase = true)
-                } ?: error("O bot não confirmou o fornecedor ${provider.wireValue}.")
             }
-
-            if (contentType == AcquisitionContentType.PLAYLIST) {
-                val collectionLabel = contentType.wireValue
-                state.value = state.value.copy(progress = "A activar pesquisa de playlists…")
-                check(clickButton(resultMessage, collectionLabel)) {
-                    "O bot não apresentou a opção ${collectionLabel} na pesquisa."
-                }
-                // The callback changes the bot's search mode. A fresh query is
-                // required to obtain results for that collection type.
-                val callbackMessageId = resultMessage.getLong("id")
-                waitForBotUpdate(botChatId, callbackMessageId, 8_000) {
-                    messageText(it).contains(collectionLabel, ignoreCase = true)
-                }
-                val repeatedQuery = sendText(botChatId, query)
-                resultMessage = waitForBotMessage(botChatId, repeatedQuery.getLong("id"), 30_000) {
-                    !it.optBoolean("is_outgoing") && hasInlineKeyboard(it) &&
-                        messageText(it).isNotBlank()
-                } ?: error("O bot não devolveu resultados para a pesquisa de ${collectionLabel}.")
+            check(messageText(resultMessage).contains(providerMarker, ignoreCase = true)) {
+                "O bot não confirmou o fornecedor ${provider.wireValue}."
             }
 
             val options = parseResults(messageText(resultMessage))
@@ -459,8 +429,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val buttons = rows.optJSONArray(rowIndex) ?: continue
             for (buttonIndex in 0 until buttons.length()) {
                 val button = buttons.optJSONObject(buttonIndex) ?: continue
-                if (!button.optString("text").contains(keyword, ignoreCase = true)) continue
                 val type = button.optJSONObject("type") ?: continue
+                val buttonText = button.optString("text")
+                val callbackData = type.optString("data")
+                if (!buttonText.contains(keyword, ignoreCase = true) &&
+                    !callbackData.contains(keyword, ignoreCase = true)
+                ) continue
                 if (type.kind() != "inlineKeyboardButtonTypeCallback") continue
                 val data = type.optString("data")
                 if (data.isEmpty()) continue
