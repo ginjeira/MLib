@@ -140,12 +140,30 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 "O bot não confirmou o fornecedor ${provider.wireValue}."
             }
 
-            val options = parseResults(messageText(resultMessage))
+            var effectiveProvider = provider
+            var options = parseResults(messageText(resultMessage))
+            // MCat Player falls back to SoundCloud when Deezer has no album
+            // results. Keep the same search message/session and record the
+            // provider that actually produced the options.
+            if (options.isEmpty() && contentType == AcquisitionContentType.ALBUM &&
+                provider == AcquisitionProvider.DEEZER
+            ) {
+                state.value = state.value.copy(progress = "Sem álbuns no Deezer; a tentar SoundCloud…")
+                if (clickButton(resultMessage, AcquisitionProvider.SOUNDCLOUD.wireValue)) {
+                    resultMessage = waitForBotUpdate(
+                        botChatId, resultMessage.getLong("id"), 12_000,
+                    ) { messageText(it).contains("from 'soundcloud'", ignoreCase = true) } ?: resultMessage
+                    if (messageText(resultMessage).contains("from 'soundcloud'", ignoreCase = true)) {
+                        effectiveProvider = AcquisitionProvider.SOUNDCLOUD
+                        options = parseResults(messageText(resultMessage))
+                    }
+                }
+            }
             val search = AcquisitionSearch(
                 id = UUID.randomUUID().toString(),
                 query = query,
                 contentType = contentType,
-                provider = provider,
+                provider = effectiveProvider,
                 results = options,
                 expiresAt = System.currentTimeMillis() + 20 * 60 * 1000L,
             )
