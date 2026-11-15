@@ -15,7 +15,7 @@ class Library(private val platform: Platform) : AutoCloseable {
     val sync: LibrarySync = LibrarySync(platform, { writableDatabase }, { reload() })
     private val publishing = Mutex()
     private val storage = lazy {
-        platform.openDatabase("library.db", 9, ::onCreate, ::onUpgrade, ::onOpen)
+        platform.openDatabase("library.db", 10, ::onCreate, ::onUpgrade, ::onOpen)
     }
     private val database
         get() = storage.value
@@ -76,16 +76,29 @@ class Library(private val platform: Platform) : AutoCloseable {
             db.execSQL("ALTER TABLE tracks ADD COLUMN profile_position INTEGER NOT NULL DEFAULT -1")
             createProfileStorage(db)
         }
-        if (oldVersion < 9) createAlbumStorage(db)
+        if (oldVersion < 10) createAlbumStorage(db)
         if (oldVersion < 6) sync.install(db)
         if (oldVersion < 7) sync.migrate(db)
     }
 
     private fun createAlbumStorage(db: SqlDatabase) {
-        db.execSQL("CREATE TABLE albums(id TEXT PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL,year TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '',genre TEXT NOT NULL DEFAULT '',auto_detected INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,account INTEGER NOT NULL DEFAULT 0)")
-        db.execSQL("CREATE INDEX albums_title_artist ON albums(title,artist)")
-        db.execSQL("CREATE TABLE album_tracks(album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,track TEXT NOT NULL,position INTEGER NOT NULL,PRIMARY KEY(album_id,track))")
-        db.execSQL("CREATE INDEX album_tracks_track ON album_tracks(track)")
+        val hasAlbums = db.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums'",
+            null,
+        ).use { it.moveToFirst() }
+        if (!hasAlbums) {
+            db.execSQL("CREATE TABLE albums(id TEXT PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL,year TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '',genre TEXT NOT NULL DEFAULT '',auto_detected INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,account INTEGER NOT NULL DEFAULT 0)")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS albums_title_artist ON albums(title,artist)")
+
+        val hasAlbumTracks = db.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='album_tracks'",
+            null,
+        ).use { it.moveToFirst() }
+        if (!hasAlbumTracks) {
+            db.execSQL("CREATE TABLE album_tracks(album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,track TEXT NOT NULL,position INTEGER NOT NULL,PRIMARY KEY(album_id,track))")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS album_tracks_track ON album_tracks(track)")
     }
 
     private fun createProfileStorage(db: SqlDatabase) {
