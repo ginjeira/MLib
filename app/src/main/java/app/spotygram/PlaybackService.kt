@@ -244,7 +244,7 @@ class PlaybackService : MediaLibraryService() {
                 MediaMetadata.Builder()
                     .setTitle(track.title)
                     .setArtist(track.artist)
-                    .setAlbumTitle(track.album)
+                    .setAlbumTitle(app.library.state.value.albums.firstOrNull { album -> album.tracks.any { it.id == track.id } }?.title)
                     .setArtworkUri(track.art.takeIf { it.startsWith("https://") || it.startsWith("http://") }?.let(Uri::parse))
                     .setIsBrowsable(false)
                     .setIsPlayable(true)
