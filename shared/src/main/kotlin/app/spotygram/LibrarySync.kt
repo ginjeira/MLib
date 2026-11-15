@@ -465,6 +465,7 @@ class LibrarySync(
                             }
                         execSQL("DELETE FROM sync_values WHERE account=0")
                         execSQL("UPDATE playlists SET account=? WHERE account=0", arrayOf(user))
+                        execSQL("UPDATE albums SET account=? WHERE account=0", arrayOf(user))
                         putMeta(this, "account", user.toString())
                         account = user
                         execSQL("UPDATE tracks SET liked=0")
@@ -485,6 +486,7 @@ class LibrarySync(
                 database().transaction {
                     putMeta(this, "account", "0")
                     account = 0L
+                    execSQL("UPDATE albums SET account=0 WHERE account=?", arrayOf(previousAccount))
                     execSQL("UPDATE tracks SET liked=0")
                     materialize(this, records(this, false).map { it.key }.toSet())
                 }
