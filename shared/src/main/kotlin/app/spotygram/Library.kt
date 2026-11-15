@@ -710,10 +710,15 @@ class Library(private val platform: Platform) : AutoCloseable {
         val normalizedTitle = normalizeMusicText(title)
         val normalizedArtist = normalizeMusicText(artist)
         val id = writableDatabase.transaction {
-            val existing = rawQuery(
-                "SELECT id FROM albums WHERE lower(trim(title))=lower(trim(?)) AND lower(trim(artist))=lower(trim(?)) LIMIT 1",
-                arrayOf(title.trim(), artist.trim()),
-            ).use { if (it.moveToFirst()) it.getString(0) else null }
+            val existing = rawQuery("SELECT id,title,artist FROM albums", null).use { c ->
+                var match: String? = null
+                while (c.moveToNext() && match == null) {
+                    if (normalizeMusicText(c.getString(1)) == normalizedTitle &&
+                        normalizeMusicText(c.getString(2)) == normalizedArtist
+                    ) match = c.getString(0)
+                }
+                match
+            }
             val albumId = existing ?: UUID.randomUUID().toString()
             if (existing == null) {
                 execSQL(
@@ -729,7 +734,7 @@ class Library(private val platform: Platform) : AutoCloseable {
             var position = rawQuery("SELECT COALESCE(MAX(position),-1)+1 FROM album_tracks WHERE album_id=?", arrayOf(albumId)).use { it.moveToFirst(); it.getInt(0) }
             compileStatement("INSERT OR IGNORE INTO album_tracks(album_id,track,position) SELECT ?,id,? FROM tracks WHERE id=?").use { statement ->
                 tracks.distinct().forEach { trackId ->
-                    statement.bindString(1,albumId); statement.bindLong(2,position++ .toLong()); statement.bindString(3,trackId); statement.executeInsert()
+                    statement.bindString(1,albumId); statement.bindLong(2,position.toLong()); position++ statement.bindString(3,trackId); statement.executeInsert()
                 }
             }
             albumId
