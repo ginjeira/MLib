@@ -462,4 +462,8 @@
     <string name="acquisition_artist">Artistas</string>
     <string name="acquisition_deezer">Deezer</string>
     <string name="acquisition_soundcloud">SoundCloud</string>
+    <string name="albums">Álbuns</string>
+    <string name="album_tracks">%1$d faixas</string>
+    <string name="albums_empty">Ainda não existem álbuns na biblioteca.</string>
+    <string name="album_delete">Eliminar álbum</string>
 </resources>
