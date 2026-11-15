@@ -233,6 +233,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         require(session.targetAlbumId == null || selected.size == 1) {
             "Para completar um álbum existente, selecciona apenas uma edição do bot de cada vez."
         }
+        val telegramUserId = request(json("getMe")).getLong("id")
         val currentPending = state.value.pendingJob
         require(currentPending == null ||
             (currentPending.query == session.search.query &&
@@ -249,7 +250,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
         ) {
             "Existe outra aquisição interrompida. Retoma-a ou descarta-a antes de iniciar esta."
         }
-        val telegramUserId = request(json("getMe")).getLong("id")
         val pending = PendingAcquisitionJob(
             query = session.search.query,
             contentType = session.search.contentType,
