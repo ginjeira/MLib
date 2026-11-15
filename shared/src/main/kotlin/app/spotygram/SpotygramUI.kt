@@ -833,6 +833,7 @@ fun SpotygramUI(
                                                     onUpdate = { id, title, artist, year, cover, genre ->
                                                         app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
                                                     },
+                                                    onSuggestCovers = { title, artist -> app.suggestAlbumCovers(title, artist) },
                                                 )
                                             else ->
                                                 SourcesScreen(
