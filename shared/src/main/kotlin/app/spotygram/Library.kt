@@ -754,6 +754,60 @@ class Library(private val platform: Platform) : AutoCloseable {
         id
     }
 
+    suspend fun reorderAlbum(id: String, order: List<String>) = withContext(Dispatchers.IO) {
+        writableDatabase.transaction {
+            val current = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id)).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(0)) }
+            }
+            val members = current.toSet()
+            val requested = order.distinct().filter { it in members }
+            val merged = requested + current.filter { it !in requested.toSet() }
+            delete("album_tracks", "album_id=?", arrayOf(id))
+            compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { statement ->
+                merged.forEachIndexed { index, track ->
+                    statement.bindString(1,id); statement.bindString(2,track); statement.bindLong(3,index.toLong()); statement.executeInsert()
+                }
+            }
+            sync.edit(this,mapOf("album/$id/order" to JSONArray(merged)))
+        }
+        reload()
+    }
+
+    suspend fun deduplicateAlbums(): Int = withContext(Dispatchers.IO) {
+        var mergedCount = 0
+        writableDatabase.transaction {
+            val rows = rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY created_at,id", arrayOf(sync.account.toString())).use { c ->
+                buildList {
+                    while (c.moveToNext()) add(Album(c.getString(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5),c.getInt(6)==1,c.getLong(7),c.getLong(8)))
+                }
+            }
+            val groups = rows.groupBy { normalizeMusicText(it.title) + "|" + normalizeMusicText(it.artist) }
+            for (group in groups.values.filter { it.size > 1 }) {
+                val keep = group.first()
+                for (duplicate in group.drop(1)) {
+                    val ids = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(duplicate.id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
+                    val current = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(keep.id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
+                    val combined = (current + ids).distinct()
+                    delete("album_tracks","album_id=?",arrayOf(keep.id))
+                    compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { st ->
+                        combined.forEachIndexed { index, track -> st.bindString(1,keep.id); st.bindString(2,track); st.bindLong(3,index.toLong()); st.executeInsert() }
+                    }
+                    sync.edit(this,mapOf("album/" + duplicate.id + "/deleted" to true))
+                    delete("album_tracks","album_id=?",arrayOf(duplicate.id))
+                    delete("albums","id=? AND account=?",arrayOf(duplicate.id,sync.account.toString()))
+                    val metadata = JSONObject().put("title",keep.title).put("artist",keep.artist).put("year",keep.year).put("cover",keep.coverUrl).put("genre",keep.genre).put("auto",keep.isAutoDetected).put("created",keep.createdAt).put("updated",System.currentTimeMillis())
+                    val values = linkedMapOf<String,Any?>("album/" + keep.id + "/metadata" to metadata,"album/" + keep.id + "/order" to JSONArray(combined))
+                    combined.forEach { values["album/" + keep.id + "/member/" + it] = true }
+                    sync.references(this,combined,values)
+                    sync.edit(this,values)
+                    mergedCount++
+                }
+            }
+        }
+        reload()
+        mergedCount
+    }
+
     suspend fun deleteAlbum(id: String) = withContext(Dispatchers.IO) {
         writableDatabase.transaction {
             sync.edit(this, mapOf("album/$id/deleted" to true))
