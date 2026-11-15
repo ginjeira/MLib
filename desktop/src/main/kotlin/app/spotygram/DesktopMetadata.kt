@@ -43,6 +43,9 @@ object DesktopMetadata {
             tag?.getFirst(FieldKey.TITLE).orEmpty().ifEmpty { ogg?.title.orEmpty() }.ifEmpty { fallback?.title.orEmpty() },
             tag?.getFirst(FieldKey.ARTIST).orEmpty().ifEmpty { ogg?.artist.orEmpty() }.ifEmpty { fallback?.artist.orEmpty() },
             tag?.firstArtwork?.binaryData?.takeIf { it.size < MAX_ART } ?: ogg?.artwork,
+            tag?.getFirst(FieldKey.ALBUM).orEmpty(),
+            tag?.getFirst(FieldKey.YEAR).orEmpty(),
+            tag?.getFirst(FieldKey.GENRE).orEmpty(),
         )
     }
 
