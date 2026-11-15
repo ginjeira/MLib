@@ -817,6 +817,10 @@ fun SpotygramUI(
                                                     onOpen = { albumId = it },
                                                     onPlay = { track, tracks -> play(track, tracks) },
                                                     onDelete = { id -> app.action { app.library.deleteAlbum(id) } },
+                                                    onCreate = { title, artist, tracks ->
+                                                        app.action { app.library.createOrUpdateAlbum(title, artist, tracks) }
+                                                    },
+                                                    onDeduplicate = { app.action { app.library.deduplicateAlbums() } },
                                                 )
                                             else ->
                                                 SourcesScreen(
