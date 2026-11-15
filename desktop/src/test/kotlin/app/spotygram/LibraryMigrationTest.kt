@@ -10,6 +10,31 @@ import kotlinx.coroutines.runBlocking
 
 class LibraryMigrationTest {
     @Test
+    fun completingDeletedTargetAlbumDoesNotCreateReplacement() = runBlocking {
+        val root = Files.createTempDirectory("mlib-deleted-album").toFile()
+        val library = Library(MigrationPlatform(root))
+        try {
+            library.reload()
+            var rejected = false
+            try {
+                library.createOrUpdateAlbum(
+                    "Album",
+                    "Artist",
+                    emptyList(),
+                    targetAlbumId = "deleted-album-id",
+                )
+            } catch (_: IllegalStateException) {
+                rejected = true
+            }
+            assertTrue(rejected)
+            assertTrue(library.state.value.albums.isEmpty())
+        } finally {
+            library.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun albumMatchingKeepsDifferentKnownReleaseYearsSeparate() = runBlocking {
         val root = Files.createTempDirectory("mlib-album-editions").toFile()
         val library = Library(MigrationPlatform(root))
