@@ -87,6 +87,36 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun smallTitleTypoMatchesOnlyWithSameArtistAndDuration() {
+        assertTrue(
+            MusicAcquisitionRules.isSameRecording(
+                track("a", title = "One More Tiem"),
+                track("b", title = "One More Time", duration = 321),
+            )
+        )
+    }
+
+    @Test
+    fun fuzzyTitleDoesNotMatchWhenArtistDiffers() {
+        assertFalse(
+            MusicAcquisitionRules.isSameRecording(
+                track("a", title = "One More Tiem"),
+                track("b", title = "One More Time", artist = "Justice", duration = 321),
+            )
+        )
+    }
+
+    @Test
+    fun fuzzyTitleDoesNotMatchWhenDurationDiffers() {
+        assertFalse(
+            MusicAcquisitionRules.isSameRecording(
+                track("a", title = "One More Tiem", duration = 320),
+                track("b", title = "One More Time", duration = 330),
+            )
+        )
+    }
+
+    @Test
     fun matchingArtistDoesNotHideLargeDurationMismatch() {
         assertFalse(MusicAcquisitionRules.isSameRecording(track("a"), track("b", duration = 400)))
     }
