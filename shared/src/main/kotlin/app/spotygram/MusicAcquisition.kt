@@ -232,7 +232,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
         state.value = state.value.copy(acquiring = true, searching = false, progress = "", error = "", outcome = null)
         try {
-            val destination = app.telegram.request(json("getChat", "chat_id" to destinationChatId))
+            val destination = request(json("getChat", "chat_id" to destinationChatId))
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
             val destinationChoice = app.telegram.rememberChat(destination)
             app.library.source(destinationChoice, true)
@@ -350,7 +350,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             ?: error("Não existe nenhuma aquisição interrompida para retomar.")
         state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
         try {
-            val destination = app.telegram.request(json("getChat", "chat_id" to pending.destinationChatId))
+            val destination = request(json("getChat", "chat_id" to pending.destinationChatId))
             app.library.source(app.telegram.rememberChat(destination), true)
             app.refresh()
 
@@ -428,7 +428,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AcquiredItem {
         val botChatId = session.botChatId
         val latestBeforeSelection = latestMessageId(botChatId)
-        val searchMessage = app.telegram.request(
+        val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)
         )
         val clicked = clickNumberButton(searchMessage, option.number)
@@ -495,7 +495,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             // isolation: one failed message must not cancel the remaining tracks.
             for ((index, sourceMessage) in pendingMessages.withIndex()) {
                 try {
-                    val forwarded = app.telegram.request(
+                    val forwarded = request(
                         json(
                             "forwardMessages",
                             "chat_id" to destinationChatId,
@@ -584,8 +584,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private suspend fun resolveBot(): JSONObject {
-        val bot = app.telegram.request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
-        val account = app.telegram.request(json("getMe"))
+        val bot = request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
+        val account = request(json("getMe"))
         val startedKey = "music_bot_started_${account.getLong("id")}"
         if (!app.prefs.getBoolean(startedKey, false)) {
             sendText(bot.getLong("id"), "/start")
@@ -595,18 +595,20 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private suspend fun sendText(chatId: Long, text: String): JSONObject =
-        app.telegram.sendConfirmed(
-            json(
-                "sendMessage",
-                "chat_id" to chatId,
-                "input_message_content" to
-                    json(
-                        "inputMessageText",
-                        "text" to json("formattedText", "text" to text, "entities" to JSONArray()),
-                    ),
-            ),
-            timeout = 45_000,
-        )
+        withFloodWaitRetry {
+            app.telegram.sendConfirmed(
+                json(
+                    "sendMessage",
+                    "chat_id" to chatId,
+                    "input_message_content" to
+                        json(
+                            "inputMessageText",
+                            "text" to json("formattedText", "text" to text, "entities" to JSONArray()),
+                        ),
+                ),
+                timeout = 45_000,
+            )
+        }
 
     private suspend fun clickButton(message: JSONObject, keyword: String): Boolean {
         val markup = message.optJSONObject("reply_markup") ?: return false
@@ -625,7 +627,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (type.kind() != "inlineKeyboardButtonTypeCallback") continue
                 val data = type.optString("data")
                 if (data.isEmpty()) continue
-                app.telegram.request(
+                request(
                     json(
                         "getCallbackQueryAnswer",
                         "chat_id" to message.getLong("chat_id"),
@@ -654,7 +656,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (type.kind() != "inlineKeyboardButtonTypeCallback") continue
                 val data = type.optString("data")
                 if (data.isEmpty()) continue
-                app.telegram.request(
+                request(
                     json(
                         "getCallbackQueryAnswer",
                         "chat_id" to message.getLong("chat_id"),
@@ -697,7 +699,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val started = System.currentTimeMillis()
         while (System.currentTimeMillis() - started < timeoutMs) {
             val message = runCatching {
-                app.telegram.request(json("getMessage", "chat_id" to chatId, "message_id" to messageId))
+                request(json("getMessage", "chat_id" to chatId, "message_id" to messageId))
             }.getOrNull()
             if (message != null && predicate(message)) return message
             delay(400)
@@ -719,7 +721,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val started = System.currentTimeMillis()
         while (System.currentTimeMillis() - started < timeoutMs) {
             val edited = runCatching {
-                app.telegram.request(
+                request(
                     json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId)
                 )
             }.getOrNull()
@@ -737,12 +739,40 @@ class MusicAcquisition(private val app: SpotygramApp) {
         return null
     }
 
+    private suspend fun request(
+        query: JSONObject,
+        timeout: Long = 30_000,
+    ): JSONObject = withFloodWaitRetry { app.telegram.request(query, timeout) }
+
+    private suspend fun <T> withFloodWaitRetry(block: suspend () -> T): T {
+        var retries = 0
+        while (true) {
+            try {
+                return block()
+            } catch (error: TelegramException) {
+                if (error.code != 429) throw error
+                val waitSeconds = Regex("(?:FLOOD_WAIT_|retry after )(\\d+)", RegexOption.IGNORE_CASE)
+                    .find(error.message.orEmpty())
+                    ?.groupValues
+                    ?.get(1)
+                    ?.toLongOrNull()
+                    ?: 5L
+                if (retries >= 3 || waitSeconds > 900L) throw error
+                state.value = state.value.copy(
+                    progress = "O Telegram limitou temporariamente os pedidos. A aguardar ${waitSeconds}s…",
+                )
+                delay(waitSeconds.coerceAtLeast(1L) * 1_000L)
+                retries++
+            }
+        }
+    }
+
     private suspend fun history(
         chatId: Long,
         limit: Int,
         fromMessageId: Long = 0L,
     ): List<JSONObject> {
-        val response = app.telegram.request(
+        val response = request(
             json(
                 "getChatHistory",
                 "chat_id" to chatId,
