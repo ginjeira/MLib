@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @Composable
 fun AlbumsScreen(
@@ -37,6 +38,7 @@ fun AlbumsScreen(
     onRemoveTrack: (String, String) -> Unit,
     onReorder: (String, List<String>) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
+    onSuggestCovers: suspend (String, String) -> List<String>,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -51,6 +53,10 @@ fun AlbumsScreen(
     var editYear by remember { mutableStateOf("") }
     var editCover by remember { mutableStateOf("") }
     var editGenre by remember { mutableStateOf("") }
+    var coverSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var coverSearchBusy by remember { mutableStateOf(false) }
+    var coverSearchError by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     val current = selected?.let { album -> library.albums.firstOrNull { it.id == album.id } }
     LaunchedEffect(current?.id, library.albums) {
         if (selected != null && current == null) selected = null
@@ -73,7 +79,7 @@ fun AlbumsScreen(
                 TextButton(onClick = { onDownload(current) }) { Text("Descarregar") }
                 TextButton(onClick = {
                     editTitle = current.title; editArtist = current.artist; editYear = current.year
-                    editCover = current.coverUrl; editGenre = current.genre; editing = true
+                    editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
                 }) { Text("Editar") }
                 IconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
@@ -117,6 +123,29 @@ fun AlbumsScreen(
                         OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text("Ano") }, singleLine = true)
                         OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text("Género") }, singleLine = true)
                         OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text("URL da capa") }, singleLine = true)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(enabled = !coverSearchBusy && editTitle.isNotBlank(), onClick = {
+                                scope.launch {
+                                    coverSearchBusy = true
+                                    coverSearchError = ""
+                                    coverSuggestions = runCatching { onSuggestCovers(editTitle, editArtist) }
+                                        .getOrElse { coverSearchError = it.message ?: "Falha na pesquisa de capas"; emptyList() }
+                                    coverSearchBusy = false
+                                    if (coverSuggestions.isEmpty() && coverSearchError.isBlank()) coverSearchError = "Não foram encontradas capas."
+                                }
+                            }) { Text(if (coverSearchBusy) "A pesquisar…" else "Procurar capas") }
+                            if (coverSuggestions.isNotEmpty()) Text("${coverSuggestions.size} sugestões", style = MaterialTheme.typography.labelSmall)
+                        }
+                        if (coverSearchError.isNotBlank()) Text(coverSearchError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        coverSuggestions.take(8).forEach { cover ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { editCover = cover }.padding(vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                AsyncImage(model = cover, contentDescription = null, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
+                                Text("Usar esta capa", Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                     }
                 },
                 confirmButton = {
