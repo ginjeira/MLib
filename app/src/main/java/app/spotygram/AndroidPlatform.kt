@@ -183,6 +183,9 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE).orEmpty(),
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST).orEmpty(),
                 retriever.embeddedPicture?.takeIf { it.size < 8 * 1024 * 1024 },
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM).orEmpty(),
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR).orEmpty(),
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE).orEmpty(),
             )
         } finally {
             retriever.release()
