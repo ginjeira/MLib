@@ -93,22 +93,30 @@ internal object MusicAcquisitionRules {
         if (kotlin.math.abs(left.length - right.length) > (longest * 0.06).toInt().coerceAtLeast(1)) {
             return 0.0
         }
-        var previous = IntArray(right.length + 1) { it }
-        var current = IntArray(right.length + 1)
-        for (i in left.indices) {
-            current[0] = i + 1
-            for (j in right.indices) {
-                val substitution = if (left[i] == right[j]) 0 else 1
-                current[j + 1] = minOf(
-                    previous[j + 1] + 1,
-                    current[j] + 1,
-                    previous[j] + substitution,
+
+        // Optimal String Alignment distance treats a single adjacent character
+        // transposition as one edit (e.g. "Tiem" -> "Time"), which is a common
+        // filename/metadata typo. It remains gated by exact artist + duration.
+        val distance = Array(left.length + 1) { IntArray(right.length + 1) }
+        for (i in 0..left.length) distance[i][0] = i
+        for (j in 0..right.length) distance[0][j] = j
+        for (i in 1..left.length) {
+            for (j in 1..right.length) {
+                val substitution = if (left[i - 1] == right[j - 1]) 0 else 1
+                var best = minOf(
+                    distance[i - 1][j] + 1,
+                    distance[i][j - 1] + 1,
+                    distance[i - 1][j - 1] + substitution,
                 )
+                if (i > 1 && j > 1 &&
+                    left[i - 1] == right[j - 2] &&
+                    left[i - 2] == right[j - 1]
+                ) {
+                    best = minOf(best, distance[i - 2][j - 2] + 1)
+                }
+                distance[i][j] = best
             }
-            val swap = previous
-            previous = current
-            current = swap
         }
-        return 1.0 - previous[right.length].toDouble() / longest
+        return 1.0 - distance[left.length][right.length].toDouble() / longest
     }
 }
