@@ -104,8 +104,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         contentType: AcquisitionContentType,
         provider: AcquisitionProvider,
         targetAlbumId: String? = null,
+        allowPendingJob: Boolean = false,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
+        check(state.value.pendingJob == null || allowPendingJob) {
+            "Existe uma aquisição interrompida. Retoma-a ou descarta-a antes de iniciar outra."
+        }
         val query = sanitizeSearchQuery(rawQuery)
         require(query.length >= 2) { "Introduz pelo menos dois caracteres para pesquisar." }
 
@@ -226,7 +230,18 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
         require(selected.isNotEmpty()) { "Selecciona pelo menos um resultado." }
         require(session.targetAlbumId == null || selected.size == 1) {
-            "Para completar um álbum existente, selecciona apenas uma edição/resultando do bot de cada vez."
+            "Para completar um álbum existente, selecciona apenas uma edição do bot de cada vez."
+        }
+        val currentPending = state.value.pendingJob
+        require(currentPending == null ||
+            (currentPending.query == session.search.query &&
+                currentPending.contentType == session.search.contentType &&
+                currentPending.provider == session.search.provider &&
+                currentPending.selectedTitles == selected.map { it.title } &&
+                currentPending.destinationChatId == destinationChatId &&
+                currentPending.targetAlbumId == session.targetAlbumId)
+        ) {
+            "Existe outra aquisição interrompida. Retoma-a ou descarta-a antes de iniciar esta."
         }
         val pending = PendingAcquisitionJob(
             query = session.search.query,
@@ -369,6 +384,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 pending.contentType,
                 pending.provider,
                 pending.targetAlbumId,
+                allowPendingJob = true,
             )
             val selectedNumbers = pending.selectedTitles.map { title ->
                 val matches = refreshedSearch.results.filter {
@@ -423,6 +439,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .put("updated_at", System.currentTimeMillis())
         app.prefs.edit().putString(pendingJobKey, json.toString()).apply()
         state.value = state.value.copy(pendingJob = job)
+    }
+
+    fun discardPending() {
+        clearPendingJob()
     }
 
     private fun clearPendingJob() {
