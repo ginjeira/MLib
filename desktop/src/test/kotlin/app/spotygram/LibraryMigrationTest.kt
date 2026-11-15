@@ -10,6 +10,26 @@ import kotlinx.coroutines.runBlocking
 
 class LibraryMigrationTest {
     @Test
+    fun albumMatchingKeepsDifferentKnownReleaseYearsSeparate() = runBlocking {
+        val root = Files.createTempDirectory("mlib-album-editions").toFile()
+        val library = Library(MigrationPlatform(root))
+        try {
+            library.reload()
+            val first = library.createOrUpdateAlbum("Greatest Hits", "Example Artist", emptyList(), year = "1998")
+            val second = library.createOrUpdateAlbum("Greatest Hits", "Example Artist", emptyList(), year = "2024")
+
+            assertTrue(first != second)
+            assertEquals(2, library.state.value.albums.size)
+
+            library.deduplicateAlbums()
+            assertEquals(2, library.state.value.albums.size)
+        } finally {
+            library.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun upgradingVersionSevenPreservesLibraryAndSyncJournal() = runBlocking {
         val root = Files.createTempDirectory("mlib-migration").toFile()
         val databaseFile = File(root, "library.db")
