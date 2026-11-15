@@ -38,6 +38,7 @@ class PlaybackService : MediaLibraryService() {
         private const val FAVORITES = "mlib:favorites"
         private const val TRACK_PREFIX = "track:"
         private const val PLAYLIST_PREFIX = "playlist:"
+         private const val ALBUM_PREFIX = "album:"
     }
 
     override fun onCreate() {
