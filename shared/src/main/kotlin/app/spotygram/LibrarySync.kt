@@ -683,7 +683,7 @@ class LibrarySync(
             if (value("album/$uid/deleted") == true) {
                 if (id.isNotEmpty()) {
                     db.execSQL("DELETE FROM album_tracks WHERE album_id=?", arrayOf(id))
-                    db.execSQL("DELETE FROM albums WHERE id=? AND account=?", arrayOf(id, account))
+                    db.execSQL("DELETE FROM albums WHERE id=? AND account=?", arrayOf<Any>(id, account))
                 }
                 continue
             }
