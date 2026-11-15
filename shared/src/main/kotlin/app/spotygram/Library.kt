@@ -710,7 +710,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         val normalizedTitle = normalizeMusicText(title)
         val normalizedArtist = normalizeMusicText(artist)
         val id = writableDatabase.transaction {
-            val existing = rawQuery("SELECT id,title,artist FROM albums", null).use { c ->
+            val existing = rawQuery("SELECT id,title,artist FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
                 var match: String? = null
                 while (c.moveToNext() && match == null) {
                     if (normalizeMusicText(c.getString(1)) == normalizedTitle &&
