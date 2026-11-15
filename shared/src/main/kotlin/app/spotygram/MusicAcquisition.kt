@@ -239,7 +239,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (session.search.contentType == AcquisitionContentType.ALBUM) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val first = item.tracks.first()
-                    val title = item.option.title.substringBefore(" (").trim().ifBlank { item.option.title }
+                    val title = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
                     val albumId = app.library.createOrUpdateAlbum(
                         title = title,
                         artist = first.artist,
@@ -254,15 +254,16 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (session.search.contentType == AcquisitionContentType.PLAYLIST && autoCreatePlaylist) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
+                    val playlistName = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
                     val existing = app.library.state.value.playlists.firstOrNull {
-                        normalizeMusicText(it.name) == normalizeMusicText(item.option.title)
+                        normalizeMusicText(it.name) == normalizeMusicText(playlistName)
                     }
                     playlistId =
                         if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)
                             existing.id
                         } else {
-                            app.library.createPlaylist(item.option.title, ids)
+                            app.library.createPlaylist(playlistName, ids)
                         }
                 }
             }
