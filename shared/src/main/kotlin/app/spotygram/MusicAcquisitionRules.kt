@@ -59,7 +59,7 @@ internal object MusicAcquisitionRules {
         val fuzzyTitle = !exactTitle &&
             bothArtistsKnown &&
             durationDifference <= 2 &&
-            titleSimilarity(candidateTitle, existingTitle) >= 0.94
+            titleSimilarity(candidateTitle, existingTitle) >= 0.92
         if (!exactTitle && !fuzzyTitle) return false
 
         if (bothArtistsKnown) {
