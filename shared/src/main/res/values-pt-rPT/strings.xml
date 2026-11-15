@@ -440,6 +440,9 @@
     <string name="share_confirmation_missing">O Telegram não confirmou o envio. Verifique a conversa antes de tentar novamente.</string>
     <string name="music_acquisition">Descobrir música</string>
     <string name="acquisition_help">Pesquisa no bot de música do Telegram, escolhe faixas ou colecções e adiciona o áudio à tua biblioteca MLib. É utilizada a sessão Telegram que já tens autenticada.</string>
+    <string name="acquisition_interrupted">Existe uma aquisição interrompida guardada: %1$s</string>
+    <string name="acquisition_resume_pending">Retomar aquisição</string>
+    <string name="acquisition_artist_help">A pesquisa por artista devolve opções de faixas individuais do bot. Selecciona as faixas pretendidas; o MLib não cria álbuns ou playlists fictícios.</string>
     <string name="acquisition_query">Artista, música ou colecção</string>
     <string name="acquisition_type">Tipo de conteúdo</string>
     <string name="acquisition_provider">Fornecedor</string>
