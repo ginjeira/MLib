@@ -821,6 +821,7 @@ fun SpotygramUI(
                                                         app.action { app.library.createOrUpdateAlbum(title, artist, tracks) }
                                                     },
                                                     onDeduplicate = { app.action { app.library.deduplicateAlbums() } },
+                                                    onAutoDetect = { app.action { app.autoDetectAlbums() } },
                                                     onUpdate = { id, title, artist, year, cover, genre ->
                                                         app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
                                                     },
