@@ -201,12 +201,16 @@ jobs:
         run: python3 tools/build-desktop.py --image-only
       - name: Verify desktop launcher and runtime image
         run: |
-          IMAGE="$MLIB_STATE/build/desktop/distributions/main/app/Spotygram"
-          echo "Inspecting desktop image: $IMAGE"
-          find "$IMAGE" -maxdepth 3 -type f -printf '%M %p\n' | head -80
+          APP_DIR="$MLIB_STATE/build/desktop/distributions/main/app"
+          echo "Inspecting desktop distribution: $APP_DIR"
+          test -d "$APP_DIR"
+          find "$APP_DIR" -maxdepth 3 -type f -printf '%M %p\n' | head -80
+          IMAGE="$(find "$APP_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          test -n "$IMAGE"
           LAUNCHER="$(find "$IMAGE/bin" -maxdepth 1 -type f -executable -print -quit)"
           CONFIG="$(find "$IMAGE/lib/app" -maxdepth 1 -type f -name '*.cfg' -print -quit)"
           test -n "$LAUNCHER" && test -x "$LAUNCHER"
           test -n "$CONFIG" && test -s "$CONFIG"
+          echo "Desktop image: $IMAGE"
           echo "Desktop launcher: $LAUNCHER"
           echo "Desktop config: $CONFIG"
