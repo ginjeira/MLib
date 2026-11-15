@@ -10,6 +10,32 @@ import kotlinx.coroutines.runBlocking
 
 class LibraryMigrationTest {
     @Test
+    fun upgradingSchemaNineAddsMissingAlbumTables() = runBlocking {
+        val root = Files.createTempDirectory("mlib-schema-nine").toFile()
+        val initial = Library(MigrationPlatform(root))
+        try {
+            initial.reload()
+        } finally {
+            initial.close()
+        }
+        DesktopDatabase(File(root, "library.db")).use { db ->
+            db.execSQL("DROP TABLE album_tracks")
+            db.execSQL("DROP TABLE albums")
+            db.execSQL("PRAGMA user_version=9")
+        }
+
+        val upgraded = Library(MigrationPlatform(root))
+        try {
+            upgraded.reload()
+            val id = upgraded.createOrUpdateAlbum("Album", "Artist", emptyList(), year = "2025")
+            assertEquals(id, upgraded.state.value.albums.single().id)
+        } finally {
+            upgraded.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun completingDeletedTargetAlbumDoesNotCreateReplacement() = runBlocking {
         val root = Files.createTempDirectory("mlib-deleted-album").toFile()
         val library = Library(MigrationPlatform(root))
