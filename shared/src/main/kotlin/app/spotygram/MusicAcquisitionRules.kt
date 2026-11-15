@@ -42,7 +42,7 @@ internal object MusicAcquisitionRules {
 
         val candidateTitle = normalizeMusicText(candidate.title)
         val existingTitle = normalizeMusicText(existing.title)
-        if (candidateTitle.isEmpty() || candidateTitle != existingTitle) return false
+        if (candidateTitle.isEmpty() || existingTitle.isEmpty()) return false
 
         val candidateArtist = normalizeMusicText(candidate.artist)
         val existingArtist = normalizeMusicText(existing.artist)
@@ -50,17 +50,52 @@ internal object MusicAcquisitionRules {
         if (bothArtistsKnown && candidateArtist != existingArtist) return false
 
         val bothDurationsKnown = candidate.duration > 0 && existing.duration > 0
+        val durationDifference = if (bothDurationsKnown)
+            kotlin.math.abs(candidate.duration - existing.duration) else Int.MAX_VALUE
+        val exactTitle = candidateTitle == existingTitle
+        // Fuzzy title matching is deliberately gated by corroborating metadata:
+        // same known artist and near-identical known duration. Never merge on
+        // a similar title alone.
+        val fuzzyTitle = !exactTitle &&
+            bothArtistsKnown &&
+            durationDifference <= 2 &&
+            titleSimilarity(candidateTitle, existingTitle) >= 0.94
+        if (!exactTitle && !fuzzyTitle) return false
+
         if (bothArtistsKnown) {
-            return !bothDurationsKnown ||
-                kotlin.math.abs(candidate.duration - existing.duration) <= 3
+            return !bothDurationsKnown || durationDifference <= 3
         }
 
-        if (bothDurationsKnown &&
-            kotlin.math.abs(candidate.duration - existing.duration) <= 2
-        ) return true
+        if (bothDurationsKnown && durationDifference <= 2) return exactTitle
 
         val bothSizesKnown = candidate.size > 0 && existing.size > 0
-        return bothSizesKnown && candidate.size == existing.size &&
+        return exactTitle && bothSizesKnown && candidate.size == existing.size &&
             bothArtistsKnown && candidateArtist == existingArtist
+    }
+
+    private fun titleSimilarity(left: String, right: String): Double {
+        if (left == right) return 1.0
+        val longest = maxOf(left.length, right.length)
+        if (longest == 0) return 1.0
+        if (kotlin.math.abs(left.length - right.length) > (longest * 0.06).toInt().coerceAtLeast(1)) {
+            return 0.0
+        }
+        var previous = IntArray(right.length + 1) { it }
+        var current = IntArray(right.length + 1)
+        for (i in left.indices) {
+            current[0] = i + 1
+            for (j in right.indices) {
+                val substitution = if (left[i] == right[j]) 0 else 1
+                current[j + 1] = minOf(
+                    previous[j + 1] + 1,
+                    current[j] + 1,
+                    previous[j] + substitution,
+                )
+            }
+            val swap = previous
+            previous = current
+            current = swap
+        }
+        return 1.0 - previous[right.length].toDouble() / longest
     }
 }
