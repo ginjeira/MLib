@@ -40,6 +40,9 @@ class LibraryMigrationTest {
             assertEquals("Test Track", library.state.value.tracks.single().title)
             assertEquals("GinjMusic", library.state.value.sources.single().title)
             assertEquals("favorite/123:456", library.sync.records().single().key)
+            library.createOrUpdateAlbum("Test Album", "Test Artist", listOf("123:456"), year = "2024")
+            assertEquals("Test Album", library.state.value.albums.single().title)
+            assertEquals(listOf("123:456"), library.state.value.albums.single().tracks)
         } finally {
             library.close()
         }
@@ -51,6 +54,8 @@ class LibraryMigrationTest {
                 assertEquals("Test Track", reopened.state.value.tracks.single().title)
                 assertEquals(123L, reopened.sync.account)
                 assertTrue(reopened.sync.records().isNotEmpty())
+                assertEquals("Test Album", reopened.state.value.albums.single().title)
+                assertEquals(listOf("123:456"), reopened.state.value.albums.single().tracks)
             } finally {
                 reopened.close()
             }
