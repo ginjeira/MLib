@@ -117,6 +117,16 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun adjacentTitleTranspositionMatchesWithSameArtistAndDuration() {
+        assertTrue(
+            MusicAcquisitionRules.isSameRecording(
+                track("a", title = "One More Tiem"),
+                track("b", title = "One More Time", duration = 321),
+            )
+        )
+    }
+
+    @Test
     fun fuzzyTitleDoesNotMatchWhenArtistDiffers() {
         assertFalse(
             MusicAcquisitionRules.isSameRecording(
