@@ -41,6 +41,16 @@ data class AcquisitionOutcome(
     val note: String = "",
 )
 
+data class PendingAcquisitionJob(
+    val query: String,
+    val contentType: AcquisitionContentType,
+    val provider: AcquisitionProvider,
+    val selectedTitles: List<String>,
+    val destinationChatId: Long,
+    val targetAlbumId: String? = null,
+    val updatedAt: Long = System.currentTimeMillis(),
+)
+
 data class AcquisitionState(
     val searching: Boolean = false,
     val acquiring: Boolean = false,
@@ -48,12 +58,14 @@ data class AcquisitionState(
     val error: String = "",
     val search: AcquisitionSearch? = null,
     val outcome: AcquisitionOutcome? = null,
+    val pendingJob: PendingAcquisitionJob? = null,
 )
 
 private data class SearchSession(
     val search: AcquisitionSearch,
     val botChatId: Long,
     val resultMessageId: Long,
+    val targetAlbumId: String? = null,
 )
 
 private data class AcquiredItem(
@@ -76,11 +88,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
     // messages/callbacks must not be interleaved by simultaneous MLib requests.
     private val botLane = Mutex()
     private val searches = linkedMapOf<String, SearchSession>()
+    private val pendingJobKey = "mlib_pending_music_acquisition"
+
+    init {
+        state.value = state.value.copy(pendingJob = readPendingJob())
+    }
 
     suspend fun search(
         rawQuery: String,
         contentType: AcquisitionContentType,
         provider: AcquisitionProvider,
+        targetAlbumId: String? = null,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
         val query = sanitizeSearchQuery(rawQuery)
@@ -167,7 +185,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 results = options,
                 expiresAt = System.currentTimeMillis() + 20 * 60 * 1000L,
             )
-            searches[search.id] = SearchSession(search, bot.getLong("id"), resultMessage.getLong("id"))
+            searches[search.id] = SearchSession(
+                search, bot.getLong("id"), resultMessage.getLong("id"), targetAlbumId,
+            )
             while (searches.size > 12) searches.remove(searches.keys.first())
             state.value = state.value.copy(
                 searching = false,
@@ -200,6 +220,15 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 ?: error("A opção $number já não pertence a esta pesquisa.")
         }
         require(selected.isNotEmpty()) { "Selecciona pelo menos um resultado." }
+        val pending = PendingAcquisitionJob(
+            query = session.search.query,
+            contentType = session.search.contentType,
+            provider = session.search.provider,
+            selectedTitles = selected.map { it.title },
+            destinationChatId = destinationChatId,
+            targetAlbumId = session.targetAlbumId,
+        )
+        persistPendingJob(pending)
 
         state.value = state.value.copy(acquiring = true, searching = false, progress = "", error = "", outcome = null)
         try {
@@ -246,6 +275,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         tracks = item.tracks.map { it.id },
                         year = "",
                         coverUrl = first.art,
+                        targetAlbumId = session.targetAlbumId,
                     )
                     acquiredAlbums += albumId
                 }
@@ -286,10 +316,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     else -> ""
                 },
             )
+            val remainingJob = pending.takeIf { failedCount > 0 }
+            if (remainingJob == null) clearPendingJob() else persistPendingJob(remainingJob)
             state.value = state.value.copy(
                 acquiring = false,
                 progress = "",
                 outcome = outcome,
+                pendingJob = remainingJob,
                 error = completed.filter { it.error.isNotEmpty() }
                     .joinToString("\n") { "${it.option.title}: ${it.error}" },
             )
@@ -299,6 +332,83 @@ class MusicAcquisition(private val app: SpotygramApp) {
             state.value = state.value.copy(acquiring = false, progress = "", error = friendly(error))
             throw error
         }
+    }
+
+    /**
+     * Rebuilds the bot search after process death and retries the selected results.
+     * The destination is refreshed first, so audio forwarded just before a crash
+     * is indexed and reused instead of being forwarded a second time.
+     */
+    suspend fun resumePending(): AcquisitionOutcome {
+        val pending = state.value.pendingJob ?: readPendingJob()
+            ?: error("Não existe nenhuma aquisição interrompida para retomar.")
+        state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
+        try {
+            val destination = app.telegram.request(json("getChat", "chat_id" to pending.destinationChatId))
+            app.library.source(app.telegram.rememberChat(destination), true)
+            app.refresh()
+
+            val refreshedSearch = search(
+                pending.query,
+                pending.contentType,
+                pending.provider,
+                pending.targetAlbumId,
+            )
+            val selectedNumbers = pending.selectedTitles.map { title ->
+                val matches = refreshedSearch.results.filter {
+                    normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(it.title)) ==
+                        normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(title))
+                }
+                check(matches.size == 1) {
+                    "Não foi possível identificar sem ambiguidades o resultado '${title}' após recuperar a pesquisa."
+                }
+                matches.single().number
+            }
+            return acquire(refreshedSearch.id, selectedNumbers, pending.destinationChatId)
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            state.value = state.value.copy(
+                acquiring = false,
+                searching = false,
+                progress = "",
+                pendingJob = pending,
+                error = friendly(error),
+            )
+            throw error
+        }
+    }
+
+    private fun readPendingJob(): PendingAcquisitionJob? = runCatching {
+        val raw = app.prefs.getString(pendingJobKey, null) ?: return null
+        val json = JSONObject(raw)
+        val titles = json.optJSONArray("selected_titles") ?: JSONArray()
+        PendingAcquisitionJob(
+            query = json.getString("query"),
+            contentType = AcquisitionContentType.valueOf(json.getString("content_type")),
+            provider = AcquisitionProvider.valueOf(json.getString("provider")),
+            selectedTitles = (0 until titles.length()).map { titles.getString(it) },
+            destinationChatId = json.getLong("destination_chat_id"),
+            targetAlbumId = json.optString("target_album_id").takeIf(String::isNotBlank),
+            updatedAt = json.optLong("updated_at", System.currentTimeMillis()),
+        )
+    }.getOrNull()
+
+    private fun persistPendingJob(job: PendingAcquisitionJob) {
+        val json = JSONObject()
+            .put("query", job.query)
+            .put("content_type", job.contentType.name)
+            .put("provider", job.provider.name)
+            .put("selected_titles", JSONArray(job.selectedTitles))
+            .put("destination_chat_id", job.destinationChatId)
+            .put("target_album_id", job.targetAlbumId ?: JSONObject.NULL)
+            .put("updated_at", System.currentTimeMillis())
+        app.prefs.edit().putString(pendingJobKey, json.toString()).apply()
+        state.value = state.value.copy(pendingJob = job)
+    }
+
+    private fun clearPendingJob() {
+        app.prefs.edit().remove(pendingJobKey).apply()
+        state.value = state.value.copy(pendingJob = null)
     }
 
     private suspend fun acquireOption(
