@@ -225,6 +225,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 ?: error("A opção $number já não pertence a esta pesquisa.")
         }
         require(selected.isNotEmpty()) { "Selecciona pelo menos um resultado." }
+        require(session.targetAlbumId == null || selected.size == 1) {
+            "Para completar um álbum existente, selecciona apenas uma edição/resultando do bot de cada vez."
+        }
         val pending = PendingAcquisitionJob(
             query = session.search.query,
             contentType = session.search.contentType,
