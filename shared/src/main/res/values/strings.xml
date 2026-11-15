@@ -454,4 +454,8 @@
     <string name="acquisition_artist">Artists</string>
     <string name="acquisition_deezer">Deezer</string>
     <string name="acquisition_soundcloud">SoundCloud</string>
+    <string name="albums">Albums</string>
+    <string name="album_tracks">%1$d tracks</string>
+    <string name="albums_empty">There are no albums in the library yet.</string>
+    <string name="album_delete">Delete album</string>
 </resources>
