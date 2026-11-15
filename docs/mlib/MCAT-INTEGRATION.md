@@ -92,7 +92,7 @@ Fluxo actual:
 9. As mensagens encaminhadas são interpretadas pelo parser existente e gravadas no catálogo SQLite.
 10. Para resultados do tipo playlist, MLib cria/actualiza uma playlist local com ordem preservada; a criação automática é configurável e fica activa por defeito.
 11. Para resultados do tipo álbum, MLib cria/actualiza uma entidade de álbum separada. O botão de completar álbum encaminha o resultado para o álbum escolhido, reutilizando faixas já existentes na biblioteca e acrescentando as restantes.
-12. Para resultados do tipo artista, o bot devolve opções de faixas individuais; as opções seleccionadas são importadas como faixas, sem criar um álbum ou playlist fictícios.
+12. Para resultados do tipo artista, o bot devolve opções do bot que podem devolver uma ou várias faixas conforme a contagem; as faixas seleccionadas são importadas individualmente, sem criar um álbum ou playlist fictícios.
 13. O trabalho seleccionado é guardado nas preferências MLib. Após reinício, a pesquisa é reconstruída, o destino é actualizado e as opções são repetidas de forma idempotente através da deduplicação.
 
 A conversa com o bot é serializada por um `Mutex` único. Isto evita que pesquisas e aquisições iniciadas no MLib misturem callbacks e respostas. As pesquisas mantêm validade local de 20 minutos.
