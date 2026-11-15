@@ -29,6 +29,7 @@ fun AlbumsScreen(
     onDelete: (String) -> Unit,
     onCreate: (String, String, List<String>) -> Unit,
     onDeduplicate: () -> Unit,
+    onAutoDetect: () -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
@@ -138,6 +139,7 @@ fun AlbumsScreen(
             ) {
                 Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onAutoDetect) { Text("Detectar álbuns") }
                 TextButton(onClick = onDeduplicate) { Text("Unificar duplicados") }
                 TextButton(onClick = { creating = true }) { Text("Novo álbum") }
             }
