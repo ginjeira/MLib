@@ -822,6 +822,8 @@ fun SpotygramUI(
                                                     },
                                                     onDeduplicate = { app.action { app.library.deduplicateAlbums() } },
                                                     onAutoDetect = { app.action { app.autoDetectAlbums() } },
+                                                    onRemoveTrack = { id, track -> app.action { app.library.removeFromAlbum(id, listOf(track)) } },
+                                                    onReorder = { id, order -> app.action { app.library.reorderAlbum(id, order) } },
                                                     onDownload = { album ->
                                                         app.action {
                                                             app.acquisition.search(album.title, AcquisitionContentType.ALBUM, AcquisitionProvider.DEEZER)
