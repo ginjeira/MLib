@@ -754,6 +754,33 @@ class Library(private val platform: Platform) : AutoCloseable {
         id
     }
 
+    suspend fun updateAlbumMetadata(
+        id: String,
+        title: String,
+        artist: String,
+        year: String = "",
+        coverUrl: String = "",
+        genre: String = "",
+    ) = withContext(Dispatchers.IO) {
+        require(title.isNotBlank() && artist.isNotBlank())
+        writableDatabase.transaction {
+            val created = rawQuery("SELECT created_at FROM albums WHERE id=? AND account=?", arrayOf(id,sync.account.toString())).use { c ->
+                check(c.moveToFirst())
+                c.getLong(0)
+            }
+            val updated = System.currentTimeMillis()
+            execSQL(
+                "UPDATE albums SET title=?,artist=?,year=?,cover_url=?,genre=?,updated_at=? WHERE id=? AND account=?",
+                arrayOf<Any>(title.trim(),artist.trim(),year.trim(),coverUrl.trim(),genre.trim(),updated,id,sync.account),
+            )
+            val metadata = JSONObject().put("title",title.trim()).put("artist",artist.trim())
+                .put("year",year.trim()).put("cover",coverUrl.trim()).put("genre",genre.trim())
+                .put("auto",false).put("created",created).put("updated",updated)
+            sync.edit(this,mapOf("album/$id/metadata" to metadata))
+        }
+        reload()
+    }
+
     suspend fun reorderAlbum(id: String, order: List<String>) = withContext(Dispatchers.IO) {
         writableDatabase.transaction {
             val current = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id)).use { c ->
