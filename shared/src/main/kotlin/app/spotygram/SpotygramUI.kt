@@ -70,7 +70,7 @@ fun SpotygramUI(
     val playing = observePlayer(player).copy(order = mode.order, repeat = mode.repeat)
     var localMode by rememberSaveable { mutableStateOf(app.prefs.getBoolean("local_mode", false)) }
     var connect by rememberSaveable { mutableStateOf(false) }
-    val destinationKeys = listOf("music", "favorites", "playlists", "chats")
+    val destinationKeys = listOf("music", "favorites", "playlists", "albums", "chats")
     var tab by rememberSaveable {
         mutableIntStateOf(
             destinationKeys
@@ -83,6 +83,7 @@ fun SpotygramUI(
     var selectedTrackId by remember { mutableStateOf<String?>(null) }
     var trackAnchor by remember { mutableStateOf(IntRect.Zero) }
     var playlistId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var albumId by rememberSaveable { mutableStateOf<String?>(null) }
     var sourceId by rememberSaveable { mutableStateOf<String?>(null) }
     var profileId by rememberSaveable { mutableStateOf<Long?>(null) }
     var profileHint by remember { mutableStateOf<UserProfile?>(null) }
@@ -589,6 +590,9 @@ fun SpotygramUI(
                                                                 (tr(R.string.playlists) to
                                                                     Icons.Rounded.PlaylistPlay),
                                                             3 to
+                                                                (tr(R.string.albums) to
+                                                                    Icons.Rounded.Album),
+                                                            4 to
                                                                 (tr(R.string.sources) to
                                                                     Icons.Rounded.Widgets),
                                                         )
@@ -806,6 +810,13 @@ fun SpotygramUI(
                                                         managedPlaylist = it
                                                         sheet = "playlist"
                                                     },
+                                                )
+                                            tab == 3 ->
+                                                AlbumsScreen(
+                                                    library = library,
+                                                    onOpen = { albumId = it },
+                                                    onPlay = { track, tracks -> play(track, tracks) },
+                                                    onDelete = { id -> app.action { app.library.deleteAlbum(id) } },
                                                 )
                                             else ->
                                                 SourcesScreen(
