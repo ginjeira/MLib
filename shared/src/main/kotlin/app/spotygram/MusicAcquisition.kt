@@ -249,7 +249,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     acquiredAlbums += albumId
                 }
             }
-            if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
+            val autoCreatePlaylist = app.prefs.getBoolean("auto_create_acquisition_playlists", true)
+            if (session.search.contentType == AcquisitionContentType.PLAYLIST && autoCreatePlaylist) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val existing = app.library.state.value.playlists.firstOrNull {
@@ -278,6 +279,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         else "${acquiredAlbums.size} álbum(ns) criado(s) na biblioteca."
                     AcquisitionContentType.ARTIST ->
                         "As faixas seleccionadas foram adicionadas; a aquisição integral e organização por artista ainda precisa de validação."
+                    AcquisitionContentType.PLAYLIST ->
+                        if (autoCreatePlaylist) "" else "As faixas foram adicionadas à biblioteca sem criar uma playlist local."
                     else -> ""
                 },
             )
