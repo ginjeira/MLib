@@ -62,6 +62,16 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun reversedArtistAndTitleMetadataMatchesWithCompatibleDuration() {
+        assertTrue(
+            MusicAcquisitionRules.isSameRecording(
+                track("a", title = "One More Time", artist = "Daft Punk"),
+                track("b", title = "Daft Punk", artist = "One More Time", duration = 322),
+            )
+        )
+    }
+
+    @Test
     fun sameTitleWithDifferentKnownArtistsIsNotDuplicate() {
         assertFalse(MusicAcquisitionRules.isSameRecording(track("a"), track("b", artist = "Justice")))
     }
