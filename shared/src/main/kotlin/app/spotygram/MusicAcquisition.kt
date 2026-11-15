@@ -244,12 +244,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
             val destinationChoice = app.telegram.rememberChat(destination)
             app.library.source(destinationChoice, true)
-            if (app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed != true) {
-                state.value = state.value.copy(progress = "A indexar o histórico de música do destino para evitar duplicados…")
-                app.refresh()
-                check(app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed == true) {
-                    "Não foi possível indexar completamente o destino. A aquisição foi interrompida para evitar duplicados."
-                }
+            // A source marked complete can still have new messages since its
+            // previous scan. Always catch up before deduplication, not only on
+            // first-time indexing; this also closes the crash-after-forward gap.
+            state.value = state.value.copy(progress = "A actualizar o histórico do destino para evitar duplicados…")
+            app.refresh()
+            check(app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed == true) {
+                "Não foi possível indexar completamente o destino. A aquisição foi interrompida para evitar duplicados."
             }
 
             val completed = mutableListOf<AcquiredItem>()
@@ -362,7 +363,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
         try {
             val destination = request(json("getChat", "chat_id" to pending.destinationChatId))
             app.library.source(app.telegram.rememberChat(destination), true)
-            app.refresh()
 
             val refreshedSearch = search(
                 pending.query,
