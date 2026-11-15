@@ -37,7 +37,7 @@ class LibrarySync(
     }
 
     companion object {
-        const val FORMAT = 4
+        const val FORMAT = 5
         private val localPlaybackSettings =
             setOf("setting/speed", "setting/order", "setting/repeat")
         val settings =
