@@ -797,6 +797,41 @@ class SpotygramApp(val platform: Platform) {
             .getString("link")
     }
 
+    suspend fun suggestAlbumCovers(title: String, artist: String): List<String> = withContext(Dispatchers.IO) {
+        val term = listOf(artist, title).filter(String::isNotBlank).joinToString(" ")
+        require(term.isNotBlank()) { "Indica o título ou artista do álbum." }
+        val suggestions = linkedSetOf<String>()
+        fun fetch(url: String, parse: (JSONObject) -> Unit) {
+            val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            try {
+                connection.connectTimeout = 8_000
+                connection.readTimeout = 8_000
+                connection.setRequestProperty("User-Agent", "MLib/1.0")
+                if (connection.responseCode in 200..299) parse(JSONObject(connection.inputStream.bufferedReader().use { it.readText() }))
+            } finally { connection.disconnect() }
+        }
+        val encoded = java.net.URLEncoder.encode(term, Charsets.UTF_8.name())
+        runCatching {
+            fetch("https://itunes.apple.com/search?term=$encoded&entity=album&limit=15") { json ->
+                val results = json.optJSONArray("results") ?: JSONArray()
+                for (i in 0 until results.length()) {
+                    val artwork = results.optJSONObject(i)?.optString("artworkUrl100").orEmpty()
+                    if (artwork.startsWith("https://")) suggestions += artwork.replace("100x100bb", "600x600bb")
+                }
+            }
+        }
+        runCatching {
+            fetch("https://api.deezer.com/search/album?q=$encoded&limit=15") { json ->
+                val results = json.optJSONArray("data") ?: JSONArray()
+                for (i in 0 until results.length()) {
+                    val cover = results.optJSONObject(i)?.optString("cover_xl").orEmpty()
+                    if (cover.startsWith("https://")) suggestions += cover
+                }
+            }
+        }
+        suggestions.take(20)
+    }
+
     suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
         awaitLibrary()
         val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }
