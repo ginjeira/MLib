@@ -704,21 +704,29 @@ class Library(private val platform: Platform) : AutoCloseable {
         coverUrl: String = "",
         genre: String = "",
         isAutoDetected: Boolean = false,
+        targetAlbumId: String? = null,
     ): String = withContext(Dispatchers.IO) {
         require(title.isNotBlank()) { "O álbum tem de ter um título." }
         val now = System.currentTimeMillis()
         val normalizedTitle = normalizeAlbumText(title)
         val normalizedArtist = normalizeAlbumText(artist)
         val id = writableDatabase.transaction {
-            val existing = rawQuery("SELECT id,title,artist FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
-                var match: String? = null
-                while (c.moveToNext() && match == null) {
-                    if (normalizeAlbumText(c.getString(1)) == normalizedTitle &&
-                        normalizeAlbumText(c.getString(2)) == normalizedArtist
-                    ) match = c.getString(0)
+            val targetExists = targetAlbumId?.let { target ->
+                rawQuery(
+                    "SELECT id FROM albums WHERE id=? AND account=?",
+                    arrayOf(target, sync.account.toString()),
+                ).use { it.moveToFirst() }
+            } == true
+            val existing = if (targetExists) targetAlbumId else
+                rawQuery("SELECT id,title,artist FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
+                    var match: String? = null
+                    while (c.moveToNext() && match == null) {
+                        if (normalizeAlbumText(c.getString(1)) == normalizedTitle &&
+                            normalizeAlbumText(c.getString(2)) == normalizedArtist
+                        ) match = c.getString(0)
+                    }
+                    match
                 }
-                match
-            }
             val albumId = existing ?: UUID.randomUUID().toString()
             if (existing == null) {
                 execSQL(
