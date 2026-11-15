@@ -563,7 +563,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val maxWait = if (multiTrack) 240_000L else 45_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
-            val messages = history(botChatId, 100)
+            val messages = historyAfter(botChatId, afterMessageId)
             for (message in messages) {
                 val id = message.optLong("id")
                 if (id <= afterMessageId) continue
@@ -737,12 +737,16 @@ class MusicAcquisition(private val app: SpotygramApp) {
         return null
     }
 
-    private suspend fun history(chatId: Long, limit: Int): List<JSONObject> {
+    private suspend fun history(
+        chatId: Long,
+        limit: Int,
+        fromMessageId: Long = 0L,
+    ): List<JSONObject> {
         val response = app.telegram.request(
             json(
                 "getChatHistory",
                 "chat_id" to chatId,
-                "from_message_id" to 0,
+                "from_message_id" to fromMessageId,
                 "offset" to 0,
                 "limit" to limit.coerceIn(1, 100),
                 "only_local" to false,
@@ -751,6 +755,31 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
         val messages = response.optJSONArray("messages") ?: return emptyList()
         return (0 until messages.length()).mapNotNull { messages.optJSONObject(it) }
+    }
+
+    /**
+     * Telegram returns chat history in reverse chronological order and caps
+     * each response at 100 messages. Page backwards to the cursor captured
+     * immediately before selecting the bot result, otherwise large playlists
+     * silently lose the oldest tracks once the bot emits more than 100 messages.
+     */
+    private suspend fun historyAfter(chatId: Long, afterMessageId: Long): List<JSONObject> {
+        val collected = linkedMapOf<Long, JSONObject>()
+        var fromMessageId = 0L
+        var pages = 0
+        while (pages < 20 && collected.size < 2_000) {
+            val page = history(chatId, 100, fromMessageId)
+            if (page.isEmpty()) break
+            page.forEach { message ->
+                val id = message.optLong("id")
+                if (id > afterMessageId) collected[id] = message
+            }
+            val oldest = page.minOfOrNull { it.optLong("id") } ?: break
+            if (oldest <= afterMessageId || page.size < 100 || oldest == fromMessageId) break
+            fromMessageId = oldest
+            pages++
+        }
+        return collected.values.sortedBy { it.optLong("id") }
     }
 
     private suspend fun latestMessageId(chatId: Long): Long =
