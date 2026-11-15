@@ -644,19 +644,28 @@ class SpotygramApp(val platform: Platform) {
                             }
                         if (tracks.isNotEmpty()) {
                             val metadata = platform.metadata(path)
-                            library.upsert(
-                                tracks.map {
-                                    it.copy(
-                                        duration = (metadata.duration / 1000).toInt(),
-                                        title =
-                                            metadata.title.takeIf { s -> s.isNotBlank() }
-                                                ?: it.title,
-                                        artist =
-                                            metadata.artist.takeIf { s -> s.isNotBlank() }
-                                                ?: it.artist,
+                            val updatedTracks = tracks.map {
+                                it.copy(
+                                    duration = (metadata.duration / 1000).toInt(),
+                                    title = metadata.title.takeIf { s -> s.isNotBlank() } ?: it.title,
+                                    artist = metadata.artist.takeIf { s -> s.isNotBlank() } ?: it.artist,
+                                )
+                            }
+                            library.upsert(updatedTracks)
+                            if (metadata.album.isNotBlank()) {
+                                val albumArtist = metadata.artist.ifBlank { updatedTracks.first().artist }
+                                if (albumArtist.isNotBlank()) {
+                                    library.createOrUpdateAlbum(
+                                        title = metadata.album,
+                                        artist = albumArtist,
+                                        tracks = updatedTracks.map { it.id },
+                                        year = metadata.year,
+                                        coverUrl = updatedTracks.firstOrNull { it.art.isNotBlank() }?.art.orEmpty(),
+                                        genre = metadata.genre,
+                                        isAutoDetected = true,
                                     )
                                 }
-                            )
+                            }
                             library.reload()
                         }
                     }
@@ -839,6 +848,17 @@ class SpotygramApp(val platform: Platform) {
                             )
                         )
                     )
+                    if (metadata.album.isNotBlank() && metadata.artist.isNotBlank()) {
+                        library.createOrUpdateAlbum(
+                            title = metadata.album,
+                            artist = metadata.artist,
+                            tracks = listOf("local:$id"),
+                            year = metadata.year,
+                            coverUrl = art,
+                            genre = metadata.genre,
+                            isAutoDetected = true,
+                        )
+                    }
                     stored = true
                 }
                 library.reload()
