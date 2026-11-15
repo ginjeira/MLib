@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.*
@@ -31,6 +34,8 @@ fun AlbumsScreen(
     onDeduplicate: () -> Unit,
     onAutoDetect: () -> Unit,
     onDownload: (Album) -> Unit,
+    onRemoveTrack: (String, String) -> Unit,
+    onReorder: (String, List<String>) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
@@ -63,7 +68,7 @@ fun AlbumsScreen(
                 AlbumArtwork(current, tracks.firstOrNull(), 48.dp)
                 Column(Modifier.weight(1f).padding(start = 8.dp)) {
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(current.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(onClick = { onDownload(current) }) { Text("Descarregar") }
                 TextButton(onClick = {
@@ -77,16 +82,26 @@ fun AlbumsScreen(
             Text(tr(R.string.album_tracks, tracks.size), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                 items(tracks, key = { it.id }) { track ->
-                    Row(
-                        Modifier.fillMaxWidth().clickable { onPlay(track, tracks) }.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Rounded.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                    val index = tracks.indexOfFirst { it.id == track.id }
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = {
+                            if (index > 0) onReorder(current.id, tracks.map { it.id }.toMutableList().apply { add(index - 1, removeAt(index)) })
+                        }, enabled = index > 0) {
+                            Icon(Icons.Rounded.ArrowUpward, contentDescription = "Mover para cima")
+                        }
+                        IconButton(onClick = {
+                            if (index < tracks.lastIndex) onReorder(current.id, tracks.map { it.id }.toMutableList().apply { add(index + 1, removeAt(index)) })
+                        }, enabled = index < tracks.lastIndex) {
+                            Icon(Icons.Rounded.ArrowDownward, contentDescription = "Mover para baixo")
+                        }
+                        Column(Modifier.weight(1f).clickable { onPlay(track, tracks) }.padding(vertical = 8.dp)) {
                             Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text(seconds(track.duration.toLong()), style = MaterialTheme.typography.labelSmall)
+                        IconButton(onClick = { onRemoveTrack(current.id, track.id) }) {
+                            Icon(Icons.Rounded.RemoveCircleOutline, contentDescription = "Remover do álbum")
+                        }
                     }
                 }
             }
