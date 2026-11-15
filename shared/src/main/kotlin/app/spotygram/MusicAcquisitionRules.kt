@@ -31,6 +31,9 @@ internal object MusicAcquisitionRules {
         return query.replace(Regex("\\s+"), " ").trim()
     }
 
+    fun findEquivalentCandidate(candidate: Track, candidates: List<Track>): Int =
+        candidates.indexOfFirst { isSameRecording(candidate, it) }
+
     /**
      * Metadata matching is deliberately conservative. A title alone is not enough:
      * require a matching artist or a matching known duration when Telegram file IDs differ.
