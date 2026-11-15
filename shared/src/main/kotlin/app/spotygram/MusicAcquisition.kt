@@ -93,10 +93,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             state.value = state.value.copy(progress = "A aguardar resposta do bot…")
 
             val botChatId = bot.getLong("id")
-            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
+            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 45_000) {
+                // Do not assume the bot's first response contains a specific
+                // English phrase or an inline keyboard. MCat's Telethon flow
+                // accepts the first incoming bot message and then follows edits
+                // and replacement messages until the expected keyboard appears.
                 !it.optBoolean("is_outgoing") &&
-                    (messageText(it).contains("searching for", ignoreCase = true) ||
-                        hasInlineKeyboard(it))
+                    (messageText(it).isNotBlank() || hasInlineKeyboard(it))
             } ?: run {
                 val reply = history(botChatId, 50)
                     .asSequence()
@@ -107,7 +110,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (replyText.isNotBlank()) {
                     error("Resposta do bot não reconhecida: ${replyText.take(180)}")
                 }
-                error("O bot de música não respondeu à pesquisa em 30 segundos.")
+                error("O bot de música não respondeu à pesquisa em 45 segundos.")
+            }
+
+            // The bot can send a textual acknowledgement first and attach or
+            // replace its inline keyboard afterwards. Follow both edit and
+            // replacement-message paths before trying to click any button.
+            if (!hasInlineKeyboard(resultMessage)) {
+                val firstMessageId = resultMessage.getLong("id")
+                resultMessage = waitForBotUpdate(botChatId, firstMessageId, 20_000) {
+                    hasInlineKeyboard(it) || messageText(it).contains("in '", ignoreCase = true)
+                } ?: resultMessage
             }
 
             // Playlist search is a special bot workflow: choose Track first,
