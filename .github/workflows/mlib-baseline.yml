@@ -132,8 +132,12 @@ jobs:
           AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
           VERSION=$(sed -nE 's/^version = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' build.gradle.kts)
           APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          echo "APK directory: $APK_DIR"
+          printf 'Found APKs: %s\n' "${APKS[@]}"
           for APK in "${APKS[@]}"; do
             test -s "$APK"
+            echo "Inspecting $APK"
+            "$AAPT" dump badging "$APK" | grep -E "^(package:|versionName=|native-code:)" || true
             if [[ "${MLIB_SIGNING_READY:-false}" == "true" ]]; then
               "$APKSIGNER" verify --verbose --print-certs "$APK"
             fi
@@ -197,6 +201,12 @@ jobs:
         run: python3 tools/build-desktop.py --image-only
       - name: Verify desktop launcher and runtime image
         run: |
-          test -x "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/bin/MLib"
-          test -s "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram/lib/app/MLib.cfg"
-          find "$MLIB_STATE/build/desktop/distributions/main/app/Spotygram" -maxdepth 2 -type f | head -40
+          IMAGE="$MLIB_STATE/build/desktop/distributions/main/app/Spotygram"
+          echo "Inspecting desktop image: $IMAGE"
+          find "$IMAGE" -maxdepth 3 -type f -printf '%M %p\n' | head -80
+          LAUNCHER="$(find "$IMAGE/bin" -maxdepth 1 -type f -executable -print -quit)"
+          CONFIG="$(find "$IMAGE/lib/app" -maxdepth 1 -type f -name '*.cfg' -print -quit)"
+          test -n "$LAUNCHER" && test -x "$LAUNCHER"
+          test -n "$CONFIG" && test -s "$CONFIG"
+          echo "Desktop launcher: $LAUNCHER"
+          echo "Desktop config: $CONFIG"
