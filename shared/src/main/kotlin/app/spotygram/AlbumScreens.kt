@@ -25,10 +25,16 @@ fun AlbumsScreen(
     onOpen: (String) -> Unit,
     onPlay: (Track, List<Track>) -> Unit,
     onDelete: (String) -> Unit,
+    onCreate: (String, String, List<String>) -> Unit,
+    onDeduplicate: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var creating by remember { mutableStateOf(false) }
+    var newTitle by remember { mutableStateOf("") }
+    var newArtist by remember { mutableStateOf("") }
+    var selectedTracks by remember { mutableStateOf(setOf<String>()) }
     val current = selected?.let { album -> library.albums.firstOrNull { it.id == album.id } }
     LaunchedEffect(current?.id, library.albums) {
         if (selected != null && current == null) selected = null
@@ -96,6 +102,8 @@ fun AlbumsScreen(
             ) {
                 Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onDeduplicate) { Text("Unificar duplicados") }
+                TextButton(onClick = { creating = true }) { Text("Novo álbum") }
             }
             if (library.albums.isNotEmpty()) {
                 OutlinedTextField(
@@ -104,6 +112,40 @@ fun AlbumsScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     singleLine = true,
                     label = { Text(tr(R.string.acquisition_query)) },
+                )
+            }
+            if (creating) {
+                AlertDialog(
+                    onDismissRequest = { creating = false },
+                    title = { Text("Criar álbum") },
+                    text = {
+                        Column(Modifier.heightIn(max = 520.dp)) {
+                            OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text("Título") }, singleLine = true)
+                            OutlinedTextField(value = newArtist, onValueChange = { newArtist = it }, label = { Text("Artista") }, singleLine = true)
+                            Text("Selecciona as faixas", Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+                            LazyColumn(Modifier.weight(1f)) {
+                                items(library.tracks.filter { it.inLibrary }, key = { it.id }) { track ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = track.id in selectedTracks, onCheckedChange = { checked ->
+                                            selectedTracks = if (checked) selectedTracks + track.id else selectedTracks - track.id
+                                        })
+                                        Column(Modifier.weight(1f)) {
+                                            Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(track.artist, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(enabled = newTitle.isNotBlank() && newArtist.isNotBlank() && selectedTracks.isNotEmpty(), onClick = {
+                            onCreate(newTitle.trim(), newArtist.trim(), library.tracks.map { it.id }.filter { it in selectedTracks })
+                            creating = false
+                            newTitle = ""; newArtist = ""; selectedTracks = emptySet()
+                        }) { Text("Criar") }
+                    },
+                    dismissButton = { TextButton(onClick = { creating = false }) { Text(tr(R.string.cancel)) } },
                 )
             }
             if (albums.isEmpty()) {
