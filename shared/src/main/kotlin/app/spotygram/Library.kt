@@ -47,6 +47,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         createTemporaryStorage(db)
         createPlaybackProgress(db)
         createProfileStorage(db)
+        createAlbumStorage(db)
         sync.install(db)
     }
 
