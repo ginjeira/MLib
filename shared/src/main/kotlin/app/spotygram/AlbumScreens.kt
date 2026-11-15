@@ -103,7 +103,7 @@ fun AlbumsScreen(
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     singleLine = true,
-                    label = { Text(tr(R.string.search)) },
+                    label = { Text(tr(R.string.acquisition_query)) },
                 )
             }
             if (albums.isEmpty()) {
