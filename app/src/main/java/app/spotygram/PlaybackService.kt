@@ -35,10 +35,11 @@ class PlaybackService : MediaLibraryService() {
         private const val ROOT = "mlib:root"
         private const val ALL_TRACKS = "mlib:tracks"
         private const val PLAYLISTS = "mlib:playlists"
+        private const val ALBUMS = "mlib:albums"
         private const val FAVORITES = "mlib:favorites"
         private const val TRACK_PREFIX = "track:"
         private const val PLAYLIST_PREFIX = "playlist:"
-         private const val ALBUM_PREFIX = "album:"
+        private const val ALBUM_PREFIX = "album:"
     }
 
     override fun onCreate() {
@@ -85,6 +86,7 @@ class PlaybackService : MediaLibraryService() {
                     ROOT -> listOf(
                         folder(ALL_TRACKS, "Todas as músicas"),
                         folder(PLAYLISTS, "Playlists"),
+                        folder(ALBUMS, "Álbuns"),
                         folder(FAVORITES, "Favoritos"),
                     )
                     ALL_TRACKS -> library.tracks
@@ -102,12 +104,30 @@ class PlaybackService : MediaLibraryService() {
                     PLAYLISTS -> library.playlists.map { playlist ->
                         folder("$PLAYLIST_PREFIX${playlist.id}", playlist.name)
                     }
-                    else -> {
-                        val playlistId = parentId.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
-                        val playlist = playlistId?.let { id -> library.playlists.firstOrNull { it.id == id } }
-                        playlist?.tracks.orEmpty().mapNotNull(library.byId::get)
-                            .filter { it.local || it.available }
-                            .map(::trackItem)
+                    ALBUMS -> library.albums.map { album ->
+                        folder(
+                            "$ALBUM_PREFIX${album.id}",
+                            album.title,
+                            artist = listOf(album.artist, album.year).filter(String::isNotBlank).joinToString(" · "),
+                            artwork = album.coverUrl,
+                        )
+                    }
+                    else -> when {
+                        parentId.startsWith(PLAYLIST_PREFIX) -> {
+                            val playlistId = parentId.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
+                            val playlist = playlistId?.let { id -> library.playlists.firstOrNull { it.id == id } }
+                            playlist?.tracks.orEmpty().mapNotNull(library.byId::get)
+                                .filter { it.local || it.available }
+                                .map(::trackItem)
+                        }
+                        parentId.startsWith(ALBUM_PREFIX) -> {
+                            val albumId = parentId.removePrefix(ALBUM_PREFIX)
+                            val album = library.albums.firstOrNull { it.id == albumId }
+                            album?.tracks.orEmpty().mapNotNull(library.byId::get)
+                                .filter { it.local || it.available }
+                                .map(::trackItem)
+                        }
+                        else -> emptyList()
                     }
                 }
                 val start = (page * pageSize).coerceAtMost(children.size)
@@ -123,9 +143,29 @@ class PlaybackService : MediaLibraryService() {
                 browser: MediaSession.ControllerInfo,
                 mediaId: String,
             ): ListenableFuture<LibraryResult<androidx.media3.common.MediaItem>> {
-                val trackId = mediaId.removePrefix(TRACK_PREFIX)
-                val track = app.library.state.value.byId[trackId]
-                val item = track?.let(::trackItem)
+                val library = app.library.state.value
+                val item = when {
+                    mediaId.startsWith(TRACK_PREFIX) ->
+                        library.byId[mediaId.removePrefix(TRACK_PREFIX)]?.let(::trackItem)
+                    mediaId.startsWith(PLAYLIST_PREFIX) -> {
+                        val id = mediaId.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
+                        library.playlists.firstOrNull { it.id == id }?.let {
+                            folder(mediaId, it.name)
+                        }
+                    }
+                    mediaId.startsWith(ALBUM_PREFIX) -> {
+                        val id = mediaId.removePrefix(ALBUM_PREFIX)
+                        library.albums.firstOrNull { it.id == id }?.let {
+                            folder(
+                                mediaId,
+                                it.title,
+                                artist = listOf(it.artist, it.year).filter(String::isNotBlank).joinToString(" · "),
+                                artwork = it.coverUrl,
+                            )
+                        }
+                    }
+                    else -> null
+                }
                 return Futures.immediateFuture(
                     if (item != null) LibraryResult.ofItem(item, null)
                     else LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
@@ -166,25 +206,35 @@ class PlaybackService : MediaLibraryService() {
                 session.notifyChildrenChanged(ROOT, Int.MAX_VALUE, null)
                 session.notifyChildrenChanged(ALL_TRACKS, Int.MAX_VALUE, null)
                 session.notifyChildrenChanged(PLAYLISTS, Int.MAX_VALUE, null)
+                session.notifyChildrenChanged(ALBUMS, Int.MAX_VALUE, null)
                 session.notifyChildrenChanged(FAVORITES, Int.MAX_VALUE, null)
                 app.library.state.value.playlists.forEach {
                     session.notifyChildrenChanged("$PLAYLIST_PREFIX${it.id}", Int.MAX_VALUE, null)
+                }
+                app.library.state.value.albums.forEach {
+                    session.notifyChildrenChanged("$ALBUM_PREFIX${it.id}", Int.MAX_VALUE, null)
                 }
             }
         }
     }
 
-    private fun folder(id: String, title: String) =
-        androidx.media3.common.MediaItem.Builder()
-            .setMediaId(id)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setIsBrowsable(true)
-                    .setIsPlayable(false)
-                    .build()
-            )
-            .build()
+    private fun folder(
+        id: String,
+        title: String,
+        artist: String = "",
+        artwork: String = "",
+    ) = androidx.media3.common.MediaItem.Builder()
+        .setMediaId(id)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(artist)
+                .setArtworkUri(artwork.takeIf { it.startsWith("https://") || it.startsWith("http://") }?.let(Uri::parse))
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .build()
+        )
+        .build()
 
     private fun trackItem(track: Track) =
         androidx.media3.common.MediaItem.Builder()
@@ -194,6 +244,8 @@ class PlaybackService : MediaLibraryService() {
                 MediaMetadata.Builder()
                     .setTitle(track.title)
                     .setArtist(track.artist)
+                    .setAlbumTitle(track.album)
+                    .setArtworkUri(track.art.takeIf { it.startsWith("https://") || it.startsWith("http://") }?.let(Uri::parse))
                     .setIsBrowsable(false)
                     .setIsPlayable(true)
                     .build()
