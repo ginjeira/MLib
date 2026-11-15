@@ -26,6 +26,8 @@ internal object MusicAcquisitionRules {
                 Regex("\\s*[\\(\\[]\\s*\\d{1,3}\\s*(?:🎵|🎶|tracks?|faixas?|musicas?)?\\s*[\\)\\]]\\s*$", RegexOption.IGNORE_CASE),
                 "",
             )
+            .replace(Regex("[\\\\p{So}\\\\p{Sk}]+\\\\s*$"), "")
+            .replace(Regex("^\\\\s*\\\\d+[.\\\\-)]\\\\s*"), "")
             .trim()
         return cleaned.ifBlank { value.trim() }
     }
