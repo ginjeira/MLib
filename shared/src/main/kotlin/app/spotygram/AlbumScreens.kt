@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -56,7 +58,7 @@ fun AlbumsScreen(
                 IconButton(onClick = { selected = null }) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = tr(R.string.back))
                 }
-                Artwork(tracks.firstOrNull(), 48.dp)
+                AlbumArtwork(current, tracks.firstOrNull(), 48.dp)
                 Column(Modifier.weight(1f).padding(start = 8.dp)) {
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(current.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -195,7 +197,7 @@ fun AlbumsScreen(
                             Modifier.fillMaxWidth().clickable { selected = album; onOpen(album.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Artwork(library.byId[album.tracks.firstOrNull()], 52.dp)
+                            AlbumArtwork(album, library.byId[album.tracks.firstOrNull()], 52.dp)
                             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                                 Text(album.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                                 Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -206,5 +208,21 @@ fun AlbumsScreen(
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.ui.unit.Dp) {
+    val url = album.coverUrl.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+    if (url != null) {
+        AsyncImage(
+            model = url,
+            contentDescription = album.title,
+            modifier = Modifier.size(size).clip(RoundedCornerShape(size * 0.23f)),
+            contentScale = ContentScale.Crop,
+        )
+    } else {
+        Artwork(fallback, size)
     }
 }
