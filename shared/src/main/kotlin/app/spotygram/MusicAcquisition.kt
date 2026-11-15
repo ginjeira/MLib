@@ -588,7 +588,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             "messageAudio" -> true
             "messageDocument" -> {
                 val document = content.optJSONObject("document") ?: return false
+                val audioAttribute = document.optJSONArray("attributes")?.let { attributes ->
+                    (0 until attributes.length()).any { index ->
+                        attributes.optJSONObject(index)?.kind() == "documentAttributeAudio"
+                    }
+                } == true
                 document.optString("mime_type").startsWith("audio/") ||
+                    audioAttribute ||
                     document.optString("file_name").substringAfterLast('.').lowercase() in
                     setOf("mp3", "m4a", "flac", "ogg", "opus", "aac", "wav", "aiff", "alac")
             }
