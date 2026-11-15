@@ -734,7 +734,11 @@ class Library(private val platform: Platform) : AutoCloseable {
             var position = rawQuery("SELECT COALESCE(MAX(position),-1)+1 FROM album_tracks WHERE album_id=?", arrayOf(albumId)).use { it.moveToFirst(); it.getInt(0) }
             compileStatement("INSERT OR IGNORE INTO album_tracks(album_id,track,position) SELECT ?,id,? FROM tracks WHERE id=?").use { statement ->
                 tracks.distinct().forEach { trackId ->
-                    statement.bindString(1,albumId); statement.bindLong(2,position.toLong()); position++ statement.bindString(3,trackId); statement.executeInsert()
+                    statement.bindString(1,albumId)
+                    statement.bindLong(2,position.toLong())
+                    position++
+                    statement.bindString(3,trackId)
+                    statement.executeInsert()
                 }
             }
             val ids = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(albumId)).use { c ->
