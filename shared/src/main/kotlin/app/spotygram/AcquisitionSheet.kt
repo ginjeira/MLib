@@ -137,7 +137,7 @@ internal fun AcquisitionSheet(
                     selected = provider == option,
                     onClick = { provider = option },
                     label = { Text(tr(if (option == AcquisitionProvider.DEEZER) R.string.acquisition_deezer else R.string.acquisition_soundcloud)) },
-                    enabled = !state.searching && !state.acquiring,
+                    enabled = !state.searching && !state.acquiring && !hasPendingJob,
                 )
             }
         }
