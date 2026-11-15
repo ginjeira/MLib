@@ -354,9 +354,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
             } else {
                 // Also deduplicate against candidates in this same bot response.
                 // Different Telegram file IDs can still describe the same recording.
-                val pendingDuplicate = pendingCandidates.indexOfFirst {
-                    isSameRecording(sourceTrack, it)
-                }
+                val pendingDuplicate = MusicAcquisitionRules.findEquivalentCandidate(
+                    sourceTrack, pendingCandidates,
+                )
                 if (pendingDuplicate >= 0) {
                     duplicatePendingPositions[index] = pendingDuplicate
                 } else {
