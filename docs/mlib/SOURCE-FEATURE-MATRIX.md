@@ -60,14 +60,21 @@ Implementado no branch `feat/mlib-independent-identity`:
 - `SpotygramUI.kt` / `SettingsSheet.kt`: acesso à funcionalidade.
 - Strings em inglês e português de Portugal.
 
-Ainda não validado:
-- Build/test CI do último commit (a execução observada anteriormente falhou em dois testes de correspondência de títulos; a correcção está no branch, ainda sem nova execução).
+Validação automatizada concluída no commit `0fde3c2031acbc3d11d245e42be193ef6f22e3d7`:
+- **PASS** — Android debug build ARM64 e x86_64, com verificação de package ID, versão, ABI e assinatura.
+- **PASS** — testes unitários Desktop/shared, incluindo migração SQLite, regras de aquisição e protocolo CloudSync.
+- **PASS** — imagem Desktop Linux e verificações do launcher/runtime.
+- Execução: [GitHub Actions #43736017616](https://github.com/ginjeira/MLib/actions/runs/43736017616).
+
+Continua por validar em execução real, antes de declarar aceitação funcional:
 - Comunicação real com o bot e callbacks.
-- Aquisição de faixa, playlist e álbum no Telegram.
+- Aquisição de faixa, playlist, álbum e artista no Telegram.
 - Deduplicação em GinjMusic e reprodução.
-- Recuperação após interrupção real do processo.
-- Conclusão de álbum com dados reais e validação da semântica de artista.
-- Navegação de álbuns no Android Auto em unidade principal física.
+- Recuperação após interrupção real do processo e comportamento perante FloodWait.
+- Confirmação da semântica de artista e limites de colecções grandes.
+- Navegação de álbuns no Android Auto numa unidade principal física.
+
+A portabilidade de código está implementada e passa a baseline CI. Estes pontos são testes de aceitação em ambiente Telegram/dispositivo, não tarefas de compilação pendentes.
 
 ## 5. Decisões futuras
 
