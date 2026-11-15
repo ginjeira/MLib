@@ -717,7 +717,10 @@ class Library(private val platform: Platform) : AutoCloseable {
                     arrayOf(target, sync.account.toString()),
                 ).use { it.moveToFirst() }
             } == true
-            val existing = if (targetExists) targetAlbumId else
+            check(targetAlbumId == null || targetExists) {
+                "O álbum seleccionado para completar já não existe na biblioteca."
+            }
+            val existing = if (targetAlbumId != null) targetAlbumId else
                 rawQuery("SELECT id,title,artist,year FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
                     var match: String? = null
                     while (c.moveToNext() && match == null) {
