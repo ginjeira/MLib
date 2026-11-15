@@ -28,7 +28,7 @@
 | Recepção de áudio | Conversa bot | Monitorização do histórico | `getChatHistory` TDLib |
 | Detecção de conclusão | Mensagens e contagens | Contagem, sinal final e silêncio | Estado de aquisição MLib |
 | Encaminhamento | Destino configurado | Destino seleccionável | `forwardMessages` TDLib para GinjMusic ou destino escolhido |
-| Deduplicação | Documento e metadata | Destino/fontes e metadata | fileKey + metadata conservadora + candidatos da mesma resposta; nunca destrutiva |
+| Deduplicação | Documento e metadata | Destino/fontes e metadata | fileKey + metadata conservadora + títulos invertidos com duração corroborante + candidatos da mesma resposta; nunca destrutiva |
 | Biblioteca | Índice operacional MCat | Biblioteca do player | SQLite MLib como catálogo autoritativo |
 | Playlist local | Não é o catálogo do player | Criação/actualização automática | Reutilizar `Library.createPlaylist` e `addToPlaylist` |
 | Álbum local | Metadados/fluxos do MCat | Gestão e conclusão de álbuns | Modelo de álbum separado, migração SQLite, CRUD, ordenação, CloudSync, detecção local e conclusão em álbum existente |
