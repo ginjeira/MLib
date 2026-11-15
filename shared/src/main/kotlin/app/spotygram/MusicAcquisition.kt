@@ -75,6 +75,11 @@ private data class AcquiredItem(
     val error: String = "",
 )
 
+private data class AudioCollection(
+    val messages: List<JSONObject>,
+    val timedOut: Boolean,
+)
+
 /**
  * Native MLib implementation of the Telegram bot workflow used by MCat Player.
  *
@@ -438,17 +443,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .find(option.title)?.groupValues?.get(1)?.toIntOrNull() ?: 0
         val multiTrack = session.search.contentType == AcquisitionContentType.PLAYLIST ||
             session.search.contentType == AcquisitionContentType.ALBUM || expectedCount > 1
-        val audioMessages = collectAudioMessages(
+        val collection = collectAudioMessages(
             botChatId = botChatId,
             afterMessageId = latestBeforeSelection,
             expectedCount = expectedCount,
             multiTrack = multiTrack,
         )
+        val audioMessages = collection.messages
         if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
-        var partialError =
-            if (expectedCount > 0 && audioMessages.size < expectedCount)
+        var partialError = when {
+            expectedCount > 0 && audioMessages.size < expectedCount ->
                 "O bot enviou ${audioMessages.size} de ${expectedCount} faixas."
-            else ""
+            collection.timedOut ->
+                "O bot não confirmou o fim do envio dentro do tempo limite; a aquisição pode estar incompleta."
+            else -> ""
+        }
 
         val parsedPairs = audioMessages.mapNotNull { message ->
             app.parseTrack(message, "Music bot")?.let { message to it }
@@ -555,11 +564,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         afterMessageId: Long,
         expectedCount: Int,
         multiTrack: Boolean,
-    ): List<JSONObject> {
+    ): AudioCollection {
         val collected = linkedMapOf<Long, JSONObject>()
         val started = System.currentTimeMillis()
         var lastAudioAt = 0L
         var finished = false
+        var quietCompletion = false
         val maxWait = if (multiTrack) 240_000L else 45_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
@@ -577,10 +587,20 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (!multiTrack && collected.isNotEmpty()) break
             if (multiTrack && collected.isNotEmpty() && lastAudioAt > 0 &&
                 System.currentTimeMillis() - lastAudioAt >= 9_000L
-            ) break
+            ) {
+                quietCompletion = true
+                break
+            }
             delay(2_000)
         }
-        return collected.values.sortedBy { it.getLong("id") }
+        val timedOut = multiTrack &&
+            System.currentTimeMillis() - started >= maxWait &&
+            !finished && !quietCompletion &&
+            !(expectedCount > 0 && collected.size >= expectedCount)
+        return AudioCollection(
+            messages = collected.values.sortedBy { it.getLong("id") },
+            timedOut = timedOut,
+        )
     }
 
     private suspend fun resolveBot(): JSONObject {
