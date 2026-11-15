@@ -394,7 +394,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             provider = AcquisitionProvider.valueOf(json.getString("provider")),
             selectedTitles = (0 until titles.length()).map { titles.getString(it) },
             destinationChatId = json.getLong("destination_chat_id"),
-            targetAlbumId = json.optString("target_album_id").takeIf(String::isNotBlank),
+            targetAlbumId = json.opt("target_album_id")
+                ?.takeUnless { it == JSONObject.NULL }
+                ?.toString()
+                ?.takeIf(String::isNotBlank),
             updatedAt = json.optLong("updated_at", System.currentTimeMillis()),
         )
     }.getOrNull()
