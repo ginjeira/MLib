@@ -47,6 +47,7 @@ data class PendingAcquisitionJob(
     val provider: AcquisitionProvider,
     val selectedTitles: List<String>,
     val destinationChatId: Long,
+    val telegramUserId: Long,
     val targetAlbumId: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
 )
@@ -243,16 +244,19 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(current.title))
                 } &&
                 currentPending.destinationChatId == destinationChatId &&
+                currentPending.telegramUserId == telegramUserId &&
                 currentPending.targetAlbumId == session.targetAlbumId)
         ) {
             "Existe outra aquisição interrompida. Retoma-a ou descarta-a antes de iniciar esta."
         }
+        val telegramUserId = request(json("getMe")).getLong("id")
         val pending = PendingAcquisitionJob(
             query = session.search.query,
             contentType = session.search.contentType,
             provider = session.search.provider,
             selectedTitles = selected.map { it.title },
             destinationChatId = destinationChatId,
+            telegramUserId = telegramUserId,
             targetAlbumId = session.targetAlbumId,
         )
         persistPendingJob(pending)
@@ -380,6 +384,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             ?: error("Não existe nenhuma aquisição interrompida para retomar.")
         state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
         try {
+            val currentUserId = request(json("getMe")).getLong("id")
+            check(currentUserId == pending.telegramUserId) {
+                "Esta aquisição pertence a outra conta Telegram. Liga a conta original ou descarta o trabalho pendente."
+            }
             val destination = request(json("getChat", "chat_id" to pending.destinationChatId))
             app.library.source(app.telegram.rememberChat(destination), true)
 
@@ -424,6 +432,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             provider = AcquisitionProvider.valueOf(json.getString("provider")),
             selectedTitles = (0 until titles.length()).map { titles.getString(it) },
             destinationChatId = json.getLong("destination_chat_id"),
+            telegramUserId = json.optLong("telegram_user_id"),
             targetAlbumId = json.opt("target_album_id")
                 ?.takeUnless { it == JSONObject.NULL }
                 ?.toString()
@@ -439,6 +448,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .put("provider", job.provider.name)
             .put("selected_titles", JSONArray(job.selectedTitles))
             .put("destination_chat_id", job.destinationChatId)
+            .put("telegram_user_id", job.telegramUserId)
             .put("target_album_id", job.targetAlbumId ?: JSONObject.NULL)
             .put("updated_at", System.currentTimeMillis())
         check(app.prefs.edit().putString(pendingJobKey, json.toString()).commit()) {
