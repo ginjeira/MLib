@@ -435,7 +435,7 @@
     <string name="acquisition_interrupted">An interrupted acquisition is saved: %1$s</string>
     <string name="acquisition_resume_pending">Resume acquisition</string>
     <string name="acquisition_discard_pending">Discard pending acquisition</string>
-    <string name="acquisition_artist_help">Artist search returns individual track options from the bot. Select the tracks you want; MLib will not create a fake album or playlist.</string>
+    <string name="acquisition_artist_help">Artist search returns bot result options; each option may produce one or more tracks depending on the bot's count. MLib imports the tracks individually and does not create a fake album or playlist.</string>
     <string name="acquisition_query">Artist, track or collection</string>
     <string name="acquisition_type">Content type</string>
     <string name="acquisition_provider">Provider</string>
