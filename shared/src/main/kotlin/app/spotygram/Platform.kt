@@ -53,6 +53,9 @@ data class AudioMetadata(
     val title: String = "",
     val artist: String = "",
     val artwork: ByteArray? = null,
+    val album: String = "",
+    val year: String = "",
+    val genre: String = "",
 )
 
 interface TdClient {
