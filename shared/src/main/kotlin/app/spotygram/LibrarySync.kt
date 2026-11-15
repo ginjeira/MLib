@@ -310,6 +310,11 @@ class LibrarySync(
         }
     }
 
+    private fun valueIsNotDeletedAlbum(all: List<Record>, id: String): Boolean {
+        val deleted = all.firstOrNull { it.key == "album/$id/deleted" }
+        return deleted == null || JSONObject(deleted.value).optBoolean("v").not()
+    }
+
     private fun portable(db: SqlDatabase, all: List<Record>, user: Long): List<Record> {
         val deleted =
             all.filter { it.key.startsWith("playlist/") && it.removesIdentity() }
@@ -323,6 +328,12 @@ class LibrarySync(
                         r.key.startsWith("playlist/") &&
                             r.key.split('/').let {
                                 it.size == 4 && it[2] == "member" && it[1] !in deleted
+                            } &&
+                            JSONObject(r.value).get("v") == true -> r.key.split('/')[3]
+                        r.key.startsWith("album/") &&
+                            r.key.split('/').let {
+                                it.size == 4 && it[2] == "member" &&
+                                    valueIsNotDeletedAlbum(all, it[1])
                             } &&
                             JSONObject(r.value).get("v") == true -> r.key.split('/')[3]
                         else -> null
