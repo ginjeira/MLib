@@ -270,8 +270,13 @@ Still outstanding before the port can be called complete:
 - Run current CI on the latest branch head. The last observed CI run predates these fixes and failed two fuzzy-title tests; the algorithm and regression tests have since been corrected, but the new head has not yet been verified by CI.
 - Live MLib-account acceptance: search, type/provider callbacks, track, playlist, album, artist, forwarding, repeat acquisition, FloodWait, restart/resume and playback.
 - Validate that Telegram's actual history pagination and bot response format match the assumptions above, including collections exceeding 100 messages.
-- Add a per-track missing-track preview/approval step for album completion; current behaviour automatically reuses existing library tracks and appends the remaining tracks from the selected bot album.
 - Exercise Android process death/restart and confirm the persisted resume journal behaves as intended.
 - Verify Android Auto album browsing and installed-app upgrade/data retention on devices.
 
 Do not mark the port complete until CI and live Telegram acceptance have passed. A source-level implementation is not runtime acceptance.
+
+
+## Post-port enhancements (not blockers for MCat behaviour parity)
+
+- Add a per-track missing-track preview/approval screen before album completion. Current behaviour matches the MCat Player flow: retrieve the selected album, reuse recordings already in the library, and append/forward only missing recordings.
+- Add confidence-scored local album grouping and a richer edition-selection UI.
