@@ -138,7 +138,7 @@ fun SpotygramUI(
         hideDuplicates &&
             playlist == null &&
             profile == null &&
-            (tab in 0..1 || tab == 3 && selectedSource != null)
+            (tab in 0..1 || tab == 4 && selectedSource != null)
     val groupedFavorites = hideDuplicates && (groupedView || profile != null)
     val current =
         library.byId[playing.id]?.let {
@@ -714,7 +714,7 @@ fun SpotygramUI(
                                             tab == 0 ||
                                                 tab == 1 ||
                                                 tab == 2 && playlist != null ||
-                                                tab == 3 && (source != null || profileId != null) ->
+                                                tab == 4 && (source != null || profileId != null) ->
                                                 MusicScreen(
                                                     hideDuplicates = groupedView,
                                                     library,
