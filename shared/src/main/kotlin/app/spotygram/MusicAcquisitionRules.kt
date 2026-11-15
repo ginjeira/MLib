@@ -18,6 +18,16 @@ internal object MusicAcquisitionRules {
             .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
             .trim()
 
+    fun cleanCollectionTitle(value: String): String {
+        val cleaned = value.trim()
+            .replace(
+                Regex("\\s*[\\(\\[]\\s*\\d{1,3}\\s*(?:🎵|🎶|tracks?|faixas?|musicas?)?\\s*[\\)\\]]\\s*$", RegexOption.IGNORE_CASE),
+                "",
+            )
+            .trim()
+        return cleaned.ifBlank { value.trim() }
+    }
+
     fun sanitizeSearchQuery(value: String): String {
         var query = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFKC)
         query = query.replace(
