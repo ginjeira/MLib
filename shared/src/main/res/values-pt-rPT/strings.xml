@@ -443,7 +443,7 @@
     <string name="acquisition_interrupted">Existe uma aquisição interrompida guardada: %1$s</string>
     <string name="acquisition_resume_pending">Retomar aquisição</string>
     <string name="acquisition_discard_pending">Descartar aquisição pendente</string>
-    <string name="acquisition_artist_help">A pesquisa por artista devolve opções de faixas individuais do bot. Selecciona as faixas pretendidas; o MLib não cria álbuns ou playlists fictícios.</string>
+    <string name="acquisition_artist_help">A pesquisa por artista devolve opções do bot; cada opção pode produzir uma ou várias faixas, conforme a contagem indicada. O MLib importa as faixas individualmente e não cria álbuns ou playlists fictícios.</string>
     <string name="acquisition_query">Artista, música ou colecção</string>
     <string name="acquisition_type">Tipo de conteúdo</string>
     <string name="acquisition_provider">Fornecedor</string>
