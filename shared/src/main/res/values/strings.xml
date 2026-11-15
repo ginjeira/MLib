@@ -434,6 +434,7 @@
     <string name="acquisition_help">Search the Telegram music bot, choose tracks or collections, and add the audio to your MLib library. MLib uses your existing Telegram sign-in.</string>
     <string name="acquisition_interrupted">An interrupted acquisition is saved: %1$s</string>
     <string name="acquisition_resume_pending">Resume acquisition</string>
+    <string name="acquisition_discard_pending">Discard pending acquisition</string>
     <string name="acquisition_artist_help">Artist search returns individual track options from the bot. Select the tracks you want; MLib will not create a fake album or playlist.</string>
     <string name="acquisition_query">Artist, track or collection</string>
     <string name="acquisition_type">Content type</string>
