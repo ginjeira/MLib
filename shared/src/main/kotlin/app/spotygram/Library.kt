@@ -1031,6 +1031,10 @@ class Library(private val platform: Platform) : AutoCloseable {
                                 "playlist/${c.getString(0)}/member/${track.id}"] = false
                         }
                     delete("playlist_tracks", "track=?", arrayOf(track.id))
+                    rawQuery("SELECT album_id FROM album_tracks WHERE track=?", arrayOf(track.id)).use { c ->
+                        while (c.moveToNext()) values["album/${c.getString(0)}/member/${track.id}"] = false
+                    }
+                    delete("album_tracks", "track=?", arrayOf(track.id))
                     delete("tracks", "id=?", arrayOf(track.id))
                     sync.edit(this, values)
                 }
