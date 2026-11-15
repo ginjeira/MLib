@@ -30,6 +30,7 @@ fun AlbumsScreen(
     onCreate: (String, String, List<String>) -> Unit,
     onDeduplicate: () -> Unit,
     onAutoDetect: () -> Unit,
+    onDownload: (Album) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
@@ -64,6 +65,7 @@ fun AlbumsScreen(
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(current.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                TextButton(onClick = { onDownload(current) }) { Text("Descarregar") }
                 TextButton(onClick = {
                     editTitle = current.title; editArtist = current.artist; editYear = current.year
                     editCover = current.coverUrl; editGenre = current.genre; editing = true
