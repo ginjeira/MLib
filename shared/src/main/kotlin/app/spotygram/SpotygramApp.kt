@@ -797,6 +797,38 @@ class SpotygramApp(val platform: Platform) {
             .getString("link")
     }
 
+    suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
+        awaitLibrary()
+        val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }
+        val groups = linkedMapOf<Pair<String, String>, MutableList<Pair<Track, AudioMetadata>>>()
+        for (track in candidates) {
+            currentCoroutineContext().ensureActive()
+            val metadata = runCatching { platform.metadata(track.path, track.title) }.getOrNull() ?: continue
+            val album = metadata.album.trim()
+            val artist = metadata.artist.ifBlank { track.artist }.trim()
+            if (album.isBlank() || artist.isBlank()) continue
+            groups.getOrPut(normalizeAlbumText(album) to normalizeAlbumText(artist)) { mutableListOf() }
+                .add(track to metadata)
+        }
+        var detected = 0
+        for ((_, entries) in groups) {
+            val first = entries.first()
+            library.createOrUpdateAlbum(
+                title = first.second.album.trim(),
+                artist = first.second.artist.ifBlank { first.first.artist }.trim(),
+                tracks = entries.map { it.first.id },
+                year = entries.firstNotNullOfOrNull { it.second.year.takeIf(String::isNotBlank) }.orEmpty(),
+                coverUrl = entries.firstNotNullOfOrNull { it.first.art.takeIf(String::isNotBlank) }.orEmpty(),
+                genre = entries.firstNotNullOfOrNull { it.second.genre.takeIf(String::isNotBlank) }.orEmpty(),
+                isAutoDetected = true,
+            )
+            detected++
+        }
+        library.deduplicateAlbums()
+        library.reload()
+        detected
+    }
+
     suspend fun importAudio(name: String, open: () -> InputStream) =
         withContext(Dispatchers.IO) {
             awaitLibrary()
