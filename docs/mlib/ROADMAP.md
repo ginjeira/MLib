@@ -69,7 +69,7 @@ Acceptance:
 
 ## Phase 3 — native track acquisition
 
-**Status (15 Nov 2026):** native TDLib search/acquisition and rule tests are present. Same-response and cross-option deduplication are implemented, including conservative metadata-gated fuzzy title matching. CI for the latest commits and live Telegram validation remain pending.
+**Status (15 Nov 2026):** native TDLib search/acquisition is implemented with bot-lane serialization, message cursoring, paginated history (up to 2,000 messages per option), destination refresh before every acquisition, same-response/cross-option deduplication, conservative metadata-gated fuzzy title matching, and limited FloodWait retry. Rule tests cover parsing, sanitisation, exact/ambiguous/fuzzy matching and adjacent transposition. CI for the latest commits and live Telegram validation remain pending.
 
 **Goal:** search and import individual tracks through MLib's own TDLib session.
 
@@ -90,7 +90,7 @@ Acceptance:
 
 ## Phase 4 — native playlist, album and artist acquisition
 
-**Status (15 Nov 2026):** playlist acquisition/create-update, a distinct album model with SQLite migration, album CRUD/order/deduplication, CloudSync representation, album UI, local metadata-based detection, and iTunes/Deezer cover suggestions are implemented. Automatic local playlist creation is now configurable in the acquisition UI and persists across launches. Persistent acquisition-job recovery and complete artist semantics remain outstanding. Playlist/album behaviour is not yet validated against the live bot.
+**Status (15 Nov 2026):** playlist acquisition/create-update with preserved order, configurable automatic playlist creation, a distinct album model with SQLite migration, album CRUD/order/deduplication, CloudSync representation, album UI, local metadata-based detection, and iTunes/Deezer cover suggestions are implemented. Album matching now keeps different known release years separate; local detection groups by album/artist/year. Existing-album completion targets the selected album, reuses matching library tracks and appends missing tracks. Acquisition jobs are persisted in MLib preferences; resume rebuilds the bot search, refreshes the destination and retries selected results idempotently. Artist semantics are defined as individual track options returned by the bot, not full discography acquisition. CI for latest commits and live bot validation remain pending.
 
 **Goal:** support collection workflows while preserving collection semantics.
 
@@ -111,7 +111,7 @@ Acceptance:
 
 ## Phase 5 — library intelligence and album completion
 
-**Status (15 Nov 2026):** imported/local audio metadata can populate distinct album records; local-file album detection groups by normalised album/artist and merges likely duplicates. Album editing supports metadata and cover suggestions from iTunes/Deezer. Edition-aware identification, confidence-scored grouping, missing-track proposals and completion via the bot remain incomplete and unvalidated.
+**Status (15 Nov 2026):** imported/local audio metadata can populate distinct album records; local-file album detection groups by normalised album/artist/release year, and duplicate merging will not merge different known years. Album editing supports metadata and cover suggestions from iTunes/Deezer. A separate per-track preview/proposal of missing tracks, confidence-scored grouping and explicit edition selection remain incomplete; the current completion action searches the bot for the album, reuses existing tracks and appends the rest.
 
 **Goal:** discover incomplete albums in the user's library.
 
@@ -195,8 +195,8 @@ Acceptance:
 3. Validate Android installation, coexistence, phone/code/2FA sign-in and session persistence on a physical device.
 4. Validate CloudSync isolation and persistence.
 5. Validate the native TDLib bot protocol live using the MLib account; no MCat HTTP/API, server or session is involved.
-6. Validate track and playlist acquisition end-to-end; finish persistent job recovery, album completion and validated artist workflows.
-7. Extend library album identification with edition-aware matching and missing-track proposals.
+6. Validate track, playlist and album acquisition end-to-end; exercise persisted job recovery, FloodWait and artist track semantics against the live bot.
+7. Extend library album identification with confidence scoring, explicit edition review and a per-track missing-track proposal screen.
 8. Stabilise Android; only then start Web and evaluate Auto/TV.
 
 Update this document with dated evidence. Planned, in-progress and validated work must remain distinct. Code written does not by itself make a checklist item complete.
@@ -247,3 +247,29 @@ Still outstanding:
 - Validate Android installation/update/coexistence, CloudSync isolation and Android Auto album browsing on devices.
 
 Do not mark the port complete until the source changes pass current CI and the live Telegram acceptance flow has been exercised.
+
+
+## Implementation update — 15 Nov 2026 (continuation)
+
+The following acquisition/album gaps were addressed in source:
+
+- Acquisition journal persisted in MLib preferences. After process restart, the UI offers **Retomar aquisição**; the bot search is rebuilt, the destination is refreshed, and selected results are retried. This is designed to recover a crash after forwarding by re-indexing the destination before deduplication.
+- Destination history is refreshed before every acquisition, even when previously marked fully indexed, so newly forwarded tracks are visible to deduplication.
+- Telegram history collection pages backwards in batches of 100 (bounded to 2,000 messages per selected result) rather than silently considering only the latest 100 messages.
+- Telegram 429/FloodWait responses are retried with bounded waits; waits longer than 15 minutes or repeated failures leave the job pending for manual resume.
+- Multi-track jobs that hit the 240-second deadline without completion/quiet confirmation are marked partial and remain resumable.
+- Completing an existing album now carries its album ID through search and acquisition, adds the returned tracks to that album, and preserves its title/artist/year/cover metadata. Multiple bot editions cannot be merged into one target album in a single selection.
+- Album matching and local-file grouping now include known release year so different known years remain separate. Bot album titles are parsed into artist and album title while preserving edition suffixes.
+- Artist search is explicitly defined as a list of individual track options; selected tracks are imported individually. No false artist album or playlist is created.
+- Regression tests were added for title transposition, artist/title parsing, collection edition suffixes and release-year separation.
+
+Still outstanding before the port can be called complete:
+
+- Run current CI on the latest branch head. The last observed CI run predates these fixes and failed two fuzzy-title tests; the algorithm and regression tests have since been corrected, but the new head has not yet been verified by CI.
+- Live MLib-account acceptance: search, type/provider callbacks, track, playlist, album, artist, forwarding, repeat acquisition, FloodWait, restart/resume and playback.
+- Validate that Telegram's actual history pagination and bot response format match the assumptions above, including collections exceeding 100 messages.
+- Add a per-track missing-track preview/approval step for album completion; current behaviour automatically reuses existing library tracks and appends the remaining tracks from the selected bot album.
+- Exercise Android process death/restart and confirm the persisted resume journal behaves as intended.
+- Verify Android Auto album browsing and installed-app upgrade/data retention on devices.
+
+Do not mark the port complete until CI and live Telegram acceptance have passed. A source-level implementation is not runtime acceptance.
