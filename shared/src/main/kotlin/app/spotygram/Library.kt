@@ -707,14 +707,14 @@ class Library(private val platform: Platform) : AutoCloseable {
     ): String = withContext(Dispatchers.IO) {
         require(title.isNotBlank()) { "O álbum tem de ter um título." }
         val now = System.currentTimeMillis()
-        val normalizedTitle = normalizeMusicText(title)
-        val normalizedArtist = normalizeMusicText(artist)
+        val normalizedTitle = normalizeAlbumText(title)
+        val normalizedArtist = normalizeAlbumText(artist)
         val id = writableDatabase.transaction {
             val existing = rawQuery("SELECT id,title,artist FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
                 var match: String? = null
                 while (c.moveToNext() && match == null) {
-                    if (normalizeMusicText(c.getString(1)) == normalizedTitle &&
-                        normalizeMusicText(c.getString(2)) == normalizedArtist
+                    if (normalizeAlbumText(c.getString(1)) == normalizedTitle &&
+                        normalizeAlbumText(c.getString(2)) == normalizedArtist
                     ) match = c.getString(0)
                 }
                 match
@@ -812,7 +812,7 @@ class Library(private val platform: Platform) : AutoCloseable {
                     while (c.moveToNext()) add(Album(c.getString(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5),c.getInt(6)==1,c.getLong(7),c.getLong(8)))
                 }
             }
-            val groups = rows.groupBy { normalizeMusicText(it.title) + "|" + normalizeMusicText(it.artist) }
+            val groups = rows.groupBy { normalizeAlbumText(it.title) + "|" + normalizeAlbumText(it.artist) }
             for (group in groups.values.filter { it.size > 1 }) {
                 val keep = group.first()
                 for (duplicate in group.drop(1)) {
@@ -1241,3 +1241,5 @@ class Library(private val platform: Platform) : AutoCloseable {
             }
         }
 }
+
+private fun normalizeAlbumText(value: String): String = value.lowercase().filter { it.isLetterOrDigit() }
