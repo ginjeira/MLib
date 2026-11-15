@@ -229,8 +229,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
 
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
-            val importedCount = completed.sumOf { it.importedIds.size }
-            val reusedCount = (allTrackIds.size - importedCount).coerceAtLeast(0)
+            val importedIds = completed.flatMap { it.importedIds }.toSet()
+            val importedCount = importedIds.size
+            val reusedCount = (allTrackIds.size - importedIds.size).coerceAtLeast(0)
             val failedCount = completed.count { it.error.isNotEmpty() }
 
             var playlistId: Long? = null
@@ -338,6 +339,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val orderedIds = MutableList<String?>(parsedPairs.size) { null }
         val pendingMessages = mutableListOf<JSONObject>()
         val pendingPositions = mutableListOf<Int>()
+        val pendingCandidates = mutableListOf<Track>()
+        val duplicatePendingPositions = mutableMapOf<Int, Int>()
         val seen = mutableSetOf<String>()
         for ((index, pair) in parsedPairs.withIndex()) {
             val sourceTrack = pair.second
@@ -349,8 +352,18 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (existing != null) {
                 orderedIds[index] = existing.id
             } else {
-                pendingMessages += pair.first
-                pendingPositions += index
+                // Also deduplicate against candidates in this same bot response.
+                // Different Telegram file IDs can still describe the same recording.
+                val pendingDuplicate = pendingCandidates.indexOfFirst {
+                    isSameRecording(sourceTrack, it)
+                }
+                if (pendingDuplicate >= 0) {
+                    duplicatePendingPositions[index] = pendingDuplicate
+                } else {
+                    pendingMessages += pair.first
+                    pendingPositions += index
+                    pendingCandidates += sourceTrack
+                }
             }
         }
 
@@ -403,6 +416,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     "$deliveryFailures de ${pendingMessages.size} mensagens não foram confirmadas no destino.",
                 ).filter { it.isNotBlank() }.joinToString(" ")
             }
+        }
+
+        // A duplicate candidate follows the outcome of the first matching message.
+        duplicatePendingPositions.forEach { (duplicateIndex, pendingIndex) ->
+            val originalIndex = pendingPositions.getOrNull(pendingIndex)
+            if (originalIndex != null) orderedIds[duplicateIndex] = orderedIds[originalIndex]
         }
 
         val byId = app.library.state.value.byId
