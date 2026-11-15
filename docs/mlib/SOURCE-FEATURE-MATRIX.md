@@ -35,7 +35,7 @@
 | Jobs e recuperação | Worker e estado próprios | Estado e progresso UI | Journal de trabalho persistente em preferências MLib; pesquisa reconstruída e repetição idempotente após refresh do destino |
 | Reprodução | Fora do foco principal | Player/MediaSession | Reutilizar Media3 e pipeline TDLib MLib |
 | CloudSync | Não é o sync MLib | Referências de produto | Protocolo MLib independente; não sincronizar áudio/cache |
-| Android Auto | Não é o foco | Lições de integração | Avaliar após estabilização Android |
+| Android Auto | Não é o foco | MediaLibraryService e árvore de navegação | MLib expõe álbuns, playlists, faixas e favoritos pela mesma PlaybackQueue; validação física pendente |
 
 ## 3. Regras de portabilidade
 
@@ -67,6 +67,7 @@ Ainda não validado:
 - Deduplicação em GinjMusic e reprodução.
 - Recuperação após interrupção real do processo.
 - Conclusão de álbum com dados reais e validação da semântica de artista.
+- Navegação de álbuns no Android Auto em unidade principal física.
 
 ## 5. Decisões futuras
 
