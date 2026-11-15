@@ -69,7 +69,7 @@ Acceptance:
 
 ## Phase 3 — native track acquisition
 
-**Status (15 Nov 2026):** native TDLib search/acquisition is implemented with bot-lane serialization, message cursoring, paginated history (up to 2,000 messages per option), destination refresh before every acquisition, same-response/cross-option deduplication, conservative metadata-gated fuzzy title matching, and limited FloodWait retry. Rule tests cover parsing, sanitisation, exact/ambiguous/fuzzy matching and adjacent transposition. CI for the latest commits and live Telegram validation remain pending.
+**Status (15 Nov 2026):** native TDLib search/acquisition is implemented with bot-lane serialization, message cursoring, paginated history (up to 2,000 messages per option), destination refresh before every acquisition, same-response/cross-option deduplication, conservative metadata-gated fuzzy title matching, and limited FloodWait retry. Rule tests cover parsing, sanitisation, exact/ambiguous/fuzzy/reversed-metadata matching and adjacent transposition. CI for the latest commits and live Telegram validation remain pending.
 
 **Goal:** search and import individual tracks through MLib's own TDLib session.
 
