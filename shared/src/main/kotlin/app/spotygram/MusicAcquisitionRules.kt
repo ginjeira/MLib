@@ -81,11 +81,20 @@ internal object MusicAcquisitionRules {
         val candidateArtist = normalizeMusicText(candidate.artist)
         val existingArtist = normalizeMusicText(existing.artist)
         val bothArtistsKnown = candidateArtist.isNotEmpty() && existingArtist.isNotEmpty()
-        if (bothArtistsKnown && candidateArtist != existingArtist) return false
-
         val bothDurationsKnown = candidate.duration > 0 && existing.duration > 0
         val durationDifference = if (bothDurationsKnown)
             kotlin.math.abs(candidate.duration - existing.duration) else Int.MAX_VALUE
+
+        // Telegram bot metadata occasionally swaps the artist and title fields.
+        // Accept only an exact reversal with corroborating duration metadata.
+        if (bothArtistsKnown &&
+            candidateTitle == existingArtist &&
+            candidateArtist == existingTitle &&
+            bothDurationsKnown &&
+            durationDifference <= 3
+        ) return true
+
+        if (bothArtistsKnown && candidateArtist != existingArtist) return false
         val exactTitle = candidateTitle == existingTitle
         // Fuzzy title matching is deliberately gated by corroborating metadata:
         // same known artist and near-identical known duration. Never merge on
