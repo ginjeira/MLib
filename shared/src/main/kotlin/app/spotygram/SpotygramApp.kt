@@ -836,14 +836,16 @@ class SpotygramApp(val platform: Platform) {
     suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
         awaitLibrary()
         val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }
-        val groups = linkedMapOf<Pair<String, String>, MutableList<Pair<Track, AudioMetadata>>>()
+        val groups = linkedMapOf<Triple<String, String, String>, MutableList<Pair<Track, AudioMetadata>>>()
         for (track in candidates) {
             currentCoroutineContext().ensureActive()
             val metadata = runCatching { platform.metadata(track.path, track.title) }.getOrNull() ?: continue
             val album = metadata.album.trim()
             val artist = metadata.artist.ifBlank { track.artist }.trim()
             if (album.isBlank() || artist.isBlank()) continue
-            groups.getOrPut(normalizeAlbumText(album) to normalizeAlbumText(artist)) { mutableListOf() }
+            groups.getOrPut(
+                Triple(normalizeAlbumText(album), normalizeAlbumText(artist), metadata.year.trim()),
+            ) { mutableListOf() }
                 .add(track to metadata)
         }
         var detected = 0
