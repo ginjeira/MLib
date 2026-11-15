@@ -1115,6 +1115,15 @@ class Library(private val platform: Platform) : AutoCloseable {
     suspend fun clearTelegram() =
         withContext(Dispatchers.IO) {
             writableDatabase.transaction {
+                val albumChanges = linkedMapOf<String, Any?>()
+                rawQuery(
+                    "SELECT album_id,track FROM album_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)",
+                    null,
+                ).use { c ->
+                    while (c.moveToNext()) albumChanges["album/" + c.getString(0) + "/member/" + c.getString(1)] = false
+                }
+                sync.edit(this, albumChanges)
+                execSQL("DELETE FROM album_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)")
                 execSQL(
                     "DELETE FROM playlist_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)"
                 )
