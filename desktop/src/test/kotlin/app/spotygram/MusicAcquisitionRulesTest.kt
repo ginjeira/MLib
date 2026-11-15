@@ -87,6 +87,12 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun collectionTitleRemovesTrackCountButPreservesEdition() {
+        assertEquals("Greatest Hits (Deluxe Edition)", MusicAcquisitionRules.cleanCollectionTitle("Greatest Hits (Deluxe Edition) (18 🎵)"))
+        assertEquals("Album (2024)", MusicAcquisitionRules.cleanCollectionTitle("Album (2024)"))
+    }
+
+    @Test
     fun pendingCandidatesFindEquivalentTrackWithDifferentTelegramFileKey() {
         val candidate = track("candidate", title = "One More Tiem", fileKey = "file-a")
         val pending = listOf(track("pending", title = "One More Time", duration = 321, fileKey = "file-b"))
