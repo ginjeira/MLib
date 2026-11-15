@@ -81,7 +81,7 @@ class Library(private val platform: Platform) : AutoCloseable {
     }
 
     private fun createAlbumStorage(db: SqlDatabase) {
-        db.execSQL("CREATE TABLE albums(id TEXT PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL,year TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '',genre TEXT NOT NULL DEFAULT '',auto_detected INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE albums(id TEXT PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL,year TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '',genre TEXT NOT NULL DEFAULT '',auto_detected INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,account INTEGER NOT NULL DEFAULT 0)")
         db.execSQL("CREATE INDEX albums_title_artist ON albums(title,artist)")
         db.execSQL("CREATE TABLE album_tracks(album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,track TEXT NOT NULL,position INTEGER NOT NULL,PRIMARY KEY(album_id,track))")
         db.execSQL("CREATE INDEX album_tracks_track ON album_tracks(track)")
@@ -263,7 +263,7 @@ class Library(private val platform: Platform) : AutoCloseable {
             db.rawQuery("SELECT album_id,track FROM album_tracks ORDER BY album_id,position", null).use { c ->
                 while (c.moveToNext()) albumMembers.getOrPut(c.getString(0)) { mutableListOf() }.add(c.getString(1))
             }
-            db.rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums ORDER BY artist,title", null).use { c ->
+            db.rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY artist,title", arrayOf(sync.account.toString()), null).use { c ->
                 while (c.moveToNext()) albums += Album(
                     c.getString(0), c.getString(1), c.getString(2), c.getString(3),
                     c.getString(4), c.getString(5), c.getInt(6) == 1,
@@ -722,8 +722,8 @@ class Library(private val platform: Platform) : AutoCloseable {
             val albumId = existing ?: UUID.randomUUID().toString()
             if (existing == null) {
                 execSQL(
-                    "INSERT INTO albums(id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
-                    arrayOf<Any>(albumId,title.trim(),artist.trim(),year,coverUrl,genre,if (isAutoDetected) 1 else 0,now,now),
+                    "INSERT INTO albums(id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at,account) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    arrayOf<Any>(albumId,title.trim(),artist.trim(),year,coverUrl,genre,if (isAutoDetected) 1 else 0,now,now,sync.account),
                 )
             } else {
                 execSQL(
@@ -737,6 +737,17 @@ class Library(private val platform: Platform) : AutoCloseable {
                     statement.bindString(1,albumId); statement.bindLong(2,position.toLong()); position++ statement.bindString(3,trackId); statement.executeInsert()
                 }
             }
+            val ids = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(albumId)).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(0)) }
+            }
+            val metadata = JSONObject().put("title",title.trim()).put("artist",artist.trim())
+                .put("year",year).put("cover",coverUrl).put("genre",genre)
+                .put("auto",isAutoDetected).put("created",if (existing == null) now else rawQuery("SELECT created_at FROM albums WHERE id=?", arrayOf(albumId)).use { it.moveToFirst(); it.getLong(0) })
+                .put("updated",now)
+            val values = linkedMapOf<String,Any?>("album/$albumId/metadata" to metadata,"album/$albumId/order" to JSONArray(ids))
+            ids.forEach { values["album/$albumId/member/$it"] = true }
+            sync.references(this, ids, values)
+            sync.edit(this, values)
             albumId
         }
         reload()
@@ -745,17 +756,26 @@ class Library(private val platform: Platform) : AutoCloseable {
 
     suspend fun deleteAlbum(id: String) = withContext(Dispatchers.IO) {
         writableDatabase.transaction {
+            sync.edit(this, mapOf("album/$id/deleted" to true))
             delete("album_tracks","album_id=?",arrayOf(id))
-            delete("albums","id=?",arrayOf(id))
+            delete("albums","id=? AND account=?",arrayOf(id,sync.account.toString()))
         }
         reload()
     }
 
     suspend fun removeFromAlbum(id: String, trackIds: List<String>) = withContext(Dispatchers.IO) {
         writableDatabase.transaction {
-            trackIds.distinct().forEach { delete("album_tracks","album_id=? AND track=?",arrayOf(id,it)) }
-            execSQL("UPDATE album_tracks SET position=position-1 WHERE album_id=? AND position>(SELECT COALESCE(MAX(position),-1) FROM album_tracks WHERE album_id=?)", arrayOf<Any>(id,id))
-            execSQL("UPDATE albums SET updated_at=? WHERE id=?", arrayOf<Any>(System.currentTimeMillis(),id))
+            trackIds.distinct().forEach { track ->
+                delete("album_tracks","album_id=? AND track=?",arrayOf(id,track))
+                sync.edit(this,mapOf("album/$id/member/$track" to false))
+            }
+            val remaining = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",arrayOf(id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
+            execSQL("UPDATE albums SET updated_at=? WHERE id=? AND account=?", arrayOf<Any>(System.currentTimeMillis(),id,sync.account))
+            val metadata = rawQuery("SELECT title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE id=?",arrayOf(id)).use { c ->
+                check(c.moveToFirst())
+                JSONObject().put("title",c.getString(0)).put("artist",c.getString(1)).put("year",c.getString(2)).put("cover",c.getString(3)).put("genre",c.getString(4)).put("auto",c.getInt(5)==1).put("created",c.getLong(6)).put("updated",System.currentTimeMillis())
+            }
+            sync.edit(this,mapOf("album/$id/metadata" to metadata,"album/$id/order" to JSONArray(remaining)))
         }
         reload()
     }
