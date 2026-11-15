@@ -826,7 +826,7 @@ fun SpotygramUI(
                                                     onReorder = { id, order -> app.action { app.library.reorderAlbum(id, order) } },
                                                     onDownload = { album ->
                                                         app.action {
-                                                            app.acquisition.search(album.title, AcquisitionContentType.ALBUM, AcquisitionProvider.DEEZER)
+                                                            app.acquisition.search(listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" "), AcquisitionContentType.ALBUM, AcquisitionProvider.DEEZER)
                                                             sheet = "acquisition"
                                                         }
                                                     },
