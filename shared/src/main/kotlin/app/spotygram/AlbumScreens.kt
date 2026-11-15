@@ -27,6 +27,7 @@ fun AlbumsScreen(
     onDelete: (String) -> Unit,
     onCreate: (String, String, List<String>) -> Unit,
     onDeduplicate: () -> Unit,
+    onUpdate: (String, String, String, String, String, String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -35,6 +36,12 @@ fun AlbumsScreen(
     var newTitle by remember { mutableStateOf("") }
     var newArtist by remember { mutableStateOf("") }
     var selectedTracks by remember { mutableStateOf(setOf<String>()) }
+    var editing by remember { mutableStateOf(false) }
+    var editTitle by remember { mutableStateOf("") }
+    var editArtist by remember { mutableStateOf("") }
+    var editYear by remember { mutableStateOf("") }
+    var editCover by remember { mutableStateOf("") }
+    var editGenre by remember { mutableStateOf("") }
     val current = selected?.let { album -> library.albums.firstOrNull { it.id == album.id } }
     LaunchedEffect(current?.id, library.albums) {
         if (selected != null && current == null) selected = null
@@ -53,6 +60,10 @@ fun AlbumsScreen(
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(current.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                TextButton(onClick = {
+                    editTitle = current.title; editArtist = current.artist; editYear = current.year
+                    editCover = current.coverUrl; editGenre = current.genre; editing = true
+                }) { Text("Editar") }
                 IconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
                 }
@@ -73,6 +84,28 @@ fun AlbumsScreen(
                     }
                 }
             }
+        }
+        if (editing) {
+            AlertDialog(
+                onDismissRequest = { editing = false },
+                title = { Text("Editar álbum") },
+                text = {
+                    Column {
+                        OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text("Título") }, singleLine = true)
+                        OutlinedTextField(value = editArtist, onValueChange = { editArtist = it }, label = { Text("Artista") }, singleLine = true)
+                        OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text("Ano") }, singleLine = true)
+                        OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text("Género") }, singleLine = true)
+                        OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text("URL da capa") }, singleLine = true)
+                    }
+                },
+                confirmButton = {
+                    TextButton(enabled = editTitle.isNotBlank() && editArtist.isNotBlank(), onClick = {
+                        onUpdate(current.id,editTitle.trim(),editArtist.trim(),editYear.trim(),editCover.trim(),editGenre.trim())
+                        editing = false
+                    }) { Text("Guardar") }
+                },
+                dismissButton = { TextButton(onClick = { editing = false }) { Text(tr(R.string.cancel)) } },
+            )
         }
         if (confirmDelete) {
             AlertDialog(
