@@ -319,29 +319,39 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
         val importedIds = mutableSetOf<String>()
         if (pendingMessages.isNotEmpty()) {
-            val messageIds = pendingMessages.map { it.getLong("id") }.distinct().sorted()
-            val forwarded = app.telegram.request(
-                json(
-                    "forwardMessages",
-                    "chat_id" to destinationChatId,
-                    "topic_id" to JSONObject.NULL,
-                    "from_chat_id" to botChatId,
-                    "message_ids" to JSONArray(messageIds),
-                    "options" to JSONObject.NULL,
-                    "send_copy" to false,
-                    "remove_caption" to false,
-                ),
-                timeout = 120_000,
-            )
-            val messages = forwarded.optJSONArray("messages") ?: JSONArray()
             val importedTracks = mutableListOf<Track>()
-            val count = minOf(messages.length(), pendingPositions.size)
-            for (i in 0 until count) {
-                val message = messages.optJSONObject(i) ?: continue
-                val track = app.parseTrack(message, destinationTitle) ?: continue
-                importedTracks += track
-                orderedIds[pendingPositions[i]] = track.id
-                importedIds += track.id
+            var deliveryFailures = 0
+            // MCat forwards each Telegram message independently. Keep that
+            // isolation: one failed message must not cancel the remaining tracks.
+            for ((index, sourceMessage) in pendingMessages.withIndex()) {
+                try {
+                    val forwarded = app.telegram.request(
+                        json(
+                            "forwardMessages",
+                            "chat_id" to destinationChatId,
+                            "topic_id" to JSONObject.NULL,
+                            "from_chat_id" to botChatId,
+                            "message_ids" to JSONArray().put(sourceMessage.getLong("id")),
+                            "options" to JSONObject.NULL,
+                            "send_copy" to false,
+                            "remove_caption" to false,
+                        ),
+                        timeout = 120_000,
+                    )
+                    val messages = forwarded.optJSONArray("messages") ?: JSONArray()
+                    val destinationMessage = messages.optJSONObject(0)
+                    val track = destinationMessage?.let { app.parseTrack(it, destinationTitle) }
+                    if (track == null) {
+                        deliveryFailures++
+                        continue
+                    }
+                    importedTracks += track
+                    orderedIds[pendingPositions[index]] = track.id
+                    importedIds += track.id
+                } catch (error: Throwable) {
+                    if (error is CancellationException) throw error
+                    deliveryFailures++
+                }
             }
             if (importedTracks.isNotEmpty()) {
                 app.library.upsert(importedTracks)
@@ -350,10 +360,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (importedTracks.isEmpty()) {
                 error("O Telegram não confirmou a entrega do áudio ao destino.")
             }
-            if (importedTracks.size < pendingMessages.size) {
-                val missing = pendingMessages.size - importedTracks.size
-                partialError = listOf(partialError, "$missing mensagens não foram confirmadas no destino.")
-                    .filter { it.isNotBlank() }.joinToString(" ")
+            if (deliveryFailures > 0) {
+                partialError = listOf(
+                    partialError,
+                    "$deliveryFailures de ${pendingMessages.size} mensagens não foram confirmadas no destino.",
+                ).filter { it.isNotBlank() }.joinToString(" ")
             }
         }
 
