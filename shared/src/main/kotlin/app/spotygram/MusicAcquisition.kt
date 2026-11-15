@@ -346,7 +346,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         if (acquiredAlbums.isEmpty()) "Não foi possível criar um álbum com as faixas recebidas."
                         else "${acquiredAlbums.size} álbum(ns) actualizado(s) na biblioteca; as faixas já existentes foram reutilizadas."
                     AcquisitionContentType.ARTIST ->
-                        "A pesquisa por artista devolve opções de faixas. As faixas seleccionadas foram importadas individualmente; não é criado um álbum ou uma playlist fictícios."
+                        "A pesquisa por artista devolve opções do bot; cada opção pode produzir uma ou várias faixas, conforme a contagem indicada. As faixas são importadas individualmente, sem criar um álbum ou playlist fictícios."
                     AcquisitionContentType.PLAYLIST ->
                         if (autoCreatePlaylist) "" else "As faixas foram adicionadas à biblioteca sem criar uma playlist local."
                     else -> ""
