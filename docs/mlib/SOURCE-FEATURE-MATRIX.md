@@ -20,7 +20,7 @@
 | Pesquisa por faixa | Bot Telegram | UI e fluxo completos | Portar para TDLib |
 | Pesquisa por álbum | Bot Telegram | UI e fluxo de aquisição | Pesquisa/acquisition nativa; entidade álbum separada e conclusão de álbum existente |
 | Pesquisa por playlist | Bot Telegram | UI e aquisição multi-faixa | Portar, preservar ordem, criar/actualizar playlist configurável |
-| Pesquisa por artista | Bot Telegram | Tipo de pesquisa suportado | Portar filtro; opções representam faixas individuais, sem discografia fictícia |
+| Pesquisa por artista | Bot Telegram | Tipo de pesquisa suportado | Portar filtro; opções podem devolver uma ou várias faixas; sem discografia fictícia |
 | Fornecedor Deezer | Bot Telegram | Filtro UI e callback | Portar callback TDLib |
 | Fornecedor SoundCloud | Bot Telegram | Filtro UI e callback | Portar callback TDLib |
 | Resultados numerados | Mensagem Telegram | Parse e selecção múltipla | Parser nativo MLib |
