@@ -391,9 +391,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             for (message in messages) {
                 val id = message.optLong("id")
                 if (id <= afterMessageId) continue
+                if (id <= afterMessageId) continue
                 if (isAudioMessage(message)) {
                     if (collected.putIfAbsent(id, message) == null) lastAudioAt = System.currentTimeMillis()
                 }
+                // Ignore completion markers left by earlier bot requests. A stale
+                // "Finished" message must not truncate the current album/playlist.
                 if (isCompletionMessage(message)) finished = true
             }
             if (expectedCount > 0 && collected.size >= expectedCount) break
