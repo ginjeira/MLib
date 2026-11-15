@@ -216,6 +216,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val failedCount = completed.count { it.error.isNotEmpty() }
 
             var playlistId: Long? = null
+            val acquiredAlbums = mutableListOf<String>()
+            if (session.search.contentType == AcquisitionContentType.ALBUM) {
+                for (item in completed.filter { it.tracks.isNotEmpty() }) {
+                    val first = item.tracks.first()
+                    val title = item.option.title.substringBefore(" (").trim().ifBlank { item.option.title }
+                    val albumId = app.library.createOrUpdateAlbum(
+                        title = title,
+                        artist = first.artist,
+                        tracks = item.tracks.map { it.id },
+                        year = "",
+                        coverUrl = first.art,
+                    )
+                    acquiredAlbums += albumId
+                }
+            }
             if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
@@ -241,7 +256,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     .joinToString(", ") { it.option.title },
                 note = when (session.search.contentType) {
                     AcquisitionContentType.ALBUM ->
-                        "As faixas foram adicionadas à biblioteca; o modelo de álbuns do MLib ainda está por implementar."
+                        if (acquiredAlbums.isEmpty()) "Não foi possível criar um álbum com as faixas recebidas."
+                        else "${acquiredAlbums.size} álbum(ns) criado(s) na biblioteca."
                     AcquisitionContentType.ARTIST ->
                         "As faixas seleccionadas foram adicionadas; a aquisição integral e organização por artista ainda precisa de validação."
                     else -> ""
