@@ -718,10 +718,13 @@ class Library(private val platform: Platform) : AutoCloseable {
                 ).use { it.moveToFirst() }
             } == true
             val existing = if (targetExists) targetAlbumId else
-                rawQuery("SELECT id,title,artist FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
+                rawQuery("SELECT id,title,artist,year FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
                     var match: String? = null
                     while (c.moveToNext() && match == null) {
-                        if (normalizeAlbumText(c.getString(1)) == normalizedTitle &&
+                        val existingYear = c.getString(3).orEmpty()
+                        val yearCompatible = year.isBlank() || existingYear.isBlank() || year == existingYear
+                        if (yearCompatible &&
+                            normalizeAlbumText(c.getString(1)) == normalizedTitle &&
                             normalizeAlbumText(c.getString(2)) == normalizedArtist
                         ) match = c.getString(0)
                     }
@@ -856,11 +859,15 @@ class Library(private val platform: Platform) : AutoCloseable {
                         val artistB = normalizeAlbumText(existing.artist)
                         val artistCompatible = artistA.isBlank() || artistB.isBlank() ||
                             artistA == artistB || artistA.contains(artistB) || artistB.contains(artistA)
+                        val yearCompatible = album.year.isBlank() || existing.year.isBlank() ||
+                            album.year == existing.year
                         val aTracks = trackCache[album.id].orEmpty().toSet()
                         val bTracks = trackCache[existing.id].orEmpty().toSet()
                         val overlap = aTracks.intersect(bTracks).size.toDouble() /
                             maxOf(1, minOf(aTracks.size,bTracks.size))
-                        (artistCompatible && similar(album.title, existing.title)) || overlap >= .65
+                        yearCompatible && (
+                            (artistCompatible && similar(album.title, existing.title)) || overlap >= .65
+                        )
                     }
                 }
                 if (candidate == null) clusters += mutableListOf(album) else candidate += album
