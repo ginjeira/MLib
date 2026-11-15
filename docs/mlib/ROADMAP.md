@@ -170,12 +170,14 @@ Acceptance:
 
 ## Phase 8 — Android Auto and TV evaluation
 
-**Goal:** assess dedicated experiences after Android stabilisation.
+**Status (15 Nov 2026):** the MLib Android Auto browse tree now exposes all tracks, favourites, playlists, albums and album tracks through the existing MediaLibraryService/PlaybackQueue. Album folders expose artist/year metadata and artwork. Physical head-unit validation remains outstanding.
+
+**Goal:** complete and validate dedicated experiences after Android stabilisation.
 
 Android Auto:
-- MediaLibraryService, MediaSession and Media3 integration.
-- Car-appropriate browse/search structure.
-- Playback controls and resume.
+- MediaLibraryService, MediaSession and Media3 integration — implemented.
+- Car-appropriate browse tree for tracks, favourites, playlists, albums and album tracks — implemented.
+- Playback controls and resume through the existing PlaybackQueue — inherited/integrated; runtime acceptance pending.
 - Physical head-unit validation.
 
 Android TV / Google TV:
