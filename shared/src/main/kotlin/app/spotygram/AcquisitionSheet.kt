@@ -52,7 +52,14 @@ internal fun AcquisitionSheet(
     LaunchedEffect(auth.type) {
         if (auth.type == "authorizationStateReady") loadDestinations()
     }
-    LaunchedEffect(state.search?.id) { selected.clear() }
+    LaunchedEffect(state.search?.id) {
+        selected.clear()
+        state.search?.let { search ->
+            query = search.query
+            contentType = search.contentType
+            provider = search.provider
+        }
+    }
 
     Column(
         Modifier.fillMaxWidth()
