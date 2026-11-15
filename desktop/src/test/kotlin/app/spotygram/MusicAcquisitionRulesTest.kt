@@ -87,6 +87,20 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun pendingCandidatesFindEquivalentTrackWithDifferentTelegramFileKey() {
+        val candidate = track("candidate", title = "One More Tiem", fileKey = "file-a")
+        val pending = listOf(track("pending", title = "One More Time", duration = 321, fileKey = "file-b"))
+        assertEquals(0, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
+    }
+
+    @Test
+    fun pendingCandidatesDoNotMatchAmbiguousSameTitleAlone() {
+        val candidate = track("candidate", title = "One More Tiem", artist = "", duration = 0, size = 0)
+        val pending = listOf(track("pending", title = "One More Time", artist = "", duration = 0, size = 0))
+        assertEquals(-1, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
+    }
+
+    @Test
     fun smallTitleTypoMatchesOnlyWithSameArtistAndDuration() {
         assertTrue(
             MusicAcquisitionRules.isSameRecording(
