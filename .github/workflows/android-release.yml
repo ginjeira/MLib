@@ -1,6 +1,9 @@
 name: MLib Android release candidate
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -17,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlib-android-release-${{ inputs.release_tag }}
+  group: mlib-android-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -27,7 +30,7 @@ jobs:
     timeout-minutes: 120
     env:
       MLIB_STATE: ${{ runner.temp }}/mlib-release-state
-      RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
       MLIB_JOBS: '2'
       TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
       TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
@@ -35,7 +38,7 @@ jobs:
       MLIB_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MLIB_ANDROID_KEYSTORE_PASSWORD }}
       MLIB_ANDROID_KEY_ALIAS: ${{ secrets.MLIB_ANDROID_KEY_ALIAS }}
       MLIB_ANDROID_KEY_PASSWORD: ${{ secrets.MLIB_ANDROID_KEY_PASSWORD }}
-      PUBLISH_DRAFT: ${{ inputs.publish_draft }}
+      PUBLISH_DRAFT: ${{ github.event_name == 'push' || inputs.publish_draft }}
     steps:
       - uses: actions/checkout@v7
         with:
