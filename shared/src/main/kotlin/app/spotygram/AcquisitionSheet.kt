@@ -71,6 +71,28 @@ internal fun AcquisitionSheet(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        state.pendingJob?.let { pending ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        tr(R.string.acquisition_interrupted, pending.query),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    Button(
+                        onClick = { scope.launch { runCatching { acquisition.resumePending() } } },
+                        enabled = auth.type == "authorizationStateReady" && !state.searching && !state.acquiring,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(tr(R.string.acquisition_resume_pending))
+                    }
+                }
+            }
+        }
+
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -79,6 +101,14 @@ internal fun AcquisitionSheet(
             singleLine = true,
             enabled = !state.searching && !state.acquiring,
         )
+
+        if (contentType == AcquisitionContentType.ARTIST) {
+            Text(
+                tr(R.string.acquisition_artist_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Text(tr(R.string.acquisition_type), style = MaterialTheme.typography.labelLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
