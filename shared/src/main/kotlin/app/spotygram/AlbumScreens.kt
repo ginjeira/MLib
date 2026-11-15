@@ -56,7 +56,8 @@ fun AlbumsScreen(
                 IconButton(onClick = { selected = null }) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = tr(R.string.back))
                 }
-                Column(Modifier.weight(1f)) {
+                Artwork(tracks.firstOrNull(), 48.dp)
+                Column(Modifier.weight(1f).padding(start = 8.dp)) {
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(current.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -194,10 +195,7 @@ fun AlbumsScreen(
                             Modifier.fillMaxWidth().clickable { selected = album; onOpen(album.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Box(
-                                Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-                                contentAlignment = Alignment.Center,
-                            ) { Icon(Icons.Rounded.Album, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                            Artwork(library.byId[album.tracks.firstOrNull()], 52.dp)
                             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                                 Text(album.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                                 Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
