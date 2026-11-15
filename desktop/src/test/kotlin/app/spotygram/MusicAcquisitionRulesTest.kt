@@ -87,6 +87,18 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun parsesArtistAndAlbumTitleFromBotCollectionResult() {
+        assertEquals(
+            ParsedMusicName("Daft Punk", "Discovery (Deluxe Edition)"),
+            MusicAcquisitionRules.parseArtistAndTitle("Daft Punk - Discovery (Deluxe Edition) (14 tracks)"),
+        )
+        assertEquals(
+            ParsedMusicName("Massive Attack", "Mezzanine"),
+            MusicAcquisitionRules.parseArtistAndTitle("Mezzanine by Massive Attack"),
+        )
+    }
+
+    @Test
     fun collectionTitleRemovesTrackCountButPreservesEdition() {
         assertEquals("Greatest Hits (Deluxe Edition)", MusicAcquisitionRules.cleanCollectionTitle("Greatest Hits (Deluxe Edition) (18 🎵)"))
         assertEquals("Album (2024)", MusicAcquisitionRules.cleanCollectionTitle("Album (2024)"))
