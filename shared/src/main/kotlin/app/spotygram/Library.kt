@@ -263,7 +263,7 @@ class Library(private val platform: Platform) : AutoCloseable {
             db.rawQuery("SELECT album_id,track FROM album_tracks ORDER BY album_id,position", null).use { c ->
                 while (c.moveToNext()) albumMembers.getOrPut(c.getString(0)) { mutableListOf() }.add(c.getString(1))
             }
-            db.rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY artist,title", arrayOf(sync.account.toString()), null).use { c ->
+            db.rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY artist,title", arrayOf(sync.account.toString())).use { c ->
                 while (c.moveToNext()) albums += Album(
                     c.getString(0), c.getString(1), c.getString(2), c.getString(3),
                     c.getString(4), c.getString(5), c.getInt(6) == 1,
