@@ -203,7 +203,6 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         libraryObserver?.cancel()
-        session.player.release()
         session.release()
         queue.close()
         super.onDestroy()
