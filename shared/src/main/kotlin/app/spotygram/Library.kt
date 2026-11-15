@@ -807,32 +807,85 @@ class Library(private val platform: Platform) : AutoCloseable {
     suspend fun deduplicateAlbums(): Int = withContext(Dispatchers.IO) {
         var mergedCount = 0
         writableDatabase.transaction {
-            val rows = rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY created_at,id", arrayOf(sync.account.toString())).use { c ->
+            val rows = rawQuery(
+                "SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY created_at,id",
+                arrayOf(sync.account.toString()),
+            ).use { c ->
                 buildList {
-                    while (c.moveToNext()) add(Album(c.getString(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),c.getString(5),c.getInt(6)==1,c.getLong(7),c.getLong(8)))
+                    while (c.moveToNext()) add(
+                        Album(c.getString(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),
+                            c.getString(5),c.getInt(6)==1,c.getLong(7),c.getLong(8))
+                    )
                 }
             }
-            val groups = rows.groupBy { normalizeAlbumText(it.title) + "|" + normalizeAlbumText(it.artist) }
-            for (group in groups.values.filter { it.size > 1 }) {
-                val keep = group.first()
-                for (duplicate in group.drop(1)) {
-                    val ids = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(duplicate.id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
-                    val current = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(keep.id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
-                    val combined = (current + ids).distinct()
-                    delete("album_tracks","album_id=?",arrayOf(keep.id))
-                    compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { st ->
-                        combined.forEachIndexed { index, track -> st.bindString(1,keep.id); st.bindString(2,track); st.bindLong(3,index.toLong()); st.executeInsert() }
+            fun albumTracks(id: String): List<String> =
+                rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id))
+                    .use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.getString(0)) } }
+            fun similar(a: String, b: String): Boolean {
+                val x = normalizeAlbumText(a)
+                val y = normalizeAlbumText(b)
+                if (x.isBlank() || y.isBlank()) return false
+                if (x == y) return true
+                if (x.contains(y) || y.contains(x)) return minOf(x.length,y.length).toDouble()/maxOf(x.length,y.length) >= .72
+                val previous = IntArray(y.length + 1) { it }
+                for (i in x.indices) {
+                    var diagonal = previous[0]
+                    previous[0] = i + 1
+                    for (j in y.indices) {
+                        val above = previous[j + 1]
+                        previous[j + 1] = minOf(previous[j + 1] + 1, previous[j] + 1, diagonal + if (x[i] == y[j]) 0 else 1)
+                        diagonal = above
                     }
-                    sync.edit(this,mapOf("album/" + duplicate.id + "/deleted" to true))
+                }
+                return 1.0 - previous[y.length].toDouble()/maxOf(x.length,y.length) >= .84
+            }
+            val clusters = mutableListOf<MutableList<Album>>()
+            val trackCache = rows.associate { it.id to albumTracks(it.id) }
+            for (album in rows) {
+                val candidate = clusters.firstOrNull { cluster ->
+                    cluster.any { existing ->
+                        val artistA = normalizeAlbumText(album.artist)
+                        val artistB = normalizeAlbumText(existing.artist)
+                        val artistCompatible = artistA.isBlank() || artistB.isBlank() ||
+                            artistA == artistB || artistA.contains(artistB) || artistB.contains(artistA)
+                        val aTracks = trackCache[album.id].orEmpty().toSet()
+                        val bTracks = trackCache[existing.id].orEmpty().toSet()
+                        val overlap = aTracks.intersect(bTracks).size.toDouble() /
+                            maxOf(1, minOf(aTracks.size,bTracks.size))
+                        (artistCompatible && similar(album.title, existing.title)) || overlap >= .65
+                    }
+                }
+                if (candidate == null) clusters += mutableListOf(album) else candidate += album
+            }
+            for (group in clusters.filter { it.size > 1 }) {
+                val keep = group.first()
+                val combined = group.flatMap { trackCache[it.id].orEmpty() }.distinct()
+                val bestCover = group.firstOrNull { it.coverUrl.startsWith("https://") || it.coverUrl.startsWith("http://") }?.coverUrl
+                    ?: keep.coverUrl
+                val bestYear = keep.year.ifBlank { group.firstNotNullOfOrNull { it.year.takeIf(String::isNotBlank) }.orEmpty() }
+                val bestGenre = keep.genre.ifBlank { group.firstNotNullOfOrNull { it.genre.takeIf(String::isNotBlank) }.orEmpty() }
+                val bestArtist = if (normalizeAlbumText(keep.artist).isBlank()) group.firstNotNullOfOrNull { it.artist.takeIf(String::isNotBlank) } ?: keep.artist else keep.artist
+                execSQL("UPDATE albums SET cover_url=?,year=?,genre=?,artist=?,updated_at=? WHERE id=?",
+                    arrayOf<Any>(bestCover,bestYear,bestGenre,bestArtist,System.currentTimeMillis(),keep.id))
+                delete("album_tracks","album_id=?",arrayOf(keep.id))
+                compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { st ->
+                    combined.forEachIndexed { index, track ->
+                        st.bindString(1,keep.id); st.bindString(2,track); st.bindLong(3,index.toLong()); st.executeInsert()
+                    }
+                }
+                for (duplicate in group.drop(1)) {
+                    sync.edit(this,mapOf("album/${duplicate.id}/deleted" to true))
                     delete("album_tracks","album_id=?",arrayOf(duplicate.id))
                     delete("albums","id=? AND account=?",arrayOf(duplicate.id,sync.account.toString()))
-                    val metadata = JSONObject().put("title",keep.title).put("artist",keep.artist).put("year",keep.year).put("cover",keep.coverUrl).put("genre",keep.genre).put("auto",keep.isAutoDetected).put("created",keep.createdAt).put("updated",System.currentTimeMillis())
-                    val values = linkedMapOf<String,Any?>("album/" + keep.id + "/metadata" to metadata,"album/" + keep.id + "/order" to JSONArray(combined))
-                    combined.forEach { values["album/" + keep.id + "/member/" + it] = true }
-                    sync.references(this,combined,values)
-                    sync.edit(this,values)
                     mergedCount++
                 }
+                val metadata = JSONObject().put("title",keep.title).put("artist",bestArtist).put("year",bestYear)
+                    .put("cover",bestCover).put("genre",bestGenre).put("auto",group.any { it.isAutoDetected })
+                    .put("created",keep.createdAt).put("updated",System.currentTimeMillis())
+                val values = linkedMapOf<String,Any?>("album/${keep.id}/metadata" to metadata,"album/${keep.id}/order" to JSONArray(combined))
+                combined.forEach { values["album/${keep.id}/member/$it"] = true }
+                sync.references(this,combined,values)
+                sync.edit(this,values)
             }
         }
         reload()
