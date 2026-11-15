@@ -276,9 +276,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val targetAlbum = session.targetAlbumId?.let { id ->
                         app.library.state.value.albums.firstOrNull { it.id == id }
                     }
+                    val parsedName = MusicAcquisitionRules.parseArtistAndTitle(item.option.title)
                     val title = targetAlbum?.title
-                        ?: MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
-                    val artist = targetAlbum?.artist?.takeIf(String::isNotBlank) ?: first.artist
+                        ?: parsedName.title.ifBlank { MusicAcquisitionRules.cleanCollectionTitle(item.option.title) }
+                    val artist = targetAlbum?.artist?.takeIf(String::isNotBlank)
+                        ?: parsedName.artist.ifBlank { first.artist }
                     val albumId = app.library.createOrUpdateAlbum(
                         title = title,
                         artist = artist,
