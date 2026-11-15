@@ -21,6 +21,7 @@ internal fun AcquisitionSheet(
 ) {
     val acquisition = app.acquisition
     val state by acquisition.state.collectAsStateWithLifecycle()
+    val hasPendingJob = state.pendingJob != null
     val auth by app.telegram.auth.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -89,6 +90,13 @@ internal fun AcquisitionSheet(
                     ) {
                         Text(tr(R.string.acquisition_resume_pending))
                     }
+                    TextButton(
+                        onClick = { acquisition.discardPending() },
+                        enabled = !state.searching && !state.acquiring,
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Text(tr(R.string.acquisition_discard_pending))
+                    }
                 }
             }
         }
@@ -99,7 +107,7 @@ internal fun AcquisitionSheet(
             modifier = Modifier.fillMaxWidth(),
             label = { Text(tr(R.string.acquisition_query)) },
             singleLine = true,
-            enabled = !state.searching && !state.acquiring,
+            enabled = !state.searching && !state.acquiring && !hasPendingJob,
         )
 
         if (contentType == AcquisitionContentType.ARTIST) {
@@ -117,7 +125,7 @@ internal fun AcquisitionSheet(
                     selected = contentType == option,
                     onClick = { contentType = option },
                     label = { Text(tr(acquisitionTypeLabel(option))) },
-                    enabled = !state.searching && !state.acquiring,
+                    enabled = !state.searching && !state.acquiring && !hasPendingJob,
                 )
             }
         }
@@ -147,7 +155,7 @@ internal fun AcquisitionSheet(
             Box {
                 OutlinedButton(
                     onClick = { destinationMenu = true },
-                    enabled = destinations.isNotEmpty() && !state.acquiring,
+                    enabled = destinations.isNotEmpty() && !state.acquiring && !hasPendingJob,
                 ) { Text(tr(R.string.acquisition_choose_destination)) }
                 DropdownMenu(
                     expanded = destinationMenu,
@@ -164,7 +172,10 @@ internal fun AcquisitionSheet(
                     }
                 }
             }
-            IconButton(onClick = { scope.launch { loadDestinations() } }) {
+            IconButton(
+                onClick = { scope.launch { loadDestinations() } },
+                enabled = !state.acquiring && !hasPendingJob,
+            ) {
                 Icon(Icons.Rounded.Refresh, tr(R.string.acquisition_refresh))
             }
         }
@@ -177,7 +188,7 @@ internal fun AcquisitionSheet(
                 }
             },
             enabled = auth.type == "authorizationStateReady" &&
-                query.trim().length >= 2 && !state.searching && !state.acquiring,
+                query.trim().length >= 2 && !state.searching && !state.acquiring && !hasPendingJob,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(tr(if (state.searching) R.string.acquisition_searching else R.string.acquisition_search))
@@ -231,7 +242,7 @@ internal fun AcquisitionSheet(
                                     if (result.number !in selected) selected.add(result.number)
                                 } else selected.remove(result.number)
                             },
-                            enabled = !state.acquiring,
+                            enabled = !state.acquiring && !hasPendingJob,
                         )
                         Text(
                             "${result.number}. ${result.title}",
@@ -248,7 +259,7 @@ internal fun AcquisitionSheet(
                                 autoCreatePlaylist = enabled
                                 app.prefs.edit().putBoolean("auto_create_acquisition_playlists", enabled).apply()
                             },
-                            enabled = !state.acquiring,
+                            enabled = !state.acquiring && !hasPendingJob,
                         )
                         Text(
                             tr(R.string.acquisition_auto_playlist),
@@ -264,7 +275,7 @@ internal fun AcquisitionSheet(
                             }
                         }
                     },
-                    enabled = selected.isNotEmpty() && destinationId != 0L && !state.acquiring,
+                    enabled = selected.isNotEmpty() && destinationId != 0L && !state.acquiring && !hasPendingJob,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(tr(R.string.acquisition_start))
