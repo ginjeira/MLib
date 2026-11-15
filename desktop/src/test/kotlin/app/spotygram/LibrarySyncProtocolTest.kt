@@ -118,6 +118,41 @@ class LibrarySyncProtocolTest {
     }
 
     @Test
+    fun albumMetadataAndMembershipAreAcceptedBySyncProtocol() {
+        val id = "00000000-0000-0000-0000-000000000099"
+        val packet = JSONArray()
+            .put(row("album/$id/metadata", 1, writerA, JSONObject()
+                .put("title", "The Album")
+                .put("artist", "The Artist")
+                .put("year", "2024")
+                .put("cover", "https://example.test/cover.jpg")
+                .put("genre", "Rock")
+                .put("auto", false)
+                .put("created", 100L)
+                .put("updated", 200L)))
+            .put(row("album/$id/member/local:00000000-0000-0000-0000-000000000001", 2, writerA, true))
+            .put(row("album/$id/order", 3, writerA, JSONArray().put("local:00000000-0000-0000-0000-000000000001")))
+        assertEquals(3, LibrarySync.decode(packet).size)
+    }
+
+    @Test
+    fun albumMetadataRejectsMissingIdentityFields() {
+        val id = "00000000-0000-0000-0000-000000000099"
+        val invalid = JSONObject()
+            .put("title", "")
+            .put("artist", "The Artist")
+            .put("year", "")
+            .put("cover", "")
+            .put("genre", "")
+            .put("auto", false)
+            .put("created", 100L)
+            .put("updated", 200L)
+        assertTrue(runCatching {
+            LibrarySync.decode(JSONArray().put(row("album/$id/metadata", 1, writerA, invalid)))
+        }.isFailure)
+    }
+
+    @Test
     fun trackTombstoneIsRecognized() {
         val deleted = LibrarySync.Record(
             "track/local:00000000-0000-0000-0000-000000000099",
