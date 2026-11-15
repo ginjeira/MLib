@@ -822,6 +822,12 @@ fun SpotygramUI(
                                                     },
                                                     onDeduplicate = { app.action { app.library.deduplicateAlbums() } },
                                                     onAutoDetect = { app.action { app.autoDetectAlbums() } },
+                                                    onDownload = { album ->
+                                                        app.action {
+                                                            app.acquisition.search(album.title, AcquisitionContentType.ALBUM, AcquisitionProvider.DEEZER)
+                                                            sheet = "acquisition"
+                                                        }
+                                                    },
                                                     onUpdate = { id, title, artist, year, cover, genre ->
                                                         app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
                                                     },
