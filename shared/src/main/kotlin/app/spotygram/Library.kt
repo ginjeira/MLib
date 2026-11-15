@@ -1242,4 +1242,4 @@ class Library(private val platform: Platform) : AutoCloseable {
         }
 }
 
-private fun normalizeAlbumText(value: String): String = value.lowercase().filter { it.isLetterOrDigit() }
+internal fun normalizeAlbumText(value: String): String = value.lowercase().filter { it.isLetterOrDigit() }
