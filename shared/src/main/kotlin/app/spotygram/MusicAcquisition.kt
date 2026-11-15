@@ -237,7 +237,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
             (currentPending.query == session.search.query &&
                 currentPending.contentType == session.search.contentType &&
                 currentPending.provider == session.search.provider &&
-                currentPending.selectedTitles == selected.map { it.title } &&
+                currentPending.selectedTitles.size == selected.size &&
+                currentPending.selectedTitles.zip(selected).all { (saved, current) ->
+                    normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(saved)) ==
+                        normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(current.title))
+                } &&
                 currentPending.destinationChatId == destinationChatId &&
                 currentPending.targetAlbumId == session.targetAlbumId)
         ) {
