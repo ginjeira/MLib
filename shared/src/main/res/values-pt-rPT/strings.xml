@@ -454,6 +454,7 @@
     <string name="acquisition_select_all">Seleccionar todos</string>
     <string name="acquisition_deselect_all">Desseleccionar todos</string>
     <string name="acquisition_start">Adquirir seleccionados</string>
+    <string name="acquisition_auto_playlist">Criar automaticamente uma playlist local após a aquisição</string>
     <string name="acquisition_complete">Aquisição concluída · %1$d adicionadas · %2$d já existentes · %3$d falhadas</string>
     <string name="acquisition_playlist_created">Playlist actualizada: %1$s</string>
     <string name="acquisition_track">Músicas</string>
