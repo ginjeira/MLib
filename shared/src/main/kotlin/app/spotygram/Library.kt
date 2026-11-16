@@ -80,6 +80,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         if (oldVersion < 11) {
             db.execSQL("ALTER TABLE playlists ADD COLUMN description TEXT NOT NULL DEFAULT ''")
             db.execSQL("ALTER TABLE playlists ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''")
+            sync.migratePlaylistMetadata(db)
         }
         if (oldVersion < 6) sync.install(db)
         if (oldVersion < 7) sync.migrate(db)
