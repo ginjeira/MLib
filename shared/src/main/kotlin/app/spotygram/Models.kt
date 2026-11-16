@@ -100,7 +100,13 @@ data class ChatChoice(val id: Long, val title: String) {
         get() = chatTitle(id, title)
 }
 
-data class Playlist(val id: Long, val name: String, val tracks: List<String>)
+data class Playlist(
+    val id: Long,
+    val name: String,
+    val tracks: List<String>,
+    val description: String = "",
+    val coverUrl: String = "",
+)
 
 data class Album(
     val id: String,
