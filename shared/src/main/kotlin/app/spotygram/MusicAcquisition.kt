@@ -646,7 +646,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 "Prazo esgotado: resultado parcial (${audioMessages.size} faixa(s)); não foi recebido um sinal de conclusão."
             }
         } else ""
-        var lastDeliveryError = ""
+        val deliveryErrors = mutableListOf<String>()
 
         val importedTracks = mutableListOf<Track>()
         val importedIds = mutableSetOf<String>()
@@ -673,15 +673,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 val destinationMessage = messages.optJSONObject(0)
                 val track = destinationMessage?.let { parseAcquiredTrack(it, destinationTitle) }
                 if (track == null) {
-                    lastDeliveryError = "O Telegram não confirmou a entrega de uma mensagem de áudio."
+                    deliveryErrors += "O Telegram não confirmou a entrega de uma mensagem de áudio."
                     continue
                 }
                 importedTracks += track
                 importedIds += track.id
-                lastDeliveryError = ""
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
-                lastDeliveryError = friendly(error)
+                deliveryErrors += friendly(error)
             }
         }
 
@@ -695,7 +694,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val byId = app.library.state.value.byId
         val tracks = importedTracks.mapNotNull { byId[it.id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
-        val resultWarnings = listOf(partialWarning, lastDeliveryError)
+        val resultWarnings = (listOf(partialWarning) + deliveryErrors)
             .filter { it.isNotBlank() }
             .distinct()
             .joinToString(" ")
@@ -704,7 +703,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             tracks = tracks,
             importedIds = importedIds,
             error = resultWarnings,
-            partial = collection.partial,
+            partial = collection.partial || (tracks.isNotEmpty() && deliveryErrors.isNotEmpty()),
         )
     }
 

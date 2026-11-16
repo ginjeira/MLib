@@ -366,7 +366,7 @@ class MusicAcquisitionRulesTest {
             }
             val actual = AcquisitionCompletionRules.completionReason(
                 contentType, expectedCount, audioCount,
-                signal?.let(AcquisitionCompletionRules::isCompletionSignal) == true,
+                signal?.let { AcquisitionCompletionRules.isCompletionSignal(it) } == true,
                 silenceMillis, elapsedMillis,
             )
             val expected = when (item.getString("expected")) {
