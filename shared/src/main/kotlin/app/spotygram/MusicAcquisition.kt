@@ -156,10 +156,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
         allowPendingJob: Boolean = false,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
-        val reservedSearchId = activeSearchId
-        if (reservedSearchId != null &&
-            searches[reservedSearchId]?.search?.expiresAt?.let { System.currentTimeMillis() >= it } == true
-        ) activeSearchId = null
         check(activeSearchId == null) {
             "O bot ainda está a aguardar a conclusão da aquisição anterior. Termina-a antes de iniciar outra pesquisa."
         }
@@ -267,7 +263,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val session = searches[searchId] ?: error("A pesquisa expirou. Faz uma nova pesquisa.")
         require(System.currentTimeMillis() < session.search.expiresAt) {
             searches.remove(searchId)
-            if (activeSearchId == searchId) activeSearchId = null
             "A pesquisa expirou. Faz uma nova pesquisa."
         }
         val selected = selectedNumbers.distinct().map { number ->
