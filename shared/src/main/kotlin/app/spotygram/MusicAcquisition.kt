@@ -469,8 +469,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             )
             val selectedNumbers = pending.selectedTitles.map { title ->
                 val matches = refreshedSearch.results.filter {
-                    normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(it.title)) ==
-                        normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(title))
+                    MusicAcquisitionRules.cleanCollectionTitle(it.title).equals(
+                        MusicAcquisitionRules.cleanCollectionTitle(title),
+                        ignoreCase = true,
+                    )
                 }
                 check(matches.size == 1) {
                     "Não foi possível identificar sem ambiguidades o resultado '${title}' após recuperar a pesquisa."
@@ -876,7 +878,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (edited != null && predicate(edited)) return edited
             delay(600)
         }
-        return nulll
+        return null
     }
 
     private suspend fun request(
@@ -998,9 +1000,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
     private fun isSameRecording(candidate: Track, existing: Track): Boolean =
         MusicAcquisitionRules.isSameRecording(candidate, existing)
-
-    private fun normalizeMusicText(value: String): String =
-        MusicAcquisitionRules.normalizeMusicText(value)
 
     private fun sanitizeSearchQuery(value: String): String =
         MusicAcquisitionRules.sanitizeSearchQuery(value)
