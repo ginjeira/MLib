@@ -355,8 +355,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 updateJobItem(jobId, index) {
                     it.copy(
                         status = when {
-                            item.skippedDuplicate -> AcquisitionJobStatus.SKIPPED_DUPLICATE
                             item.partial || !item.botFinished -> AcquisitionJobStatus.PARTIAL
+                            item.skippedDuplicate -> AcquisitionJobStatus.SKIPPED_DUPLICATE
                             item.error.isNotBlank() -> AcquisitionJobStatus.FAILED
                             else -> AcquisitionJobStatus.COMPLETED
                         },
