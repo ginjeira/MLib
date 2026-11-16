@@ -1,5 +1,5 @@
 # MLib — contrato funcional de portabilidade MCat Player
-**Versão:** 1.0 | **Baseline MLib:** `7231aa08022863a5a3f22138ff881fcf4045c340` | **Baseline MCat Player:** `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`
+**Versão:** 1.1 (aditamento 16-11-2026) | **Baseline MLib:** `7231aa08022863a5a3f22138ff881fcf4045c340` | **Baseline MCat Player:** `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`
 
 Este contrato define comportamento observável. As fixtures em `desktop/src/test/resources/portability/` são exemplos sintéticos anonimizados, não capturas live. Os payloads de callback são marcadores opacos fictícios; os testes nunca os enviam ao Telegram.
 
