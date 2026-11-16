@@ -216,6 +216,19 @@ class LibrarySync(
         }
     }
 
+    fun migratePlaylistMetadata(db: SqlDatabase) {
+        val values = linkedMapOf<String, Any?>()
+        db.rawQuery("SELECT id,description,cover_url FROM playlists WHERE sync_id IS NOT NULL", null).use { c ->
+            while (c.moveToNext()) {
+                val uid = playlistId(db, c.getLong(0))
+                values["playlist/$uid/metadata"] = JSONObject()
+                    .put("description", c.getString(1))
+                    .put("cover", c.getString(2))
+            }
+        }
+        if (values.isNotEmpty()) edit(db, values)
+    }
+
     fun install(db: SqlDatabase) {
         db.execSQL("CREATE TABLE sync_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL)")
         db.execSQL(
