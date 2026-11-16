@@ -595,17 +595,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
         val audioMessages = collection.messages
         if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
-        var partialError = when {
-            expectedCount > 0 && audioMessages.size < expectedCount ->
-                "O bot enviou ${audioMessages.size} de ${expectedCount} faixas."
-            collection.timedOut ->
-                "O bot não confirmou o fim do envio dentro do tempo limite; a aquisição pode estar incompleta."
-            else -> ""
-        }
+        var lastDeliveryError = ""
 
         val importedTracks = mutableListOf<Track>()
         val importedIds = mutableSetOf<String>()
-        var deliveryFailures = 0
 
         // MCat forwards every received audio message separately. Preserve that
         // one-message-per-request behaviour and continue after an individual
@@ -629,14 +622,15 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 val destinationMessage = messages.optJSONObject(0)
                 val track = destinationMessage?.let { app.parseTrack(it, destinationTitle) }
                 if (track == null) {
-                    deliveryFailures++
+                    lastDeliveryError = "O Telegram não confirmou a entrega de uma mensagem de áudio."
                     continue
                 }
                 importedTracks += track
                 importedIds += track.id
+                lastDeliveryError = ""
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
-                deliveryFailures++
+                lastDeliveryError = friendly(error)
             }
         }
 
@@ -647,16 +641,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         if (importedTracks.isEmpty()) {
             error("O Telegram não confirmou a entrega do áudio ao destino.")
         }
-        if (deliveryFailures > 0) {
-            partialError = listOf(
-                partialError,
-                "$deliveryFailures de ${audioMessages.size} mensagens não foram confirmadas no destino.",
-            ).filter { it.isNotBlank() }.joinToString(" ")
-        }
         val byId = app.library.state.value.byId
         val tracks = importedTracks.mapNotNull { byId[it.id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
-        return AcquiredItem(option, tracks, importedIds, partialError)
+        return AcquiredItem(option, tracks, importedIds, lastDeliveryError)
     }
 
     private suspend fun collectAudioMessages(
