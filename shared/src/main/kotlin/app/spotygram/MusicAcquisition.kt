@@ -261,7 +261,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
         check(activeSearchId == null || activeSearchId == searchId) {
             "O bot ainda está ocupado com outra pesquisa/aquisição."
         }
-        activeSearchId = searchId
         require(destinationChatId != 0L) { "Selecciona um destino Telegram válido." }
         val session = searches[searchId] ?: error("A pesquisa expirou. Faz uma nova pesquisa.")
         require(System.currentTimeMillis() < session.search.expiresAt) {
