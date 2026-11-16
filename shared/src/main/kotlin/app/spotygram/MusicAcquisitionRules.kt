@@ -263,6 +263,7 @@ internal object MusicAcquisitionRules {
     fun findEquivalentCandidate(candidate: Track, candidates: List<Track>): Int =
         candidates.indexOfFirst { isSameRecording(candidate, it) }
 
+}
 
 internal enum class AcquisitionCompletionReason {
     EXPECTED_COUNT,
