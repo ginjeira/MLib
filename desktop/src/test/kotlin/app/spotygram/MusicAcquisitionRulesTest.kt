@@ -412,4 +412,22 @@ class MusicAcquisitionRulesTest {
                 AcquisitionContentType.ALBUM, 12, 7, false, 1_000, 240_000,
             ))
     }
+
+
+    @Test
+    fun botReplacementMessageMustBeNewerThanCallbackCursor() {
+        assertFalse(AcquisitionCompletionRules.isAfterMessageCursor(100L, 100L))
+        assertFalse(AcquisitionCompletionRules.isAfterMessageCursor(99L, 100L))
+        assertTrue(AcquisitionCompletionRules.isAfterMessageCursor(101L, 100L))
+    }
+
+    @Test
+    fun simpleRequestCanFinishOnFirstAudioWithoutTextSignal() {
+        assertEquals(
+            AcquisitionCompletionReason.SINGLE_TRACK,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.ARTIST, 1, 1, false, 0, 2_000,
+            ),
+        )
+    }
 }

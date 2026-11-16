@@ -885,7 +885,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): JSONObject? {
         repeat((timeoutMs / 1_000L).toInt().coerceAtLeast(1)) {
             val match = history(chatId, 5)
-                .firstOrNull { it.optLong("id") > afterMessageId && predicate(it) }
+                .firstOrNull {
+                    AcquisitionCompletionRules.isAfterMessageCursor(it.optLong("id"), afterMessageId) &&
+                        predicate(it)
+                }
             if (match != null) return match
             delay(1_000)
         }
@@ -911,8 +914,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
     /**
      * A Telegram bot may edit the message carrying its inline keyboard or send
-     * a replacement message after a callback. Accept both forms, but only after
-     * the callback's message ID so stale keyboards cannot satisfy the wait.
+     * a replacement message after a callback. Accept both forms; a replacement
+     * must have an ID newer than the callback message to reject stale keyboards.
      */
     private suspend fun waitForBotUpdate(
         chatId: Long,
@@ -925,6 +928,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 request(json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId))
             }.getOrNull()
             if (edited != null && predicate(edited)) return edited
+
+            val replacement = history(chatId, 10).firstOrNull { message ->
+                AcquisitionCompletionRules.isAfterMessageCursor(
+                    message.optLong("id"), previousMessageId,
+                ) && predicate(message)
+            }
+            if (replacement != null) return replacement
             delay(600)
         }
         return null

@@ -294,6 +294,9 @@ internal object AcquisitionCompletionRules {
     fun isCompletionSignal(text: String): Boolean =
         completionSignals.any { text.contains(it, ignoreCase = true) }
 
+    fun isAfterMessageCursor(candidateId: Long, cursorId: Long): Boolean =
+        candidateId > cursorId
+
     fun maxWaitMillis(contentType: AcquisitionContentType, expectedCount: Int): Long =
         if (isMultiTrack(contentType, expectedCount)) 240_000L else 45_000L
 

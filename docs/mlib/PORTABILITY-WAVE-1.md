@@ -25,3 +25,7 @@ Deadlines: 45 segundos para pedido simples; 240 segundos para multi-faixa. Sem �
 Os golden cases de conclusão do `mcat-protocol-v1.json` são executados contra a função de decisão usada pelo motor. Os testes cobrem sinais, cardinalidade de artista, deadline sem áudio e resultado parcial.
 
 As fixtures são sintéticas; não simulam callbacks nem mensagens reais TDLib. A validação live Telegram/dispositivo continua necessária. A recuperação idempotente de uma aquisição parcial e a deduplicação entre fontes permanecem no âmbito das Waves 2/6.
+
+## Correlação das respostas do bot
+
+Após cada callback, a implementação aceita tanto a edição da mensagem original como uma mensagem de substituição. A substituição só é aceite quando o ID é superior ao ID da mensagem do callback; mensagens antigas não satisfazem a espera. A recolha continua a usar o cursor capturado antes da selecção, IDs únicos e paginação TDLib.
