@@ -265,8 +265,7 @@ fun PlaylistEditor(
                             Modifier.fillMaxWidth(),
                         )
                     }
-                    if (!compact) {
-                        OutlinedTextField(
+                    OutlinedTextField(
                             value = description,
                             onValueChange = { description = it.take(512) },
                             label = { Text("Descrição da playlist") },
@@ -275,15 +274,14 @@ fun PlaylistEditor(
                             maxLines = 3,
                             enabled = !saving,
                         )
-                        OutlinedTextField(
-                            value = coverUrl,
-                            onValueChange = { coverUrl = it.take(4096) },
-                            label = { Text("URL da capa (opcional)") },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            singleLine = true,
-                            enabled = !saving,
-                        )
-                    }
+                    OutlinedTextField(
+                        value = coverUrl,
+                        onValueChange = { coverUrl = it.take(4096) },
+                        label = { Text("URL da capa (opcional)") },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        singleLine = true,
+                        enabled = !saving,
+                    )
                 }
             }
         else
