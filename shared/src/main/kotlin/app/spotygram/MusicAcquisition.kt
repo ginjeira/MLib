@@ -543,17 +543,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
         // Block all other entry points while the persisted bot turn is being reconciled.
         activeSearchId = "pending-resume"
         try {
-            if (pending.awaitingBotCompletion) {
-                waitForBotCompletionSignal(pending.botChatId, pending.botMessageCursor)
-                activeSearchId = null
+            // MCat releases the acquisition turn on count, single-track, quiet
+            // period, textual completion, or deadline. Older MLib builds stored
+            // an explicit-finish wait; discard that obsolete gate on recovery.
+            activeSearchId = null
+            if (pending.awaitingBotCompletion || pending.botChatId != 0L || pending.botMessageCursor != 0L) {
                 pending = pending.copy(
                     awaitingBotCompletion = false,
                     botChatId = 0L,
                     botMessageCursor = 0L,
                 )
                 persistPendingJob(pending)
-            } else {
-                activeSearchId = null
             }
             val currentUserId = request(json("getMe")).getLong("id")
             check(currentUserId == pending.telegramUserId) {
@@ -658,9 +658,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     fun discardPending() {
-        check(state.value.pendingJob?.awaitingBotCompletion != true) {
-            "O bot ainda não confirmou o fim do pedido. Aguarda a conclusão antes de libertar a conversa."
-        }
+        // Pending jobs can be discarded after any MCat completion condition;
+        // an explicit textual finish message is not a prerequisite.
         activeSearchId = null
         clearPendingJob()
     }
@@ -899,26 +898,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
         return AudioCollection(
             messages = collected.values.sortedBy { it.getLong("id") },
             completionReason = completionReason,
-            botFinished = completionReason == AcquisitionCompletionReason.COMPLETION_SIGNAL,
+            // processMcatJob() leaves its polling loop on every terminal
+            // condition, including count, one track, 9s silence and deadline.
+            botFinished = true,
             lastObservedMessageId = lastObservedMessageId,
         )
-    }
-
-    private suspend fun waitForBotCompletionSignal(botChatId: Long, afterMessageId: Long) {
-        check(botChatId != 0L) { "Não foi possível identificar a conversa do bot para retomar a aquisição." }
-        val started = System.currentTimeMillis()
-        var cursor = afterMessageId
-        while (System.currentTimeMillis() - started < 240_000L) {
-            delay(2_000)
-            val messages = historyAfter(botChatId, cursor)
-            for (message in messages) {
-                val id = message.optLong("id")
-                if (id <= cursor) continue
-                cursor = maxOf(cursor, id)
-                if (isCompletionMessage(message)) return
-            }
-        }
-        error("O bot não confirmou o fim do pedido no prazo de recuperação. A conversa continua bloqueada; não foi enviado um novo pedido.")
     }
 
     private suspend fun resolveBot(): JSONObject {

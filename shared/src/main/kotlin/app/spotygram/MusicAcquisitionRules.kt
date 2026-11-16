@@ -279,7 +279,7 @@ internal object AcquisitionCompletionRules {
         "download complete", "completed", "concluído",
         "todas as faixas", "process complete", "done!", "pronto!",
     )
-    private val finishWord = Regex("(?<![\\p{L}\\p{N}])finish(?:ed)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+    private val finishWord = Regex("(?<![\\p{L}\\p{N}])finished(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
 
     fun expectedTrackCount(title: String, contentType: AcquisitionContentType): Int =
         Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|m[uú]sicas?)?\\)", RegexOption.IGNORE_CASE)
@@ -310,9 +310,20 @@ internal object AcquisitionCompletionRules {
         silenceMillis: Long,
         elapsedMillis: Long,
     ): AcquisitionCompletionReason? {
-        if (hasCompletionSignal) return AcquisitionCompletionReason.COMPLETION_SIGNAL
-        // Count and silence are progress hints, never proof that the stateful
-        // Telegram bot has released its conversation for another request.
+        val multiTrack = isMultiTrack(contentType, expectedCount)
+        // Keep the same decision order as MCat Player's processMcatJob().
+        if (expectedCount > 0 && audioCount >= expectedCount) {
+            return AcquisitionCompletionReason.EXPECTED_COUNT
+        }
+        if (hasCompletionSignal && audioCount > 0) {
+            return AcquisitionCompletionReason.COMPLETION_SIGNAL
+        }
+        if (!multiTrack && audioCount >= 1) {
+            return AcquisitionCompletionReason.SINGLE_TRACK
+        }
+        if (multiTrack && audioCount > 0 && silenceMillis >= 9_000L) {
+            return AcquisitionCompletionReason.QUIET_PERIOD
+        }
         if (elapsedMillis >= maxWaitMillis(contentType, expectedCount)) {
             return if (audioCount > 0) AcquisitionCompletionReason.DEADLINE_PARTIAL
             else AcquisitionCompletionReason.DEADLINE_NO_AUDIO
