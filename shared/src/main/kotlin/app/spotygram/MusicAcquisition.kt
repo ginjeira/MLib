@@ -928,10 +928,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }.getOrNull()
             if (edited != null && predicate(edited)) return edited
 
-            val replacement = history(chatId, 10).firstOrNull { message ->
-                AcquisitionCompletionRules.isAfterMessageCursor(
-                    message.optLong("id"), previousMessageId,
-                ) && predicate(message)
+            val replacement = historyAfter(chatId, previousMessageId).firstOrNull { message ->
+                predicate(message)
             }
             if (replacement != null) return replacement
             delay(600)
