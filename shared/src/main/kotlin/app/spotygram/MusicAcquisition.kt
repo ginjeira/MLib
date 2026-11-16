@@ -267,6 +267,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val session = searches[searchId] ?: error("A pesquisa expirou. Faz uma nova pesquisa.")
         require(System.currentTimeMillis() < session.search.expiresAt) {
             searches.remove(searchId)
+            if (activeSearchId == searchId) activeSearchId = null
             "A pesquisa expirou. Faz uma nova pesquisa."
         }
         val selected = selectedNumbers.distinct().map { number ->
