@@ -357,13 +357,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val cover = when {
                         existingCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(existingCover) -> existingCover
                         trackCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(trackCover) -> trackCover
-                        else -> existingCover.ifBlank { trackCover }
+                        else -> MusicAcquisitionRules.genreCoverPreset("$title $artist")
                     }
                     val albumId = app.library.createOrUpdateAlbum(
                         title = existingAlbum?.title ?: title,
                         artist = existingAlbum?.artist?.takeIf(String::isNotBlank) ?: artist,
                         tracks = item.tracks.map { it.id },
-                        year = existingAlbum?.year.orEmpty(),
+                        year = existingAlbum?.year?.ifBlank { java.time.Year.now().value.toString() }
+                            ?: java.time.Year.now().value.toString(),
                         coverUrl = cover,
                         genre = existingAlbum?.genre.orEmpty(),
                         targetAlbumId = existingAlbum?.id,
@@ -372,7 +373,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
             }
             if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
-                for (item in completed.filter { it.tracks.isNotEmpty() }) {
+                for (item in completed.filter { it.tracks.isNotEmpty() && !it.skippedDuplicate }) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val playlistName = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
                     val existing = app.library.state.value.playlists.firstOrNull {
@@ -401,7 +402,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
 
             // MCat refreshes the destination after setting the final job state.
-            app.refresh()
+            try {
+                app.refresh()
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+            }
 
             val outcome = AcquisitionOutcome(
                 imported = importedCount,
