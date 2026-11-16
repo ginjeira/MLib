@@ -688,6 +688,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             return AcquiredItem(option, listOf(existingOption), skippedDuplicate = true)
         }
         val latestBeforeSelection = latestMessageId(botChatId)
+        state.value.pendingJob?.let { pending ->
+            persistPendingJob(pending.copy(
+                awaitingBotCompletion = true,
+                botChatId = botChatId,
+                botMessageCursor = latestBeforeSelection,
+            ))
+        }
         val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)
         )

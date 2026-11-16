@@ -330,12 +330,13 @@
   ],
   "completionCases": [
     {
-      "id": "COMP-COUNT",
+      "id": "COMP-COUNT-WAIT",
+      "contentType": "playlist",
       "expectedCount": 3,
       "receivedAudioCount": 3,
       "signal": null,
       "silenceSeconds": 0,
-      "expected": "complete_count"
+      "expected": "wait_for_signal"
     },
     {
       "id": "COMP-SIGNAL-FINISHED",
@@ -343,6 +344,16 @@
       "receivedAudioCount": 2,
       "signal": "Finished.",
       "silenceSeconds": 0,
+      "expected": "complete_signal"
+    },
+    {
+      "id": "COMP-SIGNAL-FINISH-20-18",
+      "contentType": "playlist",
+      "expectedCount": 20,
+      "receivedAudioCount": 18,
+      "signal": "finish",
+      "silenceSeconds": 2,
+      "deadlineSeconds": 60,
       "expected": "complete_signal"
     },
     {
@@ -362,7 +373,7 @@
       "expected": "complete_signal"
     },
     {
-      "id": "COMP-SINGLE",
+      "id": "COMP-SINGLE-WAIT",
       "contentType": "track",
       "expectedCount": 1,
       "receivedAudioCount": 1,
@@ -371,7 +382,7 @@
       "expected": "complete_single"
     },
     {
-      "id": "COMP-QUIET",
+      "id": "COMP-QUIET-WAIT",
       "contentType": "playlist",
       "expectedCount": null,
       "receivedAudioCount": 4,
@@ -386,15 +397,16 @@
       "receivedAudioCount": 0,
       "signal": null,
       "silenceSeconds": 45,
+      "deadlineSeconds": 45,
       "expected": "fail_no_audio"
     },
     {
       "id": "COMP-PARTIAL",
       "contentType": "album",
-      "expectedCount": 12,
-      "receivedAudioCount": 7,
+      "expectedCount": 20,
+      "receivedAudioCount": 18,
       "signal": null,
-      "silenceSeconds": 0,
+      "silenceSeconds": 30,
       "deadlineSeconds": 240,
       "expected": "partial_timeout"
     }

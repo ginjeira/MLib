@@ -370,10 +370,8 @@ class MusicAcquisitionRulesTest {
                 silenceMillis, elapsedMillis,
             )
             val expected = when (item.getString("expected")) {
-                "complete_count" -> AcquisitionCompletionReason.EXPECTED_COUNT
                 "complete_signal" -> AcquisitionCompletionReason.COMPLETION_SIGNAL
-                "complete_single" -> AcquisitionCompletionReason.EXPECTED_COUNT
-                "complete_quiet" -> AcquisitionCompletionReason.QUIET_PERIOD
+                "wait_for_signal", "complete_single", "complete_quiet" -> null
                 "fail_no_audio" -> AcquisitionCompletionReason.DEADLINE_NO_AUDIO
                 "partial_timeout" -> AcquisitionCompletionReason.DEADLINE_PARTIAL
                 else -> error("Unknown completion fixture: ${item.getString("expected")}")
@@ -395,14 +393,15 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun completionSignalsAreCaseInsensitiveAndRequireAudioBeforeSuccess() {
-        listOf("Finished.", "Download complete", "COMPLETED", "Todas as faixas concluído",
-            "Process complete", "Done!", "Pronto!").forEach {
+    fun completionSignalsAreCaseInsensitiveAndFinishReleasesBotEvenWithoutAudio() {
+        listOf("finish", "Finish.", "Finished.", "Download complete", "COMPLETED",
+            "Todas as faixas concluído", "Process complete", "Done!", "Pronto!").forEach {
             assertTrue("signal: $it", AcquisitionCompletionRules.isCompletionSignal(it))
         }
-        assertEquals(null, AcquisitionCompletionRules.completionReason(
-            AcquisitionContentType.PLAYLIST, 0, 0, true, 0, 10_000,
-        ))
+        assertEquals(AcquisitionCompletionReason.COMPLETION_SIGNAL,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 0, 0, true, 0, 10_000,
+            ))
     }
 
     @Test
@@ -422,12 +421,28 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun simpleRequestCanFinishOnFirstAudioWithoutTextSignal() {
-        assertEquals(
-            AcquisitionCompletionReason.SINGLE_TRACK,
+    fun expectedCountAndSilenceDoNotReleaseTheBotConversation() {
+        assertEquals(null, AcquisitionCompletionRules.completionReason(
+            AcquisitionContentType.PLAYLIST, 20, 20, false, 9_000, 60_000,
+        ))
+        assertEquals(null, AcquisitionCompletionRules.completionReason(
+            AcquisitionContentType.TRACK, 1, 1, false, 0, 2_000,
+        ))
+    }
+
+    @Test
+    fun finishSignalCompletesGeographicallyShortCollection() {
+        assertEquals(AcquisitionCompletionReason.COMPLETION_SIGNAL,
             AcquisitionCompletionRules.completionReason(
-                AcquisitionContentType.TRACK, 0, 1, false, 0, 2_000,
-            ),
-        )
+                AcquisitionContentType.PLAYLIST, 20, 18, true, 2_000, 60_000,
+            ))
+    }
+
+    @Test
+    fun missingFinishSignalLeavesShortCollectionPartialAndBotBusy() {
+        assertEquals(AcquisitionCompletionReason.DEADLINE_PARTIAL,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 20, 18, false, 30_000, 240_000,
+            ))
     }
 }

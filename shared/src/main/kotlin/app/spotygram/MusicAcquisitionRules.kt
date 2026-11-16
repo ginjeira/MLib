@@ -276,9 +276,10 @@ internal enum class AcquisitionCompletionReason {
 
 internal object AcquisitionCompletionRules {
     private val completionSignals = listOf(
-        "finished", "download complete", "completed", "concluído",
+        "download complete", "completed", "concluído",
         "todas as faixas", "process complete", "done!", "pronto!",
     )
+    private val finishWord = Regex("(?<![\\p{L}\\p{N}])finish(?:ed)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
 
     fun expectedTrackCount(title: String, contentType: AcquisitionContentType): Int =
         Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|m[uú]sicas?)?\\)", RegexOption.IGNORE_CASE)
@@ -292,7 +293,8 @@ internal object AcquisitionCompletionRules {
             contentType == AcquisitionContentType.ALBUM || expectedCount > 1
 
     fun isCompletionSignal(text: String): Boolean =
-        completionSignals.any { text.contains(it, ignoreCase = true) }
+        finishWord.containsMatchIn(text) ||
+            completionSignals.any { text.contains(it, ignoreCase = true) }
 
     fun isAfterMessageCursor(candidateId: Long, cursorId: Long): Boolean =
         candidateId > cursorId
@@ -308,19 +310,14 @@ internal object AcquisitionCompletionRules {
         silenceMillis: Long,
         elapsedMillis: Long,
     ): AcquisitionCompletionReason? {
-        val multiTrack = isMultiTrack(contentType, expectedCount)
-        if (audioCount > 0 && expectedCount > 0 && audioCount >= expectedCount)
-            return AcquisitionCompletionReason.EXPECTED_COUNT
-        if (audioCount > 0 && hasCompletionSignal)
-            return AcquisitionCompletionReason.COMPLETION_SIGNAL
-        if (audioCount > 0 && !multiTrack)
-            return AcquisitionCompletionReason.SINGLE_TRACK
-        if (audioCount > 0 && multiTrack && silenceMillis >= 9_000L)
-            return AcquisitionCompletionReason.QUIET_PERIOD
+        if (hasCompletionSignal) return AcquisitionCompletionReason.COMPLETION_SIGNAL
+        // Count and silence are progress hints, never proof that the stateful
+        // Telegram bot has released its conversation for another request.
         if (elapsedMillis >= maxWaitMillis(contentType, expectedCount)) {
             return if (audioCount > 0) AcquisitionCompletionReason.DEADLINE_PARTIAL
             else AcquisitionCompletionReason.DEADLINE_NO_AUDIO
         }
         return null
     }
+}
 }
