@@ -426,7 +426,7 @@ class MusicAcquisitionRulesTest {
         assertEquals(
             AcquisitionCompletionReason.SINGLE_TRACK,
             AcquisitionCompletionRules.completionReason(
-                AcquisitionContentType.ARTIST, 1, 1, false, 0, 2_000,
+                AcquisitionContentType.TRACK, 0, 1, false, 0, 2_000,
             ),
         )
     }
