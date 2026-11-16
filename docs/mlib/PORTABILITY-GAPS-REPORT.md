@@ -43,7 +43,7 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 | Área | Estado observado no MLib | Conclusão |
 |---|---|---|
 | Pesquisa, filtros e resultados | Implementado em código | Paridade estrutural provável; faltam fixtures e validação live |
-| Recepção/conclusão de áudio | Implementado com diferença | MLib exige sinal terminal; MCat termina também por contagem esperada, faixa única ou 9 s de silêncio |
+| Recepção/conclusão de áudio | ACQ-01 implementado; CI pendente | Repostas as condições MCat: contagem, sinal com áudio, faixa única, 9 s de silêncio e deadline |
 | Artista | Próximo da referência | MLib e MCat classificam como multi quando a opção indica mais de uma faixa |
 | Encaminhamento/parsing | Implementado | TDLib presente; falta validação end-to-end |
 | Dedup durante aquisição | Helper portado | Falta corpus golden e fontes adicionais |
@@ -59,7 +59,7 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 
 | ID | Prioridade | Estado observado | Wave |
 |---|---:|---|---:|
-| ACQ-01 — Critérios de conclusão da recepção de áudio | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
+| ACQ-01 — Critérios de conclusão da recepção de áudio | P0 | Código, testes golden e fixture actualizados; CI pendente | 1 |
 | ACQ-02 — Classificação multi-faixa para artista | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
 | ACQ-03 — Fixtures de protocolo para pesquisa/callbacks | P1 | Implementado, não provado | 0/1 |
 | ACQ-04 — Ordem, paginação e limite de recolha | P2 | Adaptação mais ampla; limite por validar | 1 |

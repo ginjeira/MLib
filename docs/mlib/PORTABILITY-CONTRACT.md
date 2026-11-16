@@ -25,7 +25,7 @@ Este contrato define comportamento observável. As fixtures em `desktop/src/test
 - Colecção: depois de pelo menos um áudio, 9 segundos sem novas faixas concluem o lote.
 - Deadline: 45 s para pedido simples; 240 s para multi-faixa. Sem áudio no deadline, a opção falha. Com áudio, o resultado é parcial.
 - A contagem esperada, sinal textual e silêncio são critérios de conclusão herdados do MCat, não apenas indicadores.
-- Não exigir um sinal terminal explícito adicional para libertar a sequência de opções: isso altera a semântica do MCat e não é requisito de paridade.
+- Cada saída do ciclo de recepção — contagem, sinal com áudio, faixa simples, silêncio ou deadline — encerra a opção e permite ao worker MCat avançar para a opção seguinte. O timeout com áudio é parcial; sem áudio é falha. Não existe uma espera adicional por sinal terminal para libertar a sequência.
 - As regras de cursor, deduplicação de IDs e ordem cronológica são adaptações técnicas TDLib e devem preservar o resultado observável.
 
 ## Encaminhamento e biblioteca
