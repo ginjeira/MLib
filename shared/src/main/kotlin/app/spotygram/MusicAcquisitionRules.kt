@@ -159,13 +159,13 @@ internal object MusicAcquisitionRules {
     private fun cleanAlbumTitle(title: String, artist: String): String {
         if (title.isEmpty()) return ""
         var clean = title
-            .replace(Regex("^\\\\d+[.\\\\-)]\\\\s*"), "")
-            .replace(Regex("\\\\(\\\\d+\\\\s*🎵\\\\)", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("\\\\s*\\\\((?:19|20)\\\\d{2}\\\\)\\\\s*"), " ")
-            .replace(Regex("\\\\s*\\\\[(?:19|20)\\\\d{2}\\\\]\\\\s*"), " ")
-            .replace(Regex("\\\\s*-\\\\s*(?:single|ep|deluxe|remaster(?:ed)?)\\\\b", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("\\\\s*\\\\((?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\\\)", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("\\\\s*\\\\[(?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\\\]", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("^\\d+[.\\-)]\\s*"), "")
+            .replace(Regex("\\(\\d+\\s*🎵\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\((?:19|20)\\d{2}\\)\\s*"), " ")
+            .replace(Regex("\\s*\\[(?:19|20)\\d{2}\\]\\s*"), " ")
+            .replace(Regex("\\s*-\\s*(?:single|ep|deluxe|remaster(?:ed)?)\\b", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\((?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\[(?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\]", RegexOption.IGNORE_CASE), "")
             .trim()
         val parts = clean.split('-')
         if (parts.size >= 2) {
@@ -182,7 +182,7 @@ internal object MusicAcquisitionRules {
                 clean = suffixTitle
             }
         }
-        clean = clean.replace(Regex("\\\\s*-\\\\s*Sele[cç][aã]o\\\\b", RegexOption.IGNORE_CASE), "").trim()
+        clean = clean.replace(Regex("\\s*-\\s*Sele[cç][aã]o\\b", RegexOption.IGNORE_CASE), "").trim()
         return clean.ifEmpty { title }
     }
 
