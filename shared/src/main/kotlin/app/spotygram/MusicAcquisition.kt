@@ -82,6 +82,9 @@ data class PendingAcquisitionJob(
     val telegramUserId: Long,
     val targetAlbumId: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
+    val awaitingBotCompletion: Boolean = false,
+    val botChatId: Long = 0,
+    val botMessageCursor: Long = 0,
 )
 
 data class AcquisitionState(
@@ -109,11 +112,16 @@ private data class AcquiredItem(
     val error: String = "",
     val skippedDuplicate: Boolean = false,
     val partial: Boolean = false,
+    val botFinished: Boolean = true,
+    val botChatId: Long = 0,
+    val botMessageCursor: Long = 0,
 )
 
 private data class AudioCollection(
     val messages: List<JSONObject>,
     val completionReason: AcquisitionCompletionReason,
+    val botFinished: Boolean,
+    val lastObservedMessageId: Long,
 ) {
     val partial: Boolean
         get() = completionReason == AcquisitionCompletionReason.DEADLINE_PARTIAL
@@ -132,6 +140,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     // messages/callbacks must not be interleaved by simultaneous MLib requests.
     private val botLane = Mutex()
     private val searches = linkedMapOf<String, SearchSession>()
+    private var activeSearchId: String? = null
     private val pendingJobKey = "mlib_pending_music_acquisition"
 
     init {
@@ -146,6 +155,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         allowPendingJob: Boolean = false,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
+        if (activeSearchId != null &&
+            searches[activeSearchId]?.search?.expiresAt?.let { System.currentTimeMillis() >= it } == true
+        ) activeSearchId = null
+        check(activeSearchId == null) {
+            "O bot ainda está a aguardar a conclusão da aquisição anterior. Termina-a antes de iniciar outra pesquisa."
+        }
         check(state.value.pendingJob == null || allowPendingJob) {
             "Existe uma aquisição interrompida. Retoma-a ou descarta-a antes de iniciar outra."
         }
@@ -217,7 +232,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             searches[search.id] = SearchSession(
                 search, bot.getLong("id"), resultMessage.getLong("id"), targetAlbumId,
             )
-            while (searches.size > 12) searches.remove(searches.keys.first())
+            if (options.isNotEmpty()) activeSearchId = search.id
+            while (searches.size > 12) {
+                val oldest = searches.keys.first()
+                searches.remove(oldest)
+                if (activeSearchId == oldest) activeSearchId = null
+            }
             state.value = state.value.copy(
                 searching = false,
                 progress = "",
@@ -238,6 +258,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         destinationChatId: Long,
     ): AcquisitionOutcome = botLane.withLock {
         checkTelegramReady()
+        check(activeSearchId == null || activeSearchId == searchId) {
+            "O bot ainda está ocupado com outra pesquisa/aquisição."
+        }
+        activeSearchId = searchId
         require(destinationChatId != 0L) { "Selecciona um destino Telegram válido." }
         val session = searches[searchId] ?: error("A pesquisa expirou. Faz uma nova pesquisa.")
         require(System.currentTimeMillis() < session.search.expiresAt) {
@@ -304,33 +328,46 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val destinationChoice = app.telegram.rememberChat(destination)
 
             val completed = mutableListOf<AcquiredItem>()
-            selected.forEachIndexed { index, option ->
+            val retryTitles = mutableListOf<String>()
+            var botTurnFinished = true
+            var resumeBotChatId = 0L
+            var resumeBotCursor = 0L
+            for ((index, option) in selected.withIndex()) {
                 state.value = state.value.copy(
                     progress = "A obter opção ${index + 1}/${selected.size}: ${option.title}",
                 )
                 updateJobItem(jobId, index) { it.copy(status = AcquisitionJobStatus.FORWARDING) }
-                try {
-                    val item = acquireOption(session, option, destinationChatId, destinationTitle)
-                    completed += item
-                    updateJobItem(jobId, index) {
-                        it.copy(
-                            status = when {
-                                item.skippedDuplicate -> AcquisitionJobStatus.SKIPPED_DUPLICATE
-                                item.partial -> AcquisitionJobStatus.PARTIAL
-                                item.error.isNotBlank() -> AcquisitionJobStatus.FAILED
-                                else -> AcquisitionJobStatus.COMPLETED
-                            },
-                            trackIds = item.tracks.map { track -> track.id },
-                            error = item.error,
-                        )
-                    }
+                val item = try {
+                    acquireOption(session, option, destinationChatId, destinationTitle)
                 } catch (error: Throwable) {
                     if (error is CancellationException) throw error
-                    val message = friendly(error)
-                    completed += AcquiredItem(option, emptyList(), error = message)
-                    updateJobItem(jobId, index) {
-                        it.copy(status = AcquisitionJobStatus.FAILED, error = message)
-                    }
+                    val cursor = runCatching { latestMessageId(session.botChatId) }.getOrDefault(0L)
+                    AcquiredItem(
+                        option, emptyList(), error = friendly(error), botFinished = false,
+                        botChatId = session.botChatId, botMessageCursor = cursor,
+                    )
+                }
+                completed += item
+                updateJobItem(jobId, index) {
+                    it.copy(
+                        status = when {
+                            item.skippedDuplicate -> AcquisitionJobStatus.SKIPPED_DUPLICATE
+                            item.partial || !item.botFinished -> AcquisitionJobStatus.PARTIAL
+                            item.error.isNotBlank() -> AcquisitionJobStatus.FAILED
+                            else -> AcquisitionJobStatus.COMPLETED
+                        },
+                        trackIds = item.tracks.map { track -> track.id },
+                        error = item.error,
+                    )
+                }
+                if (item.error.isNotBlank()) retryTitles += option.title
+                if (!item.botFinished) {
+                    botTurnFinished = false
+                    resumeBotChatId = item.botChatId.takeIf { it != 0L } ?: session.botChatId
+                    resumeBotCursor = item.botMessageCursor
+                    retryTitles.clear()
+                    retryTitles += selected.drop(index).map { it.title }
+                    break
                 }
                 delay(1_000)
             }
@@ -467,9 +504,15 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val incompleteTitles = completed
                 .filter { it.error.isNotEmpty() }
                 .map { it.option.title }
-            val remainingJob = pending.copy(selectedTitles = incompleteTitles)
-                .takeIf { incompleteTitles.isNotEmpty() }
+            val remainingTitles = if (!botTurnFinished) retryTitles else incompleteTitles
+            val remainingJob = pending.copy(
+                selectedTitles = remainingTitles,
+                awaitingBotCompletion = !botTurnFinished,
+                botChatId = if (!botTurnFinished) resumeBotChatId else 0L,
+                botMessageCursor = if (!botTurnFinished) resumeBotCursor else 0L,
+            ).takeIf { remainingTitles.isNotEmpty() }
             if (remainingJob == null) clearPendingJob() else persistPendingJob(remainingJob)
+            if (botTurnFinished) activeSearchId = null
             state.value = state.value.copy(
                 acquiring = false,
                 progress = "",
@@ -492,10 +535,22 @@ class MusicAcquisition(private val app: SpotygramApp) {
      * is indexed and reused instead of being forwarded a second time.
      */
     suspend fun resumePending(): AcquisitionOutcome {
-        val pending = state.value.pendingJob ?: readPendingJob()
+        var pending = state.value.pendingJob ?: readPendingJob()
             ?: error("Não existe nenhuma aquisição interrompida para retomar.")
         state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
         try {
+            if (pending.awaitingBotCompletion) {
+                waitForBotCompletionSignal(pending.botChatId, pending.botMessageCursor)
+                activeSearchId = null
+                pending = pending.copy(
+                    awaitingBotCompletion = false,
+                    botChatId = 0L,
+                    botMessageCursor = 0L,
+                )
+                persistPendingJob(pending)
+            } else {
+                activeSearchId = null
+            }
             val currentUserId = request(json("getMe")).getLong("id")
             check(currentUserId == pending.telegramUserId) {
                 "Esta aquisição pertence a outra conta Telegram. Liga a conta original ou descarta o trabalho pendente."
@@ -573,6 +628,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 ?.toString()
                 ?.takeIf(String::isNotBlank),
             updatedAt = json.optLong("updated_at", System.currentTimeMillis()),
+            awaitingBotCompletion = json.optBoolean("awaiting_bot_completion", false),
+            botChatId = json.optLong("bot_chat_id", 0L),
+            botMessageCursor = json.optLong("bot_message_cursor", 0L),
         )
     }.getOrNull()
 
@@ -585,6 +643,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .put("destination_chat_id", job.destinationChatId)
             .put("telegram_user_id", job.telegramUserId)
             .put("target_album_id", job.targetAlbumId ?: JSONObject.NULL)
+            .put("awaiting_bot_completion", job.awaitingBotCompletion)
+            .put("bot_chat_id", job.botChatId)
+            .put("bot_message_cursor", job.botMessageCursor)
             .put("updated_at", System.currentTimeMillis())
         check(app.prefs.edit().putString(pendingJobKey, json.toString()).commit()) {
             "Não foi possível guardar o estado da aquisição interrompida."
@@ -593,6 +654,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     fun discardPending() {
+        check(state.value.pendingJob?.awaitingBotCompletion != true) {
+            "O bot ainda não confirmou o fim do pedido. Aguarda a conclusão antes de libertar a conversa."
+        }
+        activeSearchId = null
         clearPendingJob()
     }
 
@@ -642,12 +707,30 @@ class MusicAcquisition(private val app: SpotygramApp) {
         if (collection.completionReason == AcquisitionCompletionReason.DEADLINE_NO_AUDIO) {
             error("O bot não enviou áudio dentro do tempo limite.")
         }
-        if (audioMessages.isEmpty()) error("O bot terminou sem devolver áudio para esta opção.")
-        val partialWarning = if (collection.partial) {
+        if (audioMessages.isEmpty()) {
+            return AcquiredItem(
+                option = option,
+                tracks = emptyList(),
+                error = if (collection.botFinished) {
+                    "O bot terminou sem devolver áudio para esta opção."
+                } else {
+                    "O bot ainda não confirmou o fim do pedido; a conversa permanece bloqueada."
+                },
+                partial = !collection.botFinished,
+                botFinished = collection.botFinished,
+                botChatId = botChatId,
+                botMessageCursor = collection.lastObservedMessageId,
+            )
+        }
+        val partialWarning = if (collection.partial || !collection.botFinished) {
             if (expectedCount > 0) {
-                "Prazo esgotado: resultado parcial (${audioMessages.size}/$expectedCount faixas recebidas)."
+                if (collection.botFinished) {
+                    "Resultado parcial (${audioMessages.size}/$expectedCount faixas recebidas)."
+                } else {
+                    "O bot ainda não confirmou o fim do pedido (${audioMessages.size}/$expectedCount faixas recebidas)."
+                }
             } else {
-                "Prazo esgotado: resultado parcial (${audioMessages.size} faixa(s)); não foi recebido um sinal de conclusão."
+                "O bot ainda não confirmou o fim do pedido (${audioMessages.size} faixa(s) recebidas)."
             }
         } else ""
         val deliveryErrors = mutableListOf<String>()
@@ -707,7 +790,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
             tracks = tracks,
             importedIds = importedIds,
             error = resultWarnings,
-            partial = collection.partial || (tracks.isNotEmpty() && deliveryErrors.isNotEmpty()),
+            partial = collection.partial || !collection.botFinished ||
+                (tracks.isNotEmpty() && deliveryErrors.isNotEmpty()),
+            botFinished = collection.botFinished,
+            botChatId = botChatId,
+            botMessageCursor = collection.lastObservedMessageId,
         )
     }
 
@@ -787,9 +874,28 @@ class MusicAcquisition(private val app: SpotygramApp) {
             else AcquisitionCompletionReason.DEADLINE_PARTIAL
         }
         return AudioCollection(
-            messages = collected.values.sortedByDescending { it.getLong("id") },
+            messages = collected.values.sortedBy { it.getLong("id") },
             completionReason = completionReason,
+            botFinished = completionReason == AcquisitionCompletionReason.COMPLETION_SIGNAL,
+            lastObservedMessageId = lastObservedMessageId,
         )
+    }
+
+    private suspend fun waitForBotCompletionSignal(botChatId: Long, afterMessageId: Long) {
+        check(botChatId != 0L) { "Não foi possível identificar a conversa do bot para retomar a aquisição." }
+        val started = System.currentTimeMillis()
+        var cursor = afterMessageId
+        while (System.currentTimeMillis() - started < 240_000L) {
+            delay(2_000)
+            val messages = historyAfter(botChatId, cursor)
+            for (message in messages) {
+                val id = message.optLong("id")
+                if (id <= cursor) continue
+                cursor = maxOf(cursor, id)
+                if (isCompletionMessage(message)) return
+            }
+        }
+        error("O bot não confirmou o fim do pedido no prazo de recuperação. A conversa continua bloqueada; não foi enviado um novo pedido.")
     }
 
     private suspend fun resolveBot(): JSONObject {
