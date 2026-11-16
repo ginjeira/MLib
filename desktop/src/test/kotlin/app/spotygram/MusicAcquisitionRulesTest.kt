@@ -330,7 +330,7 @@ class MusicAcquisitionRulesTest {
             val options = MusicAcquisitionRules.parseResults(message.getString("text"))
             assertEquals(listOf(1, 2), options.map { it.number })
             val buttons = item.getJSONArray("resultButtons")
-            assertEquals(options.size(), buttons.length())
+            assertEquals(options.size, buttons.length())
             for (buttonIndex in 0 until buttons.length()) {
                 val button = buttons.getJSONObject(buttonIndex)
                 assertTrue(button.getString("callbackData").startsWith("fixture:"))
@@ -338,7 +338,9 @@ class MusicAcquisitionRulesTest {
             assertTrue(item.getJSONObject("filterButton").getString("callbackData").startsWith("fixture:"))
         }
         assertEquals(8, seenPairs.size)
-        assertEquals(2, fixture.getJSONArray("audioMessages").length().let { it - 2 })
+        val audio = fixture.getJSONArray("audioMessages")
+        val expectedAudio = (0 until audio.length()).count { audio.getJSONObject(it).getBoolean("expectedCollected") }
+        assertEquals(2, expectedAudio)
         assertTrue(fixture.getJSONArray("completionCases").length() >= 8)
         assertEquals(5, fixture.getJSONArray("cardinalityCases").length())
     }
