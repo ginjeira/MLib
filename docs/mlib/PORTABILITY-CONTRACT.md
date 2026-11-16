@@ -1,5 +1,5 @@
 # MLib — contrato funcional de portabilidade MCat Player
-**Versão:** 1.1 (aditamento 16-11-2026) | **Baseline MLib:** `7231aa08022863a5a3f22138ff881fcf4045c340` | **Baseline MCat Player:** `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`
+**Versão:** 1.2 (correcção de paridade MCat, 16-11-2026) | **Baseline MLib:** `7231aa08022863a5a3f22138ff881fcf4045c340` | **Baseline MCat Player:** `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`
 
 Este contrato define comportamento observável. As fixtures em `desktop/src/test/resources/portability/` são exemplos sintéticos anonimizados, não capturas live. Os payloads de callback são marcadores opacos fictícios; os testes nunca os enviam ao Telegram.
 
@@ -12,21 +12,21 @@ Este contrato define comportamento observável. As fixtures em `desktop/src/test
 
 ## Classificação de cardinalidade
 - `playlist` e `album`: multi-faixa.
-- `track`: pedido simples; a primeira faixa é recolhida, mas o turno só termina com sinal terminal explícito.
-- `artist`: não implica discografia nem multi-faixa. Só é multi se a opção seleccionada indicar contagem esperada superior a um.
-- Contagem indicada e validada prevalece sobre heurística de tipo.
+- `track`: pedido simples; termina quando chega a primeira faixa.
+- `artist`: só é multi-faixa quando a opção seleccionada indica contagem esperada superior a um.
+- A classificação usada pelo worker MCat é: playlist, album ou `expectedTrackCount > 1`.
 
 ## Recepção/conclusão (comportamento MCat de referência)
 - Recolher apenas mensagens de áudio novas após o cursor capturado imediatamente antes de seleccionar a opção.
-- Desduplicar IDs de mensagem e preservar ordem cronológica.
-- A contagem esperada positiva é um indicador de progresso, não uma confirmação de que o bot libertou o turno. Atingir 20/20 sem sinal final continua pendente.
-- Sinais textuais MCat (case-insensitive): `finish`, `finished`, `download complete`, `completed`, `concluído`, `todas as faixas`, `process complete`, `done!`, `pronto!`.
-- Uma colecção 20/18 com sinal final `finish` está concluída com as 18 faixas recebidas; a contagem esperada não bloqueia faixas indisponíveis, incluindo por restrições geográficas.
-- Pedido simples: a primeira faixa é recolhida, mas o turno só é libertado com sinal final explícito.
-- Silêncio de 9 segundos é apenas um indicador de inactividade; não prova que o bot terminou.
-- Deadline: 45 s para simples; 240 s para multi. Sem áudio e sem sinal = falha pendente; com áudio mas sem sinal = resultado parcial pendente, sem libertar o bot.
-- Um novo pedido só pode ser enviado depois do sinal terminal da opção anterior. A serialização por Mutex não substitui esta confirmação.
-- Em timeout, persistir a conversa, o cursor e as opções pendentes. A retoma espera o sinal terminal depois do cursor antes de reconstruir a pesquisa; contagem, silêncio ou descarte não libertam a conversa.
+- Desduplicar IDs de mensagem e preservar a ordem cronológica.
+- Para playlist/álbum/artist multi-faixa, uma contagem esperada positiva conclui a recepção assim que o número de áudios recebidos atinge essa contagem.
+- Um sinal textual reconhecido conclui a recepção se já tiver sido recebido pelo menos um áudio, mesmo que a contagem esperada não tenha sido atingida. Inclui `finished`, `download complete`, `completed`, `concluído`, `todas as faixas`, `process complete`, `done!` e `pronto!`; a comparação é case-insensitive.
+- Pedido simples: a primeira faixa recebida conclui a recepção; não exige mensagem final adicional.
+- Colecção: depois de pelo menos um áudio, 9 segundos sem novas faixas concluem o lote.
+- Deadline: 45 s para pedido simples; 240 s para multi-faixa. Sem áudio no deadline, a opção falha. Com áudio, o resultado é parcial.
+- A contagem esperada, sinal textual e silêncio são critérios de conclusão herdados do MCat, não apenas indicadores.
+- Não exigir um sinal terminal explícito adicional para libertar a sequência de opções: isso altera a semântica do MCat e não é requisito de paridade.
+- As regras de cursor, deduplicação de IDs e ordem cronológica são adaptações técnicas TDLib e devem preservar o resultado observável.
 
 ## Encaminhamento e biblioteca
 - Encaminhar cada mensagem de áudio individualmente por TDLib `forwardMessages`; não descarregar/re-enviar áudio.
@@ -53,5 +53,5 @@ TDLib já autenticada, Kotlin, SQLite e CloudSync MLib são os mecanismos. GramJ
 - **Teste live aprovado:** evidência real Telegram/dispositivo, com data e execução. Build CI não substitui teste live.
 
 
-## Exclusividade do turno Telegram (ACQ-05)
-A conversa stateful do bot fica reservada desde que a pesquisa devolve opções até à chegada de um sinal terminal explícito. Em timeout, o job conserva chat/cursor/opções e a retoma aguarda o sinal final antes de enviar qualquer nova pesquisa ou selecção. Não se pode avançar para a opção seguinte com base apenas na contagem, no silêncio ou na primeira faixa. Na retoma parcial, a deduplicação é por faixa, reutilizando o que já foi importado e encaminhando apenas o que falta.
+## Exclusividade do turno Telegram
+A sequência de opções deve reproduzir o worker MCat: após cada opção, a próxima pode ser processada quando os critérios de conclusão acima forem satisfeitos. Um Mutex local pode impedir concorrência entre chamadas MLib, mas não deve impor um sinal terminal adicional que o MCat não exige. Qualquer endurecimento diferente deve ser explicitamente classificado como alteração funcional, não como portabilidade.

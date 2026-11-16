@@ -43,8 +43,8 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 | Área | Estado observado no MLib | Conclusão |
 |---|---|---|
 | Pesquisa, filtros e resultados | Implementado em código | Paridade estrutural provável; faltam fixtures e validação live |
-| Recepção/conclusão de áudio | Implementado com diferença | MLib só reconhece exactamente `Finished.`; MCat usa contagem, vários sinais, faixa única e silêncio |
-| Artista | Implementado com diferença | MLib trata sempre ARTIST como multi; MCat depende da cardinalidade esperada |
+| Recepção/conclusão de áudio | Implementado com diferença | MLib exige sinal terminal; MCat termina também por contagem esperada, faixa única ou 9 s de silêncio |
+| Artista | Próximo da referência | MLib e MCat classificam como multi quando a opção indica mais de uma faixa |
 | Encaminhamento/parsing | Implementado | TDLib presente; falta validação end-to-end |
 | Dedup durante aquisição | Helper portado | Falta corpus golden e fontes adicionais |
 | Merge de faixas | Parcial | MLib não reproduz integralmente merge de metadata MCat |
@@ -63,7 +63,7 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 | ACQ-02 — Classificação multi-faixa para artista | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
 | ACQ-03 — Fixtures de protocolo para pesquisa/callbacks | P1 | Implementado, não provado | 0/1 |
 | ACQ-04 — Ordem, paginação e limite de recolha | P2 | Adaptação mais ampla; limite por validar | 1 |
-| ACQ-05 — Exclusividade do turno e confirmação de libertação do bot | P0 | Implementação submetida a CI; aceitação live pendente | 1 |
+| ACQ-05 — Exclusividade remota estrita por sinal terminal | — | Endurecimento específico MLib; não faz parte da semântica de conclusão MCat e não pode substituir ACQ-01 | Opcional |
 | SRC-01 — Destino Telegram e fontes de deduplicação | P1 | Parcial | 2 |
 | DED-01 — Regras de duplicados de faixas | P1 | Port directo; golden tests em falta | 0/2 |
 | DED-02 — Merge de metadata de faixas | P1 | Em falta/modelo diferente | 2 |
@@ -101,7 +101,7 @@ Estas áreas necessitam de testes e ajustes identificados, mas não justificam r
 **Gate:** uma pessoa externa identifica comportamento esperado e ficheiro/teste MLib correspondente para cada capacidade.
 
 ### Wave 1 — Protocolo de pesquisa e recepção
-Corrigir ACQ-01 (contagem esperada como indicador, sinais finais MCat incluindo finish/finished, colecções com menos faixas recebidas, faixa única e resultados parciais); ACQ-02 (artist só multi quando a opção/contagem exigir); ACQ-05 (reservar a conversa desde a pesquisa com resultados até ao sinal terminal explícito; contagem e silêncio nunca libertam o bot); fechar callbacks, mensagens editadas/novas, polling, cursor, paginação e ordem cronológica. Em timeout sem sinal, persistir conversa/cursor e aguardar a conclusão antes de retomar ou enviar qualquer pedido. Gate: nenhum segundo pedido é enviado enquanto o bot não confirmar que terminou o anterior.
+Corrigir ACQ-01 para reproduzir a conclusão MCat: contagem esperada atingida; sinal textual reconhecido com pelo menos uma faixa; primeira faixa em pedido simples; ou 9 segundos sem novas faixas em colecção. ACQ-02: artist é multi apenas quando a opção indicar mais de uma faixa. Fechar callbacks, mensagens editadas/novas, polling, cursor, paginação e ordem cronológica. Timeout de 45 s (simples) ou 240 s (multi): sem áudio, falha; com áudio, resultado parcial, seguindo a mesma política de continuação do MCat. Gate: os casos golden de conclusão reproduzem exactamente a função `processMcatJob`.
 
 ### Wave 2 — Destinos e deduplicação
 Implementar SRC-01; golden cross-language DED-01 e identidade Telegram; DED-02 com merge controlado preservando formato, bitrate, duração, tamanho, capas, artista, álbum, favoritos e relações; definir duplicados na mesma resposta, biblioteca, destino e fontes. Gate: pedidos repetidos não criam duplicados; melhores metadados preservados; nada é removido silenciosamente.
@@ -128,8 +128,8 @@ Executar T01–T20 numa conta Telegram real; builds Android ARM64/x86_64 e Deskt
 | T01 | Track / Deezer e SoundCloud | Filtros aplicados; resultados actuais; expiração 20 min |
 | T02 | Album/playlist/artist | Tipo correcto; sem resultados obsoletos; artist pode ser uma ou várias faixas |
 | T03 | Callbacks/teclado | Payload TDLib exacto; mensagem editada/nova; sem selecção errada |
-| T04 | Conclusão faixa | A primeira faixa é recolhida, mas o turno só termina com sinal final explícito; sem áudio e sem sinal fica pendente |
-| T05 | Conclusão colecção | 20/18 com finish conclui; 20/18 sem sinal fica pendente; 20/20 sem sinal também aguarda; retoma só após sinal final |
+| T04 | Conclusão faixa | A primeira faixa recebida conclui o pedido simples; sem áudio ao fim de 45 s, falha |
+| T05 | Conclusão colecção | Atingir contagem esperada conclui; sinal textual com áudio conclui mesmo abaixo da contagem; 9 s sem novas faixas conclui; deadline 240 s produz falha sem áudio ou resultado parcial com áudio |
 | T06 | Mais de 100 mensagens | Paginação sem perda/repetição/troca; limite explícito |
 | T07 | Encaminhamento | Mensagens individuais, metadata correcta, falhas isoladas |
 | T08 | Deduplicação | Repetição não cria duplicados; fontes consultadas; artistas distintos não fundidos |
@@ -171,14 +171,18 @@ Executar T01–T20 numa conta Telegram real; builds Android ARM64/x86_64 e Deskt
 A portabilidade só pode ser declarada concluída quando as lacunas P0/P1 estiverem fechadas ou formalmente excluídas, playlists/álbuns/capas estiverem integrados no modelo MLib, golden/unit/migration/CloudSync passarem, T01–T20 tiverem evidência, CI confirmar Android ARM64/x86_64 e Desktop e os documentos apontarem para o mesmo estado. Teste live e build são provas distintas.
 
 
-## 11. Aditamento Wave 1 — Exclusividade do turno do bot (16-11-2026)
+## 11. Correcção do contrato de aquisição — fonte MCat (16-11-2026)
 
-Foi identificado um requisito adicional: o bot Telegram só aceita um novo pedido depois de terminar o anterior. O Mutex apenas serializa chamadas locais; não prova que o worker remoto terminou.
+A versão anterior deste relatório incorporou uma regra de exclusividade remota que não corresponde ao comportamento observado em `MCat-Player/server.ts`, em `processMcatJob`. Essa regra foi retirada como requisito de paridade. O Mutex e a espera por sinal terminal explícito podem ser mecanismos adicionais do MLib, mas não podem alterar os critérios funcionais herdados.
 
-**Regra vinculativa:** uma pesquisa que devolve opções reserva o turno. A reserva só é libertada quando chega uma mensagem terminal explícita do bot (finish, finished ou outro sinal reconhecido). Atingir a contagem esperada, receber uma faixa única ou observar 9 segundos de silêncio não liberta o turno.
+**Critérios MCat vinculativos para ACQ-01:**
+- Pedido simples: termina quando chega a primeira mensagem de áudio.
+- Colecção: termina quando atinge a contagem esperada positiva; ou quando chega um sinal textual reconhecido e existe pelo menos uma faixa; ou quando decorrem 9 segundos sem novas faixas depois de ter chegado áudio.
+- Sinais textuais: `finished`, `download complete`, `completed`, `concluído`, `todas as faixas`, `process complete`, `done!`, `pronto!` e variantes reconhecidas pelo código-fonte.
+- Deadline: 45 segundos para pedido simples e 240 segundos para multi-faixa. Sem áudio, a opção falha; com áudio, o resultado é parcial.
+- A classificação multi-faixa é playlist, álbum ou opção com contagem esperada superior a um; artist sem contagem superior a um é simples.
 
-**Disponibilidade parcial:** a contagem esperada é indicativa. Se forem esperadas 20 faixas e o bot enviar 18, um sinal final finish confirma a conclusão das 18 disponíveis; não se inventam nem se aguardam indefinidamente as duas em falta, que podem estar indisponíveis por restrições geográficas. Sem sinal final, o pedido permanece pendente mesmo com 20/20.
+**Consequência:** 20/18 com sinal final, 20/20 por contagem, 18 faixas seguidas de 9 segundos de silêncio e uma faixa simples são casos de conclusão segundo MCat. A política de turno seguinte deve seguir a sequência observável do worker MCat, não impor um sinal terminal adicional.
 
-**Timeout e recuperação:** conservar a opção actual e as seguintes, o identificador da conversa e o cursor da última mensagem observada. Não enviar a opção seguinte nem uma nova pesquisa. A retoma aguarda primeiro o sinal final após esse cursor; só depois reconstrói a pesquisa. A deduplicação na retoma é por faixa, para reutilizar as faixas já importadas e encaminhar apenas as que faltam; não se salta uma colecção inteira por existir uma única correspondência. Descartar o job não pode desbloquear artificialmente uma conversa cujo fim ainda não foi confirmado.
+A implementação MLib que exige exclusivamente sinal explícito está em divergência e é o alvo de ACQ-01. As fixtures e testes devem ser actualizados para este contrato antes de aceitar a correcção.
 
-**Testes obrigatórios:** 20/18 + finish; 20/18 sem sinal; 20/20 sem sinal; faixa única sem sinal; finish case-insensitive; ausência de segunda opção/pesquisa antes do sinal; retoma com sinal já recebido ou que chega durante a espera. A implementação deve ser marcada como concluída apenas após CI e revisão do fluxo.
