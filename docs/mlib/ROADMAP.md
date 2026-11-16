@@ -280,3 +280,9 @@ Do not mark the port complete until CI and live Telegram acceptance have passed.
 
 - Add a per-track missing-track preview/approval screen before album completion. Current behaviour matches the MCat Player flow: retrieve the selected album, reuse recordings already in the library, and append/forward only missing recordings.
 - Add confidence-scored local album grouping and a richer edition-selection UI.
+
+## MCat Player portability — controlled wave plan (16 Nov 2026)
+
+The detailed, binding gap register and acceptance criteria are maintained in `docs/mlib/PORTABILITY-GAPS-REPORT.md`. Wave 0 baseline: MLib `7231aa08022863a5a3f22138ff881fcf4045c340` on `feat/mlib-independent-identity`; MCat Player `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`; SQLite schema **11** (confirmed in `Library.kt`). The old schema-8 statement in persistence documentation is superseded by the 16-Nov addendum.
+
+Do not interpret earlier roadmap statements that acquisition is “implemented” as proof of MCat parity. Record separately: code present, source parity (golden tests), automated test result, and live Telegram/device acceptance. ACQ-01/02 remain P0 and block Wave 2+ progression until Wave 1 is closed. The report's Wave 0–7 sequence is authoritative for the MCat Player port; this broader product roadmap remains historical context.

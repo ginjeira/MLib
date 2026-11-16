@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "fixtureNature": "expected results transcribed from MCat Player source functions; synthetic inputs",
+  "source": {
+    "repository": "ginjeira/MCat-Player",
+    "branch": "main",
+    "commit": "a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132",
+    "files": [
+      "src/utils/trackSanitizer.ts",
+      "src/utils/trackDeduplication.ts",
+      "server.ts"
+    ]
+  },
+  "searchQuery": [
+    {
+      "id": "Q-01",
+      "input": "[12 tracks] Daft Punk - One More Time.mp3",
+      "expected": "Daft Punk - One More Time"
+    },
+    {
+      "id": "Q-02",
+      "input": "01. Björk - Jóga [Official Audio].flac",
+      "expected": "Björk - Jóga"
+    },
+    {
+      "id": "Q-03",
+      "input": "Greatest Hits - Seleção (18 🎵)",
+      "expected": "Greatest Hits"
+    },
+    {
+      "id": "Q-04",
+      "input": "",
+      "expected": ""
+    }
+  ],
+  "collectionName": [
+    {
+      "id": "PL-01",
+      "input": "01. My Playlist (18 🎵) 🎧",
+      "expected": "My Playlist"
+    },
+    {
+      "id": "PL-02",
+      "input": "Greatest Hits (Deluxe Edition) (14 tracks)",
+      "expected": "Greatest Hits (Deluxe Edition)"
+    },
+    {
+      "id": "PL-03",
+      "input": "Road Trip 🎶",
+      "expected": "Road Trip"
+    }
+  ],
+  "trackDuplicate": [
+    {
+      "id": "TR-01",
+      "candidate": {
+        "title": "Halo (Official Audio)",
+        "artist": "Beyoncé"
+      },
+      "existing": {
+        "title": "Beyonce",
+        "artist": "Halo"
+      },
+      "expected": true,
+      "reason": "cross/reversed title-artist match after normalization"
+    },
+    {
+      "id": "TR-02",
+      "candidate": {
+        "title": "One More Time",
+        "artist": "Daft Punk"
+      },
+      "existing": {
+        "title": "One More Time",
+        "artist": "Justice"
+      },
+      "expected": false,
+      "reason": "different known artists"
+    },
+    {
+      "id": "TR-03",
+      "candidate": {
+        "title": "Around the World",
+        "artist": ""
+      },
+      "existing": {
+        "title": "Around the World",
+        "artist": "Daft Punk"
+      },
+      "expected": true,
+      "reason": "same title with missing artist"
+    },
+    {
+      "id": "TR-04",
+      "candidate": {
+        "title": "",
+        "artist": "Daft Punk"
+      },
+      "existing": {
+        "title": "",
+        "artist": "Daft Punk"
+      },
+      "expected": false,
+      "reason": "empty normalized title is never a match"
+    },
+    {
+      "id": "TR-05",
+      "candidate": {
+        "title": "One More Time",
+        "artist": "Daft Punk"
+      },
+      "existing": {
+        "title": "One More Time - Official Video",
+        "artist": "Daft Punk"
+      },
+      "expected": true,
+      "reason": "official suffix stripped"
+    }
+  ],
+  "albumDuplicate": [
+    {
+      "id": "AL-01",
+      "first": {
+        "title": "Discovery (Deluxe Edition)",
+        "artist": "Daft Punk"
+      },
+      "second": {
+        "title": "Daft Punk - Discovery",
+        "artist": "Daft Punk"
+      },
+      "expected": true,
+      "reason": "edition/prefix cleanup"
+    },
+    {
+      "id": "AL-02",
+      "first": {
+        "title": "Discovery",
+        "artist": "Daft Punk"
+      },
+      "second": {
+        "title": "Discovery",
+        "artist": "Justice"
+      },
+      "expected": false,
+      "reason": "different known artists"
+    },
+    {
+      "id": "AL-03",
+      "first": {
+        "title": "Mezzanine (1998)",
+        "artist": "Massive Attack"
+      },
+      "second": {
+        "title": "Mezzanine",
+        "artist": "Massive Attack"
+      },
+      "expected": true,
+      "reason": "year removed by source cleaner"
+    },
+    {
+      "id": "AL-04",
+      "first": {
+        "title": "",
+        "artist": "Unknown"
+      },
+      "second": {
+        "title": "",
+        "artist": "Unknown"
+      },
+      "expected": false,
+      "reason": "empty normalized title is never a match"
+    }
+  ],
+  "mergeSemantics": [
+    {
+      "id": "MERGE-TRACK-01",
+      "implementationWave": 2,
+      "sourceFunction": "mergeTracks",
+      "primary": {
+        "format": "MP3",
+        "bitrate": 192,
+        "duration": 0,
+        "fileSize": 1000,
+        "cover": "generic",
+        "artist": "Artista Desconhecido",
+        "album": "Músicas",
+        "favorite": false
+      },
+      "secondary": {
+        "format": "FLAC",
+        "bitrate": 900,
+        "duration": 320,
+        "fileSize": 9000,
+        "cover": "custom",
+        "artist": "Daft Punk",
+        "album": "Discovery",
+        "favorite": true
+      },
+      "expected": {
+        "format": "FLAC",
+        "bitrate": 900,
+        "duration": 320,
+        "fileSize": 9000,
+        "cover": "custom",
+        "artist": "Daft Punk",
+        "album": "Discovery",
+        "favorite": true
+      }
+    },
+    {
+      "id": "MERGE-ALBUM-01",
+      "implementationWave": 4,
+      "sourceFunction": "mergeAlbums",
+      "primary": {
+        "title": "Discovery 🎵",
+        "artist": "Artista Desconhecido",
+        "year": 0,
+        "cover": "generic",
+        "trackIds": [
+          "a",
+          "b"
+        ],
+        "createdAt": "2024-02-01"
+      },
+      "secondary": {
+        "title": "Discovery",
+        "artist": "Daft Punk",
+        "year": 2001,
+        "cover": "custom",
+        "trackIds": [
+          "b",
+          "c"
+        ],
+        "createdAt": "2024-03-01"
+      },
+      "expected": {
+        "title": "Discovery",
+        "artist": "Daft Punk",
+        "year": 2001,
+        "cover": "custom",
+        "trackIds": [
+          "a",
+          "b",
+          "c"
+        ],
+        "trackCount": 3,
+        "createdAt": "2024-02-01"
+      }
+    }
+  ]
+}

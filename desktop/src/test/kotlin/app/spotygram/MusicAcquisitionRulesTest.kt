@@ -193,4 +193,67 @@ class MusicAcquisitionRulesTest {
             )
         )
     }
+
+    @Test
+    fun wave0GoldenSearchQueryAndPlaylistNameCasesMatchMCat() {
+        val queryCases = listOf(
+            "[12 tracks] Daft Punk - One More Time.mp3" to "Daft Punk - One More Time",
+            "01. Björk - Jóga [Official Audio].flac" to "Björk - Jóga",
+            "Greatest Hits - Seleção (18 🎵)" to "Greatest Hits",
+            "" to "",
+        )
+        queryCases.forEach { (input, expected) ->
+            assertEquals(expected, MusicAcquisitionRules.sanitizeSearchQuery(input))
+        }
+        val playlistCases = listOf(
+            "01. My Playlist (18 🎵) 🎧" to "My Playlist",
+            "Greatest Hits (Deluxe Edition) (14 tracks)" to "Greatest Hits (Deluxe Edition)",
+            "Road Trip 🎶" to "Road Trip",
+        )
+        playlistCases.forEach { (input, expected) ->
+            assertEquals(expected, MusicAcquisitionRules.cleanCollectionTitle(input))
+        }
+    }
+
+    @Test
+    fun wave0GoldenTrackDuplicateCasesMatchMCatSource() {
+        data class Case(val candidateTitle: String, val candidateArtist: String, val existingTitle: String, val existingArtist: String, val expected: Boolean)
+        val cases = listOf(
+            Case("Halo (Official Audio)", "Beyoncé", "Beyonce", "Halo", true),
+            Case("One More Time", "Daft Punk", "One More Time", "Justice", false),
+            Case("Around the World", "", "Around the World", "Daft Punk", true),
+            Case("", "Daft Punk", "", "Daft Punk", false),
+            Case("One More Time", "Daft Punk", "One More Time - Official Video", "Daft Punk", true),
+        )
+        cases.forEach { case ->
+            assertEquals(
+                case.expected,
+                MusicAcquisitionRules.areTracksDuplicate(
+                    case.candidateTitle, case.candidateArtist,
+                    case.existingTitle, case.existingArtist,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun wave0GoldenAlbumDuplicateCasesMatchMCatSource() {
+        data class Case(val firstTitle: String, val firstArtist: String, val secondTitle: String, val secondArtist: String, val expected: Boolean)
+        val cases = listOf(
+            Case("Discovery (Deluxe Edition)", "Daft Punk", "Daft Punk - Discovery", "Daft Punk", true),
+            Case("Discovery", "Daft Punk", "Discovery", "Justice", false),
+            Case("Mezzanine (1998)", "Massive Attack", "Mezzanine", "Massive Attack", true),
+            Case("", "Unknown", "", "Unknown", false),
+        )
+        cases.forEach { case ->
+            assertEquals(
+                case.expected,
+                MusicAcquisitionRules.areAlbumsDuplicate(
+                    case.firstTitle, case.firstArtist,
+                    case.secondTitle, case.secondArtist,
+                ),
+            )
+        }
+    }
+
 }

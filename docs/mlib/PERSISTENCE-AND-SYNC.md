@@ -99,3 +99,9 @@ Use the same Telegram user account but separate MLib installations, TDLib sessio
 ## Release gate
 
 Do not declare multi-device support complete until CI passes, the encrypted protocol has passed review, and the two-device acceptance plan has been completed with recorded evidence. No merge or release is authorised by this implementation work.
+
+## Correcção de baseline documental — 16-11-2026
+
+**Schema SQLite actual no baseline auditado: 11.** A implementação em `shared/src/main/kotlin/app/spotygram/Library.kt` abre `library.db` com versão 11 e contém migrações até essa versão, incluindo metadata de playlists. A referência a schema version 8 no texto histórico acima está desactualizada e não deve ser usada para descrever o HEAD `7231aa08022863a5a3f22138ff881fcf4045c340`.
+
+Esta correcção não altera o protocolo CloudSync. A migração, preservação de dados e aceitação de dois dispositivos continuam sujeitas aos testes da matriz T18/T19 do relatório `PORTABILITY-GAPS-REPORT.md`.

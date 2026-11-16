@@ -87,3 +87,16 @@ A portabilidade de código está implementada e passa a baseline CI. Estes ponto
 7. Avaliar cache/offline e Android Auto depois de estabilizar a aquisição Android.
 
 Esta matriz descreve direcção e estado observado. Uma capacidade só passa a validada após testes de execução documentados.
+
+## Estado autoritativo da auditoria MCat Player — 16-11-2026
+
+Este addendum substitui qualquer leitura anterior de “portabilidade concluída”. O código da primeira fatia está presente, mas presença não equivale a paridade de fonte nem a teste live aprovado. O relatório orientador é `PORTABILITY-GAPS-REPORT.md`; o contrato congelado está em `PORTABILITY-CONTRACT.md`.
+
+Baseline MLib: `7231aa08022863a5a3f22138ff881fcf4045c340` (`feat/mlib-independent-identity`). Baseline MCat Player: `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`. Schema SQLite: **11**, confirmado em `Library.kt` (`openDatabase("library.db", 11, ...)`). A anterior referência a schema 8 não está actualizada.
+
+Estados usados daqui em diante:
+- **Código presente** — implementação observável no HEAD.
+- **Paridade de fonte** — golden cases MCat/Kotlin aprovados.
+- **Teste live aprovado** — prova real com Telegram/dispositivo; CI/build não substitui este teste.
+
+Wave 0 produz fixtures e golden tests. ACQ-01 e ACQ-02 permanecem diferenças P0 e passam para Wave 1; SRC-01/DED-02 para Wave 2; ALB-01/02/03 para Wave 4; PL-03 para Wave 3/5; COV-01 para Wave 5. Não declarar a portabilidade concluída.

@@ -155,3 +155,14 @@ A integração só deve ser considerada funcional depois de todos estes testes:
 10. Confirmar que o canal CloudSync MLib e os dados do Spotygram não são afectados.
 
 **Estado em 15-11-2026:** a portabilidade nativa está implementada: pesquisa e callbacks TDLib, aquisição sequencial, recolha paginada, encaminhamento, deduplicação, recuperação persistente, playlists configuráveis, álbuns distintos/completar álbum e semântica explícita de artista. A baseline CI do commit `0fde3c2031acbc3d11d245e42be193ef6f22e3d7` passou: Android ARM64/x86_64, testes unitários Desktop/shared e imagem Desktop Linux. [Execução #43736017616](https://github.com/ginjeira/MLib/actions/runs/43736017616). A aceitação com o bot Telegram real e em unidade Android Auto física continua por executar; não é substituída pelo resultado de compilação.
+
+## Baseline de portabilidade — revisão vinculativa 16-11-2026
+
+A auditoria detalhada e o contrato funcional versionado estão em `PORTABILITY-GAPS-REPORT.md`, `PORTABILITY-CONTRACT.md` e `PORTABILITY-WAVE-0.md`. Estes documentos substituem as declarações genéricas anteriores que podiam ser interpretadas como paridade concluída.
+
+- MLib baseline: `7231aa08022863a5a3f22138ff881fcf4045c340`, branch `feat/mlib-independent-identity`.
+- MCat Player baseline: `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`.
+- SQLite schema: **11**, confirmado directamente em `Library.kt`; qualquer referência anterior a schema 8 está obsoleta.
+- Código presente, paridade de fonte e teste live aprovado são estados distintos.
+
+Diferenças P0 ACQ-01/ACQ-02 continuam abertas e pertencem à Wave 1. Em particular, o worker MLib só reconhece actualmente a mensagem exacta `Finished.`, enquanto o MCat usa contagem, múltiplos sinais textuais, primeira faixa em pedido simples e silêncio de 9 segundos em colecções. O MLib também classifica `artist` sempre como multi, ao contrário da regra MCat dependente da cardinalidade esperada. Não corrigir estas diferenças dentro da Wave 0.
