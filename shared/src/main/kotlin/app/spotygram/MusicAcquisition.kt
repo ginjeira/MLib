@@ -309,14 +309,26 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         ?: parsedName.title.ifBlank { MusicAcquisitionRules.cleanCollectionTitle(item.option.title) }
                     val artist = targetAlbum?.artist?.takeIf(String::isNotBlank)
                         ?: parsedName.artist.ifBlank { first.artist }
+                    // MCat first checks the explicitly selected album, then its
+                    // own areAlbumsDuplicate() rules before creating a new one.
+                    val existingAlbum = targetAlbum ?: app.library.state.value.albums.firstOrNull {
+                        MusicAcquisitionRules.areAlbumsDuplicate(it.title, it.artist, title, artist)
+                    }
+                    val existingCover = existingAlbum?.coverUrl.orEmpty()
+                    val trackCover = first.art
+                    val cover = when {
+                        existingCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(existingCover) -> existingCover
+                        trackCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(trackCover) -> trackCover
+                        else -> existingCover.ifBlank { trackCover }
+                    }
                     val albumId = app.library.createOrUpdateAlbum(
-                        title = title,
-                        artist = artist,
+                        title = existingAlbum?.title ?: title,
+                        artist = existingAlbum?.artist?.takeIf(String::isNotBlank) ?: artist,
                         tracks = item.tracks.map { it.id },
-                        year = targetAlbum?.year.orEmpty(),
-                        coverUrl = targetAlbum?.coverUrl?.takeIf(String::isNotBlank) ?: first.art,
-                        genre = targetAlbum?.genre.orEmpty(),
-                        targetAlbumId = session.targetAlbumId,
+                        year = existingAlbum?.year.orEmpty(),
+                        coverUrl = cover,
+                        genre = existingAlbum?.genre.orEmpty(),
+                        targetAlbumId = existingAlbum?.id,
                     )
                     acquiredAlbums += albumId
                 }
@@ -326,7 +338,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val playlistName = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
                     val existing = app.library.state.value.playlists.firstOrNull {
-                        normalizeMusicText(it.name) == normalizeMusicText(playlistName)
+                        it.name.equals(playlistName, ignoreCase = true)
                     }
                     playlistId =
                         if (existing != null) {
