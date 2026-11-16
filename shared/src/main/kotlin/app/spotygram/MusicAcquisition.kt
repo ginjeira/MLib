@@ -757,8 +757,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
                             candidate.title, candidate.artist, track.title, track.artist,
                         )
                 }
-                if (existingTrack != null) {
-                    reusedTracks += existingTrack
+                val batchDuplicate = (importedTracks + reusedTracks).firstOrNull { track ->
+                    MusicAcquisitionRules.areTracksDuplicate(
+                        candidate.title, candidate.artist, track.title, track.artist,
+                    )
+                }
+                val duplicate = existingTrack ?: batchDuplicate
+                if (duplicate != null) {
+                    reusedTracks += duplicate
                     continue
                 }
                 val forwarded = request(
