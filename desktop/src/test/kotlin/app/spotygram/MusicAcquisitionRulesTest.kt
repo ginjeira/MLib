@@ -33,7 +33,7 @@ class MusicAcquisitionRulesTest {
             "Searching for Daft Punk\n1. One More Time\n2. Around the World\nnot a result\n2. Duplicate"
         )
         assertEquals(
-            listOf(AcquisitionOption(1, "One More Time"), AcquisitionOption(2, "Around the World")),
+            listOf(AcquisitionOption(1, "One More Time"), AcquisitionOption(2, "Around the World"), AcquisitionOption(2, "Duplicate")),
             results,
         )
     }
@@ -47,8 +47,8 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun sameTelegramFileIsAlwaysTheSameRecording() {
-        assertTrue(
+    fun duplicateMatchingUsesMCatMetadataRulesNotTelegramFileIds() {
+        assertFalse(
             MusicAcquisitionRules.isSameRecording(
                 track("a", title = "Different title", artist = "", duration = 0, fileKey = "telegram-unique"),
                 track("b", title = "Other title", artist = "Unknown", duration = 0, fileKey = "telegram-unique"),
@@ -77,8 +77,8 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun sameTitleAloneWithMissingArtistAndDurationIsAmbiguous() {
-        assertFalse(
+    fun sameTitleWithMissingArtistMatchesAsInMCat() {
+        assertTrue(
             MusicAcquisitionRules.isSameRecording(
                 track("a", artist = "", duration = 0, size = 0),
                 track("b", artist = "", duration = 0, size = 0),
@@ -87,7 +87,7 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun missingArtistCanBeMatchedByCloseKnownDuration() {
+    fun missingArtistMatchesWithoutDurationCheckAsInMCat() {
         assertTrue(
             MusicAcquisitionRules.isSameRecording(
                 track("a", artist = "", duration = 320),
@@ -123,15 +123,15 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun pendingCandidatesDoNotMatchAmbiguousSameTitleAlone() {
+    fun pendingCandidatesUseMCatSameTitleMatching() {
         val candidate = track("candidate", title = "One More Tiem", artist = "", duration = 0, size = 0)
         val pending = listOf(track("pending", title = "One More Time", artist = "", duration = 0, size = 0))
-        assertEquals(-1, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
+        assertEquals(0, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
     }
 
     @Test
-    fun smallTitleTypoMatchesOnlyWithSameArtistAndDuration() {
-        assertTrue(
+    fun smallTitleTypoDoesNotMatchWithoutExactMCatTitleRules() {
+        assertFalse(
             MusicAcquisitionRules.isSameRecording(
                 track("a", title = "One More Tiem"),
                 track("b", title = "One More Time", duration = 321),
@@ -170,7 +170,7 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun matchingArtistDoesNotHideLargeDurationMismatch() {
-        assertFalse(MusicAcquisitionRules.isSameRecording(track("a"), track("b", duration = 400)))
+    fun matchingArtistUsesMCatMatchingWithoutDurationConstraint() {
+        assertTrue(MusicAcquisitionRules.isSameRecording(track("a"), track("b", duration = 400)))
     }
 }
