@@ -41,7 +41,7 @@ internal object MusicAcquisitionRules {
         query = query.replace(Regex("\\s*-\\s*sele[cç][aã]o\\b", RegexOption.IGNORE_CASE), " ")
         query = query.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
         query = query.replace(
-            Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
+            Regex("[\\x{1F300}-\\x{1F9FF}\\x{2600}-\\x{26FF}\\x{2700}-\\x{27BF}\\x{1FA00}-\\x{1FAFF}🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
             " ",
         )
         query = query.replace(Regex("[()\\[\\]{}【】《》〔〕「」『』]"), " ")
@@ -61,7 +61,7 @@ internal object MusicAcquisitionRules {
         title = title.replace(Regex("[\\u200B-\\u200D\\uFEFF\\u00A0\\u200E\\u200F\\u202A-\\u202E]"), " ")
         title = title.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
         title = title.replace(
-            Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
+            Regex("[\\x{1F300}-\\x{1F9FF}\\x{2600}-\\x{26FF}\\x{2700}-\\x{27BF}\\x{1FA00}-\\x{1FAFF}🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
             " ",
         )
         title = title.replace(
