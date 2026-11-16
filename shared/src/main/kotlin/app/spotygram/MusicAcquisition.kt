@@ -41,6 +41,37 @@ data class AcquisitionOutcome(
     val note: String = "",
 )
 
+enum class AcquisitionJobStatus(val wireValue: String) {
+    QUEUED("queued"),
+    RUNNING("running"),
+    FORWARDING("forwarding"),
+    COMPLETED("completed"),
+    FAILED("failed"),
+    SKIPPED_DUPLICATE("skipped_duplicate"),
+}
+
+data class AcquisitionJobItem(
+    val optionNumber: Int,
+    val title: String,
+    val status: AcquisitionJobStatus = AcquisitionJobStatus.QUEUED,
+    val trackIds: List<String> = emptyList(),
+    val error: String = "",
+)
+
+data class AcquisitionJob(
+    val id: String,
+    val query: String,
+    val contentType: AcquisitionContentType,
+    val provider: AcquisitionProvider,
+    val destinationChatId: Long,
+    val destinationTitle: String,
+    val status: AcquisitionJobStatus,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val items: List<AcquisitionJobItem>,
+    val error: String = "",
+)
+
 data class PendingAcquisitionJob(
     val query: String,
     val contentType: AcquisitionContentType,
@@ -60,6 +91,7 @@ data class AcquisitionState(
     val search: AcquisitionSearch? = null,
     val outcome: AcquisitionOutcome? = null,
     val pendingJob: PendingAcquisitionJob? = null,
+    val jobs: List<AcquisitionJob> = emptyList(),
 )
 
 private data class SearchSession(
@@ -247,6 +279,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
         try {
             val destination = request(json("getChat", "chat_id" to destinationChatId))
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
+            val jobId = UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+            val job = AcquisitionJob(
+                id = jobId,
+                query = session.search.query,
+                contentType = session.search.contentType,
+                provider = session.search.provider,
+                destinationChatId = destinationChatId,
+                destinationTitle = destinationTitle,
+                status = AcquisitionJobStatus.RUNNING,
+                createdAt = now,
+                updatedAt = now,
+                items = selected.map { AcquisitionJobItem(it.number, it.title) },
+            )
+            state.value = state.value.copy(jobs = (listOf(job) + state.value.jobs).take(30))
             val destinationChoice = app.telegram.rememberChat(destination)
             app.library.source(destinationChoice, true)
             // A source marked complete can still have new messages since its
@@ -263,11 +310,26 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 state.value = state.value.copy(
                     progress = "A obter opção ${index + 1}/${selected.size}: ${option.title}",
                 )
+                updateJobItem(jobId, index) { it.copy(status = AcquisitionJobStatus.FORWARDING) }
                 try {
-                    completed += acquireOption(session, option, destinationChatId, destinationTitle)
+                    val item = acquireOption(session, option, destinationChatId, destinationTitle)
+                    completed += item
+                    updateJobItem(jobId, index) {
+                        it.copy(
+                            status = if (item.skippedDuplicate) AcquisitionJobStatus.SKIPPED_DUPLICATE
+                                else if (item.error.isNotBlank()) AcquisitionJobStatus.FAILED
+                                else AcquisitionJobStatus.COMPLETED,
+                            trackIds = item.tracks.map { track -> track.id },
+                            error = item.error,
+                        )
+                    }
                 } catch (error: Throwable) {
                     if (error is CancellationException) throw error
-                    completed += AcquiredItem(option, emptyList(), error = friendly(error))
+                    val message = friendly(error)
+                    completed += AcquiredItem(option, emptyList(), error = message)
+                    updateJobItem(jobId, index) {
+                        it.copy(status = AcquisitionJobStatus.FAILED, error = message)
+                    }
                 }
                 delay(1_000)
             }
@@ -277,6 +339,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val importedCount = importedIds.size
             val reusedCount = (allTrackIds.size - importedIds.size).coerceAtLeast(0)
             val failedCount = completed.count { it.error.isNotEmpty() }
+            val jobSucceeded = state.value.jobs.firstOrNull { it.id == jobId }
+                ?.items?.any {
+                    it.status == AcquisitionJobStatus.COMPLETED ||
+                        it.status == AcquisitionJobStatus.SKIPPED_DUPLICATE
+                } == true
+            updateJob(jobId) {
+                it.copy(
+                    status = if (jobSucceeded) AcquisitionJobStatus.COMPLETED else AcquisitionJobStatus.FAILED,
+                    error = if (jobSucceeded) "" else "Nenhuma opção foi adquirida com sucesso.",
+                )
+            }
 
             var playlistId: Long? = null
             val acquiredAlbums = mutableListOf<String>()
@@ -413,6 +486,27 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 error = friendly(error),
             )
             throw error
+        }
+    }
+
+    private fun updateJob(jobId: String, transform: (AcquisitionJob) -> AcquisitionJob) {
+        val now = System.currentTimeMillis()
+        state.value = state.value.copy(
+            jobs = state.value.jobs.map { job ->
+                if (job.id == jobId) transform(job).copy(updatedAt = now) else job
+            },
+        )
+    }
+
+    private fun updateJobItem(
+        jobId: String,
+        index: Int,
+        transform: (AcquisitionJobItem) -> AcquisitionJobItem,
+    ) {
+        updateJob(jobId) { job ->
+            job.copy(items = job.items.mapIndexed { itemIndex, item ->
+                if (itemIndex == index) transform(item) else item
+            })
         }
     }
 
