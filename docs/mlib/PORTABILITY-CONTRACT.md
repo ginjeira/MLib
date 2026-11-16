@@ -12,7 +12,7 @@ Este contrato define comportamento observável. As fixtures em `desktop/src/test
 
 ## Classificação de cardinalidade
 - `playlist` e `album`: multi-faixa.
-- `track`: pedido simples, termina após a primeira faixa válida.
+- `track`: pedido simples; a primeira faixa é recolhida, mas o turno só termina com sinal terminal explícito.
 - `artist`: não implica discografia nem multi-faixa. Só é multi se a opção seleccionada indicar contagem esperada superior a um.
 - Contagem indicada e validada prevalece sobre heurística de tipo.
 
@@ -30,6 +30,7 @@ Este contrato define comportamento observável. As fixtures em `desktop/src/test
 
 ## Encaminhamento e biblioteca
 - Encaminhar cada mensagem de áudio individualmente por TDLib `forwardMessages`; não descarregar/re-enviar áudio.
+- Na retoma de uma colecção parcial, deduplicar faixa a faixa: reutilizar as já importadas e encaminhar as novas. Uma faixa existente não justifica saltar a colecção inteira.
 - Preservar title/performer/duration e a identidade Telegram; actualizar/indexar o destino antes de deduplicar/retry.
 - Uma opção pode ter sucessos parciais e falhas; nunca eliminar os sucessos já encaminhados.
 - Pesquisa artist importa opções seleccionadas individualmente; não inventa álbum/playlist.
@@ -53,4 +54,4 @@ TDLib já autenticada, Kotlin, SQLite e CloudSync MLib são os mecanismos. GramJ
 
 
 ## Exclusividade do turno Telegram (ACQ-05)
-A conversa stateful do bot fica reservada desde que a pesquisa devolve opções até à chegada de um sinal terminal explícito. Em timeout, o job conserva chat/cursor/opções e a retoma aguarda o sinal final antes de enviar qualquer nova pesquisa ou selecção. Não se pode avançar para a opção seguinte com base apenas na contagem, no silêncio ou na primeira faixa.
+A conversa stateful do bot fica reservada desde que a pesquisa devolve opções até à chegada de um sinal terminal explícito. Em timeout, o job conserva chat/cursor/opções e a retoma aguarda o sinal final antes de enviar qualquer nova pesquisa ou selecção. Não se pode avançar para a opção seguinte com base apenas na contagem, no silêncio ou na primeira faixa. Na retoma parcial, a deduplicação é por faixa, reutilizando o que já foi importado e encaminhando apenas o que falta.
