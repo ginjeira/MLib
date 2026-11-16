@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.json.JSONObject
 
 class MusicAcquisitionRulesTest {
     private fun track(
@@ -254,6 +255,92 @@ class MusicAcquisitionRulesTest {
                 ),
             )
         }
+    }
+
+
+    private fun readPortabilityFixture(name: String): JSONObject {
+        val stream = javaClass.getResourceAsStream("/portability/$name")
+            ?: error("Missing portability fixture: $name")
+        return stream.bufferedReader(Charsets.UTF_8).use { JSONObject(it.readText()) }
+    }
+
+    @Test
+    fun wave0GoldenJsonFixtureMatchesKotlinPort() {
+        val fixture = readPortabilityFixture("mcat-golden-v1.json")
+        val queries = fixture.getJSONArray("searchQuery")
+        for (index in 0 until queries.length()) {
+            val item = queries.getJSONObject(index)
+            assertEquals(
+                "search query golden ${item.getString("id")}",
+                item.getString("expected"),
+                MusicAcquisitionRules.sanitizeSearchQuery(item.getString("input")),
+            )
+        }
+        val playlists = fixture.getJSONArray("collectionName")
+        for (index in 0 until playlists.length()) {
+            val item = playlists.getJSONObject(index)
+            assertEquals(
+                "playlist golden ${item.getString("id")}",
+                item.getString("expected"),
+                MusicAcquisitionRules.cleanCollectionTitle(item.getString("input")),
+            )
+        }
+        val tracks = fixture.getJSONArray("trackDuplicate")
+        for (index in 0 until tracks.length()) {
+            val item = tracks.getJSONObject(index)
+            val candidate = item.getJSONObject("candidate")
+            val existing = item.getJSONObject("existing")
+            assertEquals(
+                "track duplicate golden ${item.getString("id")}",
+                item.getBoolean("expected"),
+                MusicAcquisitionRules.areTracksDuplicate(
+                    candidate.getString("title"), candidate.getString("artist"),
+                    existing.getString("title"), existing.getString("artist"),
+                ),
+            )
+        }
+        val albums = fixture.getJSONArray("albumDuplicate")
+        for (index in 0 until albums.length()) {
+            val item = albums.getJSONObject(index)
+            val first = item.getJSONObject("first")
+            val second = item.getJSONObject("second")
+            assertEquals(
+                "album duplicate golden ${item.getString("id")}",
+                item.getBoolean("expected"),
+                MusicAcquisitionRules.areAlbumsDuplicate(
+                    first.getString("title"), first.getString("artist"),
+                    second.getString("title"), second.getString("artist"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun wave0ProtocolFixturesCoverAllTypeProviderPairsAndParseResults() {
+        val fixture = readPortabilityFixture("mcat-protocol-v1.json")
+        val cases = fixture.getJSONArray("searchCases")
+        assertEquals(8, cases.length())
+        val seenPairs = mutableSetOf<String>()
+        for (index in 0 until cases.length()) {
+            val item = cases.getJSONObject(index)
+            val type = item.getString("contentType")
+            val provider = item.getString("provider")
+            seenPairs += "$type/$provider"
+            val message = item.getJSONObject("searchMessage")
+            val options = MusicAcquisitionRules.parseResults(message.getString("text"))
+            assertEquals(listOf(1, 2), options.map { it.number })
+            val buttons = item.getJSONArray("resultButtons")
+            assertEquals(options.size(), buttons.length())
+            for (buttonIndex in 0 until buttons.length()) {
+                val button = buttons.getJSONObject(buttonIndex)
+                assertTrue(button.getString("callbackData").startsWith("fixture:"))
+            }
+            assertTrue(item.getJSONObject("filterButton").getString("callbackData").startsWith("fixture:"))
+        }
+        assertEquals(8, seenPairs.size)
+        assertEquals(2, fixture.getJSONArray("audioMessages").length().let { it - 2 })
+        assertTrue(fixture.getJSONArray("completionCases").length() >= 8)
+        assertEquals(5, fixture.getJSONArray("cardinalityCases").length())
     }
 
 }

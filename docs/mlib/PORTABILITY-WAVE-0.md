@@ -15,7 +15,7 @@
 3. `fixtures/mcat-golden-v1.json`: casos esperados para sanitização, nomes de playlist, comparação track/album e semântica de merge.
 4. `PORTABILITY-GAPS-REPORT.md`: registo versionado das lacunas e waves.
 5. Matriz MCat → MLib → estado → teste → wave e correcções de estado nos documentos existentes.
-6. Testes JVM adicionais que consomem os golden cases de funções já portadas.
+6. Testes JVM adicionais que carregam e executam directamente os golden JSON; fixtures de protocolo também são carregadas e verificam as oito combinações tipo/provider e o parsing dos resultados.
 
 ## Rastreabilidade funcional
 
