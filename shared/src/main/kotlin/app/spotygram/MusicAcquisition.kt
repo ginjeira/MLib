@@ -328,25 +328,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             // MCat adds the destination to the active sources and refreshes
             // its messages after processing the job, not before selecting bot results.
             app.library.source(destinationChoice, true)
-            app.refresh()
 
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
             val importedIds = completed.flatMap { it.importedIds }.toSet()
             val importedCount = importedIds.size
             val reusedCount = (allTrackIds.size - importedIds.size).coerceAtLeast(0)
             val failedCount = completed.count { it.error.isNotEmpty() }
-            val jobSucceeded = state.value.jobs.firstOrNull { it.id == jobId }
-                ?.items?.any {
-                    it.status == AcquisitionJobStatus.COMPLETED ||
-                        it.status == AcquisitionJobStatus.SKIPPED_DUPLICATE
-                } == true
-            updateJob(jobId) {
-                it.copy(
-                    status = if (jobSucceeded) AcquisitionJobStatus.COMPLETED else AcquisitionJobStatus.FAILED,
-                    error = if (jobSucceeded) "" else "Nenhuma opção foi adquirida com sucesso.",
-                )
-            }
-
             var playlistId: Long? = null
             val acquiredAlbums = mutableListOf<String>()
             if (session.search.contentType == AcquisitionContentType.ALBUM) {
@@ -400,6 +387,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         }
                 }
             }
+
+            val jobSucceeded = state.value.jobs.firstOrNull { it.id == jobId }
+                ?.items?.any {
+                    it.status == AcquisitionJobStatus.COMPLETED ||
+                        it.status == AcquisitionJobStatus.SKIPPED_DUPLICATE
+                } == true
+            updateJob(jobId) {
+                it.copy(
+                    status = if (jobSucceeded) AcquisitionJobStatus.COMPLETED else AcquisitionJobStatus.FAILED,
+                    error = if (jobSucceeded) "" else "Nenhuma opção foi adquirida com sucesso.",
+                )
+            }
+
+            // MCat refreshes the destination after setting the final job state.
+            app.refresh()
 
             val outcome = AcquisitionOutcome(
                 imported = importedCount,
