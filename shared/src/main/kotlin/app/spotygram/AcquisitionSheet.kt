@@ -79,7 +79,10 @@ internal fun AcquisitionSheet(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        state.pendingJob?.let { pending ->
+        // The pending journal is written before forwarding starts. While
+        // acquisition is active it is not an interrupted job yet: hide the
+        // resume/discard controls so they are not shown as inert buttons.
+        if (!state.acquiring && !state.searching) state.pendingJob?.let { pending ->
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 modifier = Modifier.fillMaxWidth(),
