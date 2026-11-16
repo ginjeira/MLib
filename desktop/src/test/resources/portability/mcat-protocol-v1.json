@@ -373,13 +373,13 @@
       "expected": "complete_signal"
     },
     {
-      "id": "COMP-SINGLE-WAIT",
+      "id": "COMP-SINGLE-EXPECTED-COUNT",
       "contentType": "track",
       "expectedCount": 1,
       "receivedAudioCount": 1,
       "signal": null,
       "silenceSeconds": 0,
-      "expected": "complete_single"
+      "expected": "complete_count"
     },
     {
       "id": "COMP-QUIET-WAIT",
@@ -406,7 +406,7 @@
       "expectedCount": 20,
       "receivedAudioCount": 18,
       "signal": null,
-      "silenceSeconds": 30,
+      "silenceSeconds": 8,
       "deadlineSeconds": 240,
       "expected": "partial_timeout"
     }

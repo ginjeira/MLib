@@ -433,7 +433,8 @@ class MusicAcquisitionRulesTest {
             AcquisitionCompletionRules.completionReason(
                 AcquisitionContentType.PLAYLIST, 20, 20, false, 9_000, 60_000,
             ))
-        assertEquals(AcquisitionCompletionReason.SINGLE_TRACK,
+        // MCat checks expected count before its single-track fallback.
+        assertEquals(AcquisitionCompletionReason.EXPECTED_COUNT,
             AcquisitionCompletionRules.completionReason(
                 AcquisitionContentType.TRACK, 1, 1, false, 0, 2_000,
             ))
@@ -456,9 +457,15 @@ class MusicAcquisitionRulesTest {
 
     @Test
     fun missingFinishSignalLeavesShortCollectionPartialButReleasesBotTurn() {
+        // A short collection ends after 9s without new audio, before deadline.
+        assertEquals(AcquisitionCompletionReason.QUIET_PERIOD,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 20, 18, false, 9_000, 30_000,
+            ))
+        // Partial deadline applies only if the MCat quiet window did not expire.
         assertEquals(AcquisitionCompletionReason.DEADLINE_PARTIAL,
             AcquisitionCompletionRules.completionReason(
-                AcquisitionContentType.PLAYLIST, 20, 18, false, 30_000, 240_000,
+                AcquisitionContentType.PLAYLIST, 20, 18, false, 8_000, 240_000,
             ))
     }
 }
