@@ -46,7 +46,7 @@ internal object MusicAcquisitionRules {
         )
         query = query.replace(Regex("[()\\[\\]{}【】《》〔〕「」『』]"), " ")
         query = query.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
-        query = query.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\"“”„‟`´]"), " ")
+        query = query.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\x22“”„‟`´]"), " ")
         query = query.replace(Regex("\\s+"), " ").trim()
         return query.ifEmpty { value.trim() }
     }
@@ -74,7 +74,7 @@ internal object MusicAcquisitionRules {
         )
         title = title.replace(Regex("[【】《》〔〕「」『』]"), " ")
         title = title.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
-        title = title.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\"“”„‟`´]"), " ")
+        title = title.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\x22“”„‟`´]"), " ")
         title = title.replace(Regex("\\s+"), " ").trim()
         return title.ifEmpty { rawTitle.trim() }
     }
