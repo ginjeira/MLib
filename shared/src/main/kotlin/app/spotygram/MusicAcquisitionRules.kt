@@ -193,6 +193,10 @@ internal object MusicAcquisitionRules {
             url.contains("photo-1511192336575") ||
             url.contains("unsplash.com")
 
+    /** The acquisition worker's exact generic-cover test in MCat Player. */
+    fun isMCatJobGenericAlbumCover(url: String): Boolean =
+        url.isBlank() || url.contains("photo-1514525253161")
+
     /** Exact genre-to-cover fallback used by MCat Player. */
     fun genreCoverPreset(value: String): String {
         val text = value.lowercase()
