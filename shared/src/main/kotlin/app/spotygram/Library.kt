@@ -1050,6 +1050,36 @@ class Library(private val platform: Platform) : AutoCloseable {
             reload()
         }
 
+    suspend fun updatePlaylistMetadata(
+        id: Long,
+        description: String,
+        coverUrl: String,
+    ) = withContext(Dispatchers.IO) {
+        require(description.length <= 512) { "A descrição da playlist é demasiado longa." }
+        require(coverUrl.length <= 4096) { "O endereço da capa da playlist é demasiado longo." }
+        writableDatabase.transaction {
+            val uid = sync.playlistId(this, id)
+            update(
+                "playlists",
+                Values().apply {
+                    put("description", description.trim())
+                    put("cover_url", coverUrl.trim())
+                },
+                "id=? AND account=?",
+                arrayOf(id.toString(), sync.account.toString()),
+            )
+            sync.edit(
+                this,
+                mapOf(
+                    "playlist/$uid/metadata" to JSONObject()
+                        .put("description", description.trim())
+                        .put("cover", coverUrl.trim()),
+                ),
+            )
+        }
+        reload()
+    }
+
     suspend fun reorderPlaylist(id: Long, order: List<String>) =
         withContext(Dispatchers.IO) {
             writableDatabase.transaction {
