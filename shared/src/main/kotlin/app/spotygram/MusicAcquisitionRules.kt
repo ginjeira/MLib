@@ -193,6 +193,38 @@ internal object MusicAcquisitionRules {
             url.contains("photo-1511192336575") ||
             url.contains("unsplash.com")
 
+    /** Exact genre-to-cover fallback used by MCat Player. */
+    fun genreCoverPreset(value: String): String {
+        val text = value.lowercase()
+        return when {
+            listOf("rock", "metal", "hard rock", "punk").any(text::contains) ->
+                "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=800&q=80"
+            listOf("jazz", "blues", "soul", "funk").any(text::contains) ->
+                "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=80"
+            listOf("classic", "piano", "orquest", "violin", "sinfon").any(text::contains) ->
+                "https://images.unsplash.com/photo-1520523839898-507127040407?w=800&q=80"
+            listOf("hip", "rap", "trap", "urban", "drill").any(text::contains) ->
+                "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&q=80"
+            listOf("electro", "dance", "edm", "house", "techno", "trance", "club").any(text::contains) ->
+                "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80"
+            listOf("car", "condu", "auto", "viagem", "road", "drive", "estrada").any(text::contains) ->
+                "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80"
+            listOf("chill", "relax", "lo-fi", "dormir", "peace", "calm", "medita").any(text::contains) ->
+                "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800&q=80"
+            listOf("treino", "gym", "workout", "fitness", "correr", "run").any(text::contains) ->
+                "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&q=80"
+            listOf("festa", "party", "balada", "noite", "verao", "summer").any(text::contains) ->
+                "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80"
+            listOf("acust", "folk", "guitar", "indie", "voz", "unplugged").any(text::contains) ->
+                "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=800&q=80"
+            listOf("vinil", "retro", "80s", "70s", "90s", "disco", "nostalg").any(text::contains) ->
+                "https://images.unsplash.com/photo-1539185441755-769473a23570?w=800&q=80"
+            listOf("pop", "hits", "top", "radio", "chart").any(text::contains) ->
+                "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+            else -> "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+        }
+    }
+
     /** Exact port of MCat Player's areAlbumsDuplicate(). */
     fun areAlbumsDuplicate(
         firstTitle: String,
