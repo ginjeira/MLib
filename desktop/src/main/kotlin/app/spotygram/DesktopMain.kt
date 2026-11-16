@@ -37,17 +37,17 @@ fun main(arguments: Array<String>) {
         BrandIcons.write(File(arguments[1]))
         return
     }
-    System.setProperty("nucleus.app.id", "app.spotygram")
-    System.setProperty("nucleus.app.name", "spotygram")
+    System.setProperty("nucleus.app.id", "pt.ginjeira.mlib")
+    System.setProperty("nucleus.app.name", "MLib")
     System.setProperty("nucleus.app.version", BuildConfig.VERSION_NAME)
-    System.setProperty("nucleus.app.aumid", "app.spotygram")
+    System.setProperty("nucleus.app.aumid", "pt.ginjeira.mlib")
     val platform = try { DesktopPlatform() } catch (error: Exception) {
-        JOptionPane.showMessageDialog(null, error.message, "spotygram", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, error.message, "MLib", JOptionPane.ERROR_MESSAGE)
         return
     }
     val instance = try { DesktopInstance(platform.filesDir) } catch (error: Exception) {
         platform.close()
-        JOptionPane.showMessageDialog(null, error.message, "spotygram", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, error.message, "MLib", JOptionPane.ERROR_MESSAGE)
         return
     }
     if (!instance.primary) {
@@ -153,10 +153,10 @@ fun main(arguments: Array<String>) {
                         if (traySupported) visible = false else windowState.isMinimized = true
                     } else quit()
                 },
-                title = "spotygram",
+                title = "MLib",
                 state = windowState,
                 visible = visible,
-                icon = painterResource(R.drawable.spotygram_launcher),
+                icon = painterResource(R.drawable.mlib_launcher),
                 onPreviewKeyEvent = { event ->
                     if (event.type != KeyEventType.KeyDown) false
                     else when {
@@ -196,7 +196,7 @@ fun main(arguments: Array<String>) {
                     }
                 }
             }
-            if (traySupported) Tray(icon = painterResource(R.drawable.spotygram_launcher), tooltip = "spotygram",
+            if (traySupported) Tray(icon = painterResource(R.drawable.mlib_launcher), tooltip = "MLib",
                 onAction = ::show, menu = {
                     Item(tr(R.string.show_window), onClick = ::show)
                     Separator()
@@ -207,7 +207,7 @@ fun main(arguments: Array<String>) {
         kotlinx.coroutines.runBlocking { started?.close() }
         instance.close()
         platform.close()
-        JOptionPane.showMessageDialog(null, error.message ?: "spotygram could not start", "spotygram", JOptionPane.ERROR_MESSAGE)
+        JOptionPane.showMessageDialog(null, error.message ?: "MLib could not start", "MLib", JOptionPane.ERROR_MESSAGE)
         error.printStackTrace()
         kotlin.system.exitProcess(1)
     } finally {

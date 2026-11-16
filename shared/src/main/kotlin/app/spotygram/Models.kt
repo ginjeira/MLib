@@ -102,11 +102,25 @@ data class ChatChoice(val id: Long, val title: String) {
 
 data class Playlist(val id: Long, val name: String, val tracks: List<String>)
 
+data class Album(
+    val id: String,
+    val title: String,
+    val artist: String,
+    val year: String = "",
+    val coverUrl: String = "",
+    val genre: String = "",
+    val isAutoDetected: Boolean = false,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val tracks: List<String> = emptyList(),
+)
+
 data class LibraryState(
     val tracks: List<Track> = emptyList(),
     val sources: List<Source> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val profiles: List<UserProfile> = emptyList(),
+    val albums: List<Album> = emptyList(),
 ) {
     val byId by lazy { tracks.associateBy { it.id } }
     val duplicates by lazy { TrackDuplicates(tracks) }
@@ -122,6 +136,9 @@ data class LibraryState(
     }
     val playlistCounts by lazy {
         playlists.associate { playlist -> playlist.id to playlist.tracks.count { it in byId } }
+    }
+    val albumCounts by lazy {
+        albums.associate { album -> album.id to album.tracks.count { it in byId } }
     }
 
     fun localDisplay(track: Track): Track {

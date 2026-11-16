@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +68,7 @@ fun SettingsSheet(
     onResume: () -> Unit,
     onCache: () -> Unit,
     onSharing: () -> Unit,
+    onAcquisition: () -> Unit,
     onClose: () -> Unit,
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
@@ -73,6 +76,11 @@ fun SettingsSheet(
     val resumeLongAudio by app.resumeLongAudio.collectAsStateWithLifecycle()
     val resumeMinutes by app.resumeMinutes.collectAsStateWithLifecycle()
     var editingResume by rememberSaveable { mutableStateOf(false) }
+    var editingSyncKey by rememberSaveable { mutableStateOf(false) }
+    var recoveryCode by rememberSaveable { mutableStateOf("") }
+    var syncKeyInput by rememberSaveable { mutableStateOf("") }
+    var syncKeyError by rememberSaveable { mutableStateOf("") }
+    val clipboard = LocalClipboardManager.current
     Column(Modifier.fillMaxWidth()) {
         SettingsHeader(R.string.settings, onClose)
         LazyColumn(
@@ -84,6 +92,16 @@ fun SettingsSheet(
                 ),
             contentPadding = PaddingValues(horizontal = 20.dp),
         ) {
+            item(key = "acquisition") {
+                ListItem(
+                    headlineContent = { Text(tr(R.string.music_acquisition)) },
+                    supportingContent = { Text(tr(R.string.acquisition_help)) },
+                    leadingContent = { Icon(Icons.Rounded.Search, null) },
+                    trailingContent = { Icon(Icons.Rounded.ChevronRight, null) },
+                    modifier = Modifier.clickable(onClick = onAcquisition),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
             item(key = "appearance") {
                 Text(
                     tr(R.string.appearance),
@@ -335,9 +353,11 @@ fun SettingsSheet(
                                     }
                                 )
                             Text(
-                                if (syncState.phase == "error" && syncState.error.isNotBlank())
-                                    "$status\n${syncState.error}"
-                                else status
+                                when {
+                                    syncState.phase == "key_required" -> "A sincronização está suspensa até criares ou importares a chave de recuperação."
+                                    syncState.phase == "error" && syncState.error.isNotBlank() -> "$status\n${syncState.error}"
+                                    else -> status
+                                }
                             )
                         },
                         leadingContent = {
@@ -357,6 +377,16 @@ fun SettingsSheet(
                             } else null,
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     )
+                    ActionRow(
+                        Icons.Rounded.Key,
+                        "Chave de cifragem e recuperação",
+                        onClick = {
+                            recoveryCode = app.cloudSync.recoveryCode().orEmpty()
+                            syncKeyInput = ""
+                            syncKeyError = ""
+                            editingSyncKey = true
+                        },
+                    )
                 }
             }
             item(key = "updates") {
@@ -364,7 +394,7 @@ fun SettingsSheet(
             }
             item(key = "about") {
                 Text(
-                    "spotygram ${BuildConfig.VERSION_NAME}",
+                    "MLib ${BuildConfig.VERSION_NAME}",
                     Modifier.padding(top = 20.dp),
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -377,6 +407,65 @@ fun SettingsSheet(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+    if (editingSyncKey) {
+        AlertDialog(
+            onDismissRequest = { editingSyncKey = false },
+            title = { Text("Cifragem da sincronização MLib") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("A mesma chave de 256 bits tem de ser instalada em todos os dispositivos. O código de recuperação não é enviado para o Telegram. Guarda-o num local seguro.")
+                    if (recoveryCode.isNotBlank()) {
+                        OutlinedTextField(
+                            value = recoveryCode,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Código de recuperação deste dispositivo") },
+                            minLines = 2,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButton(onClick = { clipboard.setText(AnnotatedString(recoveryCode)) }) {
+                            Text("Copiar código")
+                        }
+                    } else {
+                        Text("Ainda não existe uma chave neste dispositivo. Cria a primeira chave aqui ou importa a chave de outro dispositivo.")
+                        TextButton(
+                            onClick = {
+                                runCatching { app.cloudSync.createRecoveryCode() }
+                                    .onSuccess { recoveryCode = it; syncKeyError = "" }
+                                    .onFailure { syncKeyError = it.message.orEmpty() }
+                            },
+                        ) { Text("Criar primeira chave neste dispositivo") }
+                    }
+                    OutlinedTextField(
+                        value = syncKeyInput,
+                        onValueChange = { syncKeyInput = it; syncKeyError = "" },
+                        label = { Text("Importar código de outro dispositivo") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (syncKeyError.isNotBlank())
+                        Text(syncKeyError, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = syncKeyInput.isNotBlank(),
+                    onClick = {
+                        runCatching { app.cloudSync.importRecoveryCode(syncKeyInput) }
+                            .onSuccess {
+                                recoveryCode = app.cloudSync.recoveryCode().orEmpty()
+                                syncKeyInput = ""
+                                syncKeyError = ""
+                            }
+                            .onFailure { syncKeyError = it.message.orEmpty() }
+                    },
+                ) { Text("Importar chave") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingSyncKey = false }) { Text(tr(R.string.close)) }
+            },
+        )
     }
     if (editingResume) {
         var value by rememberSaveable { mutableStateOf(resumeMinutes.toString()) }
@@ -436,7 +525,7 @@ fun SettingsSheet(
                     listOf(
                             "system" to R.string.system_default,
                             "en" to R.string.language_english,
-                            "ru" to R.string.language_russian,
+                            "pt" to R.string.language_portuguese,
                         )
                         .forEach { (value, label) ->
                             TextButton(

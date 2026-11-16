@@ -70,7 +70,7 @@ fun SpotygramUI(
     val playing = observePlayer(player).copy(order = mode.order, repeat = mode.repeat)
     var localMode by rememberSaveable { mutableStateOf(app.prefs.getBoolean("local_mode", false)) }
     var connect by rememberSaveable { mutableStateOf(false) }
-    val destinationKeys = listOf("music", "favorites", "playlists", "chats")
+    val destinationKeys = listOf("music", "favorites", "playlists", "albums", "chats")
     var tab by rememberSaveable {
         mutableIntStateOf(
             destinationKeys
@@ -83,6 +83,7 @@ fun SpotygramUI(
     var selectedTrackId by remember { mutableStateOf<String?>(null) }
     var trackAnchor by remember { mutableStateOf(IntRect.Zero) }
     var playlistId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var albumId by rememberSaveable { mutableStateOf<String?>(null) }
     var sourceId by rememberSaveable { mutableStateOf<String?>(null) }
     var profileId by rememberSaveable { mutableStateOf<Long?>(null) }
     var profileHint by remember { mutableStateOf<UserProfile?>(null) }
@@ -137,7 +138,7 @@ fun SpotygramUI(
         hideDuplicates &&
             playlist == null &&
             profile == null &&
-            (tab in 0..1 || tab == 3 && selectedSource != null)
+            (tab in 0..1 || tab == 4 && selectedSource != null)
     val groupedFavorites = hideDuplicates && (groupedView || profile != null)
     val current =
         library.byId[playing.id]?.let {
@@ -371,6 +372,7 @@ fun SpotygramUI(
                     },
                     onCache = { sheet = "cache" },
                     onSharing = { sheet = "sharingSettings" },
+                    onAcquisition = { sheet = "acquisition" },
                     onClose = ::closeSheet,
                 )
             "sharingSettings" ->
@@ -588,6 +590,9 @@ fun SpotygramUI(
                                                                 (tr(R.string.playlists) to
                                                                     Icons.Rounded.PlaylistPlay),
                                                             3 to
+                                                                (tr(R.string.albums) to
+                                                                    Icons.Rounded.Album),
+                                                            4 to
                                                                 (tr(R.string.sources) to
                                                                     Icons.Rounded.Widgets),
                                                         )
@@ -673,7 +678,7 @@ fun SpotygramUI(
                                                 Modifier.size(28.dp),
                                             )
                                             Text(
-                                                "spotygram",
+                                                "MLib",
                                                 Modifier.weight(1f).padding(start = 8.dp),
                                                 style = MaterialTheme.typography.titleMedium,
                                             )
@@ -709,7 +714,7 @@ fun SpotygramUI(
                                             tab == 0 ||
                                                 tab == 1 ||
                                                 tab == 2 && playlist != null ||
-                                                tab == 3 && (source != null || profileId != null) ->
+                                                tab == 4 && (source != null || profileId != null) ->
                                                 MusicScreen(
                                                     hideDuplicates = groupedView,
                                                     library,
@@ -805,6 +810,35 @@ fun SpotygramUI(
                                                         managedPlaylist = it
                                                         sheet = "playlist"
                                                     },
+                                                )
+                                            tab == 3 ->
+                                                AlbumsScreen(
+                                                    library = library,
+                                                    onOpen = { albumId = it },
+                                                    onPlay = { track, tracks -> play(track, tracks) },
+                                                    onDelete = { id -> app.action { app.library.deleteAlbum(id) } },
+                                                    onCreate = { title, artist, tracks ->
+                                                        app.action { app.library.createOrUpdateAlbum(title, artist, tracks) }
+                                                    },
+                                                    onDeduplicate = { app.action { app.library.deduplicateAlbums() } },
+                                                    onAutoDetect = { app.action { app.autoDetectAlbums() } },
+                                                    onRemoveTrack = { id, track -> app.action { app.library.removeFromAlbum(id, listOf(track)) } },
+                                                    onReorder = { id, order -> app.action { app.library.reorderAlbum(id, order) } },
+                                                    onDownload = { album ->
+                                                        app.action {
+                                                            app.acquisition.search(
+                                                                listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" "),
+                                                                AcquisitionContentType.ALBUM,
+                                                                AcquisitionProvider.DEEZER,
+                                                                targetAlbumId = album.id,
+                                                            )
+                                                            sheet = "acquisition"
+                                                        }
+                                                    },
+                                                    onUpdate = { id, title, artist, year, cover, genre ->
+                                                        app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
+                                                    },
+                                                    onSuggestCovers = { title, artist -> app.suggestAlbumCovers(title, artist) },
                                                 )
                                             else ->
                                                 SourcesScreen(
@@ -1003,6 +1037,7 @@ fun SpotygramUI(
                                     "settings",
                                     "sharingSettings",
                                     "cache" -> settingsContent()
+                                    "acquisition" -> AcquisitionSheet(app, onClose = ::closeSheet)
                                     "share" -> shareContent(Modifier, null)
                                     "chats" ->
                                         SourcePicker(

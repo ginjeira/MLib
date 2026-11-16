@@ -11,7 +11,7 @@ plugins {
 }
 
 version = rootProject.version
-val buildState = rootProject.extra["spotygramState"] as String
+val buildState = rootProject.extra["mlibState"] as String
 val definitions = layout.buildDirectory.dir("generated/definitions")
 val generateDefinitions = tasks.register("generateDesktopDefinitions") {
     val strings = rootProject.file("shared/src/main/res/values/strings.xml")
@@ -69,7 +69,7 @@ val generateDefinitions = tasks.register("generateDesktopDefinitions") {
             package app.spotygram
             object BuildConfig {
                 const val VERSION_NAME = "${rootProject.version}"
-                const val APPLICATION_ID = "app.spotygram"
+                const val APPLICATION_ID = "pt.ginjeira.mlib"
                 const val DEBUG = ${providers.gradleProperty("desktopDebug").orElse("false").get().toBoolean()}
                 const val TELEGRAM_API_ID = $apiId
                 const val TELEGRAM_API_HASH = "$apiHash"
@@ -101,9 +101,9 @@ val prepareNative = tasks.register<Exec>("prepareNativeLibraries") {
         rootProject.file("tools/desktop-dependencies.py"), "--target", "$targetOs-$targetArch", "--state", buildState)
     doLast {
         nativeDirectory.resolve("licenses").mkdirs()
-        rootProject.file("LICENSE").copyTo(nativeDirectory.resolve("licenses/Spotygram.txt"), overwrite = true)
+        rootProject.file("LICENSE").copyTo(nativeDirectory.resolve("licenses/MLib.txt"), overwrite = true)
         file("src/main/resources/third-party-notices.txt").copyTo(
-            nativeDirectory.resolve("licenses/Spotygram-dependencies.txt"), overwrite = true)
+            nativeDirectory.resolve("licenses/MLib-dependencies.txt"), overwrite = true)
         rootProject.file("shared/licenses/Fluent-Emoji-MIT.txt").copyTo(
             nativeDirectory.resolve("licenses/Fluent-Emoji-MIT.txt"), overwrite = true)
         rootProject.file("shared/licenses/Takopi-artwork-NOTICE.txt").copyTo(
@@ -117,7 +117,7 @@ val prepareIcons = tasks.register<JavaExec>("prepareDesktopIcons") {
     mainClass.set("app.spotygram.DesktopMainKt")
     args("--write-icons", icons.get().asFile.absolutePath)
     jvmArgs("-Djava.awt.headless=true", "-Xmx128m")
-    inputs.file(rootProject.file("shared/src/main/res/drawable-nodpi/spotygram_launcher.png"))
+    inputs.file(rootProject.file("shared/src/main/res/drawable-nodpi/mlib_launcher.png"))
     outputs.dir(icons)
 }
 
@@ -141,6 +141,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.28.0")
     implementation("dev.nucleusframework:nucleus.media-control:2.5.0")
     implementation("org.slf4j:slf4j-nop:2.0.17")
+    testImplementation("junit:junit:4.13.2")
 }
 
 compose.desktop {
@@ -148,19 +149,19 @@ compose.desktop {
         mainClass = "app.spotygram.DesktopMainKt"
         jvmArgs += listOf("-Xms32m", "-Xmx256m", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=10")
         nativeDistributions {
-            packageName = "Spotygram"
+            packageName = "MLib"
             packageVersion = rootProject.version.toString()
             modules("java.sql", "jdk.crypto.ec", "java.net.http", "jdk.unsupported", "jdk.security.auth")
             appResourcesRootDir.set(nativeDirectory.parentFile)
-            linux { iconFile.set(icons.get().asFile.resolve("spotygram.png")) }
-            windows { iconFile.set(icons.get().asFile.resolve("spotygram.ico")) }
+            linux { iconFile.set(icons.get().asFile.resolve("mlib.png")) }
+            windows { iconFile.set(icons.get().asFile.resolve("mlib.ico")) }
             macOS {
                 // jpackage requires a positive major; the final app bundle keeps our public version.
                 packageVersion = rootProject.version.toString().split('.').let {
                     "${it[0].toInt() + 1}.${it[1]}.${it[2]}"
                 }
-                iconFile.set(icons.get().asFile.resolve("spotygram.icns"))
-                bundleID = "app.spotygram"
+                iconFile.set(icons.get().asFile.resolve("mlib.icns"))
+                bundleID = "pt.ginjeira.mlib"
             }
             outputBaseDir.set(layout.buildDirectory.dir("distributions"))
         }
@@ -170,15 +171,15 @@ tasks.withType<JavaExec>().configureEach {
     if (name == "run") {
         dependsOn(prepareNative)
         jvmArgs("-Dspotygram.native.dir=${nativeDirectory.absolutePath}")
-        providers.gradleProperty("desktopData").orNull?.let { jvmArgs("-Dspotygram.data.dir=$it") }
-        providers.gradleProperty("telegramTestDc").orNull?.let { jvmArgs("-Dspotygram.telegram.test=$it") }
+        providers.gradleProperty("desktopData").orNull?.let { jvmArgs("-Dmlib.data.dir=$it") }
+        providers.gradleProperty("telegramTestDc").orNull?.let { jvmArgs("-Dmlib.telegram.test=$it") }
     }
 }
 tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDistributable" }.configureEach {
     dependsOn(prepareNative, prepareIcons)
     if (targetOs == "windows") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val destination = layout.buildDirectory.dir("distributions/$variant/app/Spotygram/app").get().asFile
+        val destination = layout.buildDirectory.dir("distributions/$variant/app/MLib/app").get().asFile
         val angle = configurations.runtimeClasspath.get().single { it.name.startsWith("skiko-awt-runtime-angle-windows-") }
         ZipFile(angle).use { archive ->
             listOf("libEGL.dll", "libGLESv2.dll").forEach { name ->
@@ -190,7 +191,7 @@ tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDi
     }
     if (targetOs == "linux") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val resources = layout.buildDirectory.dir("distributions/$variant/app/Spotygram/lib/app/resources")
+        val resources = layout.buildDirectory.dir("distributions/$variant/app/MLib/lib/app/resources")
             .get().asFile.toPath()
         // Gradle's resource copy follows native aliases, duplicating large libraries.
         nativeDirectory.listFiles().orEmpty().filter { Files.isSymbolicLink(it.toPath()) }.forEach { source ->
@@ -201,7 +202,7 @@ tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDi
     }
     if (targetOs == "macos") doLast {
         val variant = if (name == "createReleaseDistributable") "release" else "main"
-        val bundle = layout.buildDirectory.dir("distributions/$variant/app/Spotygram.app").get().asFile
+        val bundle = layout.buildDirectory.dir("distributions/$variant/app/MLib.app").get().asFile
         val plist = bundle.resolve("Contents/Info.plist")
         providers.exec {
             commandLine("/usr/libexec/PlistBuddy", "-c", "Set :CFBundleShortVersionString ${rootProject.version}", plist)

@@ -154,7 +154,7 @@ def prepare(target, state):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", choices=TARGETS, default=current_target())
-    parser.add_argument("--state", type=Path, default=Path(os.environ.get("SPOTYGRAM_STATE",
-        Path.home() / ".local" / "state" / "spotygram")))
+    parser.add_argument("--state", type=Path, default=Path(os.environ.get("MLIB_STATE",
+        Path.home() / ".local" / "state" / "mlib")))
     arguments = parser.parse_args()
     prepare(arguments.target, arguments.state.resolve())

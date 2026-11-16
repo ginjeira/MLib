@@ -15,7 +15,7 @@ class Library(private val platform: Platform) : AutoCloseable {
     val sync: LibrarySync = LibrarySync(platform, { writableDatabase }, { reload() })
     private val publishing = Mutex()
     private val storage = lazy {
-        platform.openDatabase("library.db", 8, ::onCreate, ::onUpgrade, ::onOpen)
+        platform.openDatabase("library.db", 10, ::onCreate, ::onUpgrade, ::onOpen)
     }
     private val database
         get() = storage.value
@@ -47,6 +47,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         createTemporaryStorage(db)
         createPlaybackProgress(db)
         createProfileStorage(db)
+        createAlbumStorage(db)
         sync.install(db)
     }
 
@@ -75,8 +76,29 @@ class Library(private val platform: Platform) : AutoCloseable {
             db.execSQL("ALTER TABLE tracks ADD COLUMN profile_position INTEGER NOT NULL DEFAULT -1")
             createProfileStorage(db)
         }
+        if (oldVersion < 10) createAlbumStorage(db)
         if (oldVersion < 6) sync.install(db)
         if (oldVersion < 7) sync.migrate(db)
+    }
+
+    private fun createAlbumStorage(db: SqlDatabase) {
+        val hasAlbums = db.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='albums'",
+            null,
+        ).use { it.moveToFirst() }
+        if (!hasAlbums) {
+            db.execSQL("CREATE TABLE albums(id TEXT PRIMARY KEY,title TEXT NOT NULL,artist TEXT NOT NULL,year TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '',genre TEXT NOT NULL DEFAULT '',auto_detected INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,account INTEGER NOT NULL DEFAULT 0)")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS albums_title_artist ON albums(title,artist)")
+
+        val hasAlbumTracks = db.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='album_tracks'",
+            null,
+        ).use { it.moveToFirst() }
+        if (!hasAlbumTracks) {
+            db.execSQL("CREATE TABLE album_tracks(album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,track TEXT NOT NULL,position INTEGER NOT NULL,PRIMARY KEY(album_id,track))")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS album_tracks_track ON album_tracks(track)")
     }
 
     private fun createProfileStorage(db: SqlDatabase) {
@@ -250,7 +272,19 @@ class Library(private val platform: Platform) : AutoCloseable {
                             Playlist(c.getLong(0), c.getString(1), members[c.getLong(0)].orEmpty())
                     }
                 }
-            val snapshot = LibraryState(tracks, sources, lists, profiles)
+            val albums = mutableListOf<Album>()
+            val albumMembers = mutableMapOf<String, MutableList<String>>()
+            db.rawQuery("SELECT album_id,track FROM album_tracks ORDER BY album_id,position", null).use { c ->
+                while (c.moveToNext()) albumMembers.getOrPut(c.getString(0)) { mutableListOf() }.add(c.getString(1))
+            }
+            db.rawQuery("SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY artist,title", arrayOf(sync.account.toString())).use { c ->
+                while (c.moveToNext()) albums += Album(
+                    c.getString(0), c.getString(1), c.getString(2), c.getString(3),
+                    c.getString(4), c.getString(5), c.getInt(6) == 1,
+                    c.getLong(7), c.getLong(8), albumMembers[c.getString(0)].orEmpty()
+                )
+            }
+            val snapshot = LibraryState(tracks, sources, lists, profiles, albums)
             if (snapshot != state.value) {
                 snapshot.byId
                 snapshot.localGroups
@@ -365,6 +399,10 @@ class Library(private val platform: Platform) : AutoCloseable {
                     "chat=?",
                     arrayOf(id.toString()),
                 )
+                sync.edit(
+                    this,
+                    mapOf("source/$id" to JSONObject().put("enabled", true).put("title", title.take(256))),
+                )
             }
             reload()
         }
@@ -391,6 +429,19 @@ class Library(private val platform: Platform) : AutoCloseable {
                     },
                     "id=?",
                     arrayOf(profile.id.toString()),
+                )
+                val selected = rawQuery(
+                    "SELECT selected FROM profiles WHERE id=?",
+                    arrayOf(profile.id.toString()),
+                ).use { it.moveToFirst() && it.getInt(0) == 1 }
+                sync.edit(
+                    this,
+                    mapOf(
+                        "profile/${profile.id}" to JSONObject()
+                            .put("enabled", selected)
+                            .put("title", profile.title.take(256))
+                            .put("username", profile.username.take(64)),
+                    ),
                 )
             }
             reload()
@@ -659,6 +710,246 @@ class Library(private val platform: Platform) : AutoCloseable {
             id
         }
 
+    suspend fun createOrUpdateAlbum(
+        title: String,
+        artist: String,
+        tracks: List<String>,
+        year: String = "",
+        coverUrl: String = "",
+        genre: String = "",
+        isAutoDetected: Boolean = false,
+        targetAlbumId: String? = null,
+    ): String = withContext(Dispatchers.IO) {
+        require(title.isNotBlank()) { "O álbum tem de ter um título." }
+        val now = System.currentTimeMillis()
+        val normalizedTitle = normalizeAlbumText(title)
+        val normalizedArtist = normalizeAlbumText(artist)
+        val id = writableDatabase.transaction {
+            val targetExists = targetAlbumId?.let { target ->
+                rawQuery(
+                    "SELECT id FROM albums WHERE id=? AND account=?",
+                    arrayOf(target, sync.account.toString()),
+                ).use { it.moveToFirst() }
+            } == true
+            check(targetAlbumId == null || targetExists) {
+                "O álbum seleccionado para completar já não existe na biblioteca."
+            }
+            val existing = if (targetAlbumId != null) targetAlbumId else
+                rawQuery("SELECT id,title,artist,year FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
+                    var match: String? = null
+                    while (c.moveToNext() && match == null) {
+                        val existingYear = c.getString(3).orEmpty()
+                        val yearCompatible = year.isBlank() || existingYear.isBlank() || year == existingYear
+                        if (yearCompatible &&
+                            normalizeAlbumText(c.getString(1)) == normalizedTitle &&
+                            normalizeAlbumText(c.getString(2)) == normalizedArtist
+                        ) match = c.getString(0)
+                    }
+                    match
+                }
+            val albumId = existing ?: UUID.randomUUID().toString()
+            if (existing == null) {
+                execSQL(
+                    "INSERT INTO albums(id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at,account) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    arrayOf<Any>(albumId,title.trim(),artist.trim(),year,coverUrl,genre,if (isAutoDetected) 1 else 0,now,now,sync.account),
+                )
+            } else {
+                execSQL(
+                    "UPDATE albums SET title=?,artist=?,year=CASE WHEN ?='' THEN year ELSE ? END,cover_url=CASE WHEN ?='' THEN cover_url ELSE ? END,genre=CASE WHEN ?='' THEN genre ELSE ? END,auto_detected=MAX(auto_detected,?),updated_at=? WHERE id=?",
+                    arrayOf<Any>(title.trim(),artist.trim(),year,year,coverUrl,coverUrl,genre,genre,if (isAutoDetected) 1 else 0,now,albumId),
+                )
+            }
+            var position = rawQuery("SELECT COALESCE(MAX(position),-1)+1 FROM album_tracks WHERE album_id=?", arrayOf(albumId)).use { it.moveToFirst(); it.getInt(0) }
+            compileStatement("INSERT OR IGNORE INTO album_tracks(album_id,track,position) SELECT ?,id,? FROM tracks WHERE id=?").use { statement ->
+                tracks.distinct().forEach { trackId ->
+                    statement.bindString(1,albumId)
+                    statement.bindLong(2,position.toLong())
+                    position++
+                    statement.bindString(3,trackId)
+                    statement.executeInsert()
+                }
+            }
+            val ids = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(albumId)).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(0)) }
+            }
+            val metadata = JSONObject().put("title",title.trim()).put("artist",artist.trim())
+                .put("year",year).put("cover",coverUrl).put("genre",genre)
+                .put("auto",isAutoDetected).put("created",if (existing == null) now else rawQuery("SELECT created_at FROM albums WHERE id=?", arrayOf(albumId)).use { it.moveToFirst(); it.getLong(0) })
+                .put("updated",now)
+            val values = linkedMapOf<String,Any?>("album/$albumId/metadata" to metadata,"album/$albumId/order" to JSONArray(ids))
+            ids.forEach { values["album/$albumId/member/$it"] = true }
+            sync.references(this, ids, values)
+            sync.edit(this, values)
+            albumId
+        }
+        reload()
+        id
+    }
+
+    suspend fun updateAlbumMetadata(
+        id: String,
+        title: String,
+        artist: String,
+        year: String = "",
+        coverUrl: String = "",
+        genre: String = "",
+    ) = withContext(Dispatchers.IO) {
+        require(title.isNotBlank() && artist.isNotBlank())
+        writableDatabase.transaction {
+            val created = rawQuery("SELECT created_at FROM albums WHERE id=? AND account=?", arrayOf(id,sync.account.toString())).use { c ->
+                check(c.moveToFirst())
+                c.getLong(0)
+            }
+            val updated = System.currentTimeMillis()
+            execSQL(
+                "UPDATE albums SET title=?,artist=?,year=?,cover_url=?,genre=?,updated_at=? WHERE id=? AND account=?",
+                arrayOf<Any>(title.trim(),artist.trim(),year.trim(),coverUrl.trim(),genre.trim(),updated,id,sync.account),
+            )
+            val metadata = JSONObject().put("title",title.trim()).put("artist",artist.trim())
+                .put("year",year.trim()).put("cover",coverUrl.trim()).put("genre",genre.trim())
+                .put("auto",false).put("created",created).put("updated",updated)
+            sync.edit(this,mapOf("album/$id/metadata" to metadata))
+        }
+        reload()
+    }
+
+    suspend fun reorderAlbum(id: String, order: List<String>) = withContext(Dispatchers.IO) {
+        writableDatabase.transaction {
+            val current = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id)).use { c ->
+                buildList { while (c.moveToNext()) add(c.getString(0)) }
+            }
+            val members = current.toSet()
+            val requested = order.distinct().filter { it in members }
+            val merged = requested + current.filter { it !in requested.toSet() }
+            delete("album_tracks", "album_id=?", arrayOf(id))
+            compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { statement ->
+                merged.forEachIndexed { index, track ->
+                    statement.bindString(1,id); statement.bindString(2,track); statement.bindLong(3,index.toLong()); statement.executeInsert()
+                }
+            }
+            sync.edit(this,mapOf("album/$id/order" to JSONArray(merged)))
+        }
+        reload()
+    }
+
+    suspend fun deduplicateAlbums(): Int = withContext(Dispatchers.IO) {
+        var mergedCount = 0
+        writableDatabase.transaction {
+            val rows = rawQuery(
+                "SELECT id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE account=? ORDER BY created_at,id",
+                arrayOf(sync.account.toString()),
+            ).use { c ->
+                buildList {
+                    while (c.moveToNext()) add(
+                        Album(c.getString(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4),
+                            c.getString(5),c.getInt(6)==1,c.getLong(7),c.getLong(8))
+                    )
+                }
+            }
+            fun albumTracks(id: String): List<String> =
+                rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id))
+                    .use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.getString(0)) } }
+            fun similar(a: String, b: String): Boolean {
+                val x = normalizeAlbumText(a)
+                val y = normalizeAlbumText(b)
+                if (x.isBlank() || y.isBlank()) return false
+                if (x == y) return true
+                if (x.contains(y) || y.contains(x)) return minOf(x.length,y.length).toDouble()/maxOf(x.length,y.length) >= .72
+                val previous = IntArray(y.length + 1) { it }
+                for (i in x.indices) {
+                    var diagonal = previous[0]
+                    previous[0] = i + 1
+                    for (j in y.indices) {
+                        val above = previous[j + 1]
+                        previous[j + 1] = minOf(previous[j + 1] + 1, previous[j] + 1, diagonal + if (x[i] == y[j]) 0 else 1)
+                        diagonal = above
+                    }
+                }
+                return 1.0 - previous[y.length].toDouble()/maxOf(x.length,y.length) >= .84
+            }
+            val clusters = mutableListOf<MutableList<Album>>()
+            val trackCache = rows.associate { it.id to albumTracks(it.id) }
+            for (album in rows) {
+                val candidate = clusters.firstOrNull { cluster ->
+                    cluster.any { existing ->
+                        val artistA = normalizeAlbumText(album.artist)
+                        val artistB = normalizeAlbumText(existing.artist)
+                        val artistCompatible = artistA.isBlank() || artistB.isBlank() ||
+                            artistA == artistB || artistA.contains(artistB) || artistB.contains(artistA)
+                        val yearCompatible = album.year.isBlank() || existing.year.isBlank() ||
+                            album.year == existing.year
+                        val aTracks = trackCache[album.id].orEmpty().toSet()
+                        val bTracks = trackCache[existing.id].orEmpty().toSet()
+                        val overlap = aTracks.intersect(bTracks).size.toDouble() /
+                            maxOf(1, minOf(aTracks.size,bTracks.size))
+                        yearCompatible && (
+                            (artistCompatible && similar(album.title, existing.title)) || overlap >= .65
+                        )
+                    }
+                }
+                if (candidate == null) clusters += mutableListOf(album) else candidate += album
+            }
+            for (group in clusters.filter { it.size > 1 }) {
+                val keep = group.first()
+                val combined = group.flatMap { trackCache[it.id].orEmpty() }.distinct()
+                val bestCover = group.firstOrNull { it.coverUrl.startsWith("https://") || it.coverUrl.startsWith("http://") }?.coverUrl
+                    ?: keep.coverUrl
+                val bestYear = keep.year.ifBlank { group.firstNotNullOfOrNull { it.year.takeIf(String::isNotBlank) }.orEmpty() }
+                val bestGenre = keep.genre.ifBlank { group.firstNotNullOfOrNull { it.genre.takeIf(String::isNotBlank) }.orEmpty() }
+                val bestArtist = if (normalizeAlbumText(keep.artist).isBlank()) group.firstNotNullOfOrNull { it.artist.takeIf(String::isNotBlank) } ?: keep.artist else keep.artist
+                execSQL("UPDATE albums SET cover_url=?,year=?,genre=?,artist=?,updated_at=? WHERE id=?",
+                    arrayOf<Any>(bestCover,bestYear,bestGenre,bestArtist,System.currentTimeMillis(),keep.id))
+                delete("album_tracks","album_id=?",arrayOf(keep.id))
+                compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { st ->
+                    combined.forEachIndexed { index, track ->
+                        st.bindString(1,keep.id); st.bindString(2,track); st.bindLong(3,index.toLong()); st.executeInsert()
+                    }
+                }
+                for (duplicate in group.drop(1)) {
+                    sync.edit(this,mapOf("album/${duplicate.id}/deleted" to true))
+                    delete("album_tracks","album_id=?",arrayOf(duplicate.id))
+                    delete("albums","id=? AND account=?",arrayOf(duplicate.id,sync.account.toString()))
+                    mergedCount++
+                }
+                val metadata = JSONObject().put("title",keep.title).put("artist",bestArtist).put("year",bestYear)
+                    .put("cover",bestCover).put("genre",bestGenre).put("auto",group.any { it.isAutoDetected })
+                    .put("created",keep.createdAt).put("updated",System.currentTimeMillis())
+                val values = linkedMapOf<String,Any?>("album/${keep.id}/metadata" to metadata,"album/${keep.id}/order" to JSONArray(combined))
+                combined.forEach { values["album/${keep.id}/member/$it"] = true }
+                sync.references(this,combined,values)
+                sync.edit(this,values)
+            }
+        }
+        reload()
+        mergedCount
+    }
+
+    suspend fun deleteAlbum(id: String) = withContext(Dispatchers.IO) {
+        writableDatabase.transaction {
+            sync.edit(this, mapOf("album/$id/deleted" to true))
+            delete("album_tracks","album_id=?",arrayOf(id))
+            delete("albums","id=? AND account=?",arrayOf(id,sync.account.toString()))
+        }
+        reload()
+    }
+
+    suspend fun removeFromAlbum(id: String, trackIds: List<String>) = withContext(Dispatchers.IO) {
+        writableDatabase.transaction {
+            trackIds.distinct().forEach { track ->
+                delete("album_tracks","album_id=? AND track=?",arrayOf(id,track))
+                sync.edit(this,mapOf("album/$id/member/$track" to false))
+            }
+            val remaining = rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",arrayOf(id)).use { c -> buildList { while(c.moveToNext()) add(c.getString(0)) } }
+            execSQL("UPDATE albums SET updated_at=? WHERE id=? AND account=?", arrayOf<Any>(System.currentTimeMillis(),id,sync.account))
+            val metadata = rawQuery("SELECT title,artist,year,cover_url,genre,auto_detected,created_at,updated_at FROM albums WHERE id=?",arrayOf(id)).use { c ->
+                check(c.moveToFirst())
+                JSONObject().put("title",c.getString(0)).put("artist",c.getString(1)).put("year",c.getString(2)).put("cover",c.getString(3)).put("genre",c.getString(4)).put("auto",c.getInt(5)==1).put("created",c.getLong(6)).put("updated",System.currentTimeMillis())
+            }
+            sync.edit(this,mapOf("album/$id/metadata" to metadata,"album/$id/order" to JSONArray(remaining)))
+        }
+        reload()
+    }
+
     private fun addTracks(db: SqlDatabase, playlist: Long, tracks: List<String>) {
         check(
             db.rawQuery(
@@ -856,6 +1147,10 @@ class Library(private val platform: Platform) : AutoCloseable {
                                 "playlist/${c.getString(0)}/member/${track.id}"] = false
                         }
                     delete("playlist_tracks", "track=?", arrayOf(track.id))
+                    rawQuery("SELECT album_id FROM album_tracks WHERE track=?", arrayOf(track.id)).use { c ->
+                        while (c.moveToNext()) values["album/${c.getString(0)}/member/${track.id}"] = false
+                    }
+                    delete("album_tracks", "track=?", arrayOf(track.id))
                     delete("tracks", "id=?", arrayOf(track.id))
                     sync.edit(this, values)
                 }
@@ -909,6 +1204,15 @@ class Library(private val platform: Platform) : AutoCloseable {
     suspend fun clearTelegram() =
         withContext(Dispatchers.IO) {
             writableDatabase.transaction {
+                val albumChanges = linkedMapOf<String, Any?>()
+                rawQuery(
+                    "SELECT album_id,track FROM album_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)",
+                    null,
+                ).use { c ->
+                    while (c.moveToNext()) albumChanges["album/" + c.getString(0) + "/member/" + c.getString(1)] = false
+                }
+                sync.edit(this, albumChanges)
+                execSQL("DELETE FROM album_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)")
                 execSQL(
                     "DELETE FROM playlist_tracks WHERE track IN (SELECT id FROM tracks WHERE chat!=0 OR profile_user!=0)"
                 )
@@ -1022,3 +1326,5 @@ class Library(private val platform: Platform) : AutoCloseable {
             }
         }
 }
+
+internal fun normalizeAlbumText(value: String): String = value.lowercase().filter { it.isLetterOrDigit() }

@@ -1,6 +1,6 @@
 # Verification record
 
-[Documentation](README.md) · **English** · [Русский](verification.ru.md)
+[Documentation](README.md) · **English**
 
 This page records observed behavior and its limits. A build does not establish
 account access, physical sound or responsiveness on another computer. Temporary
@@ -43,7 +43,7 @@ eight direct scroll updates; a reduced-motion desktop property disabled
 interpolation. These observations do not establish physical touchpad behavior.
 
 The duration-label implementation matched the prior formatter at 17 boundary
-values in English and Russian, including negative values and `Long.MAX_VALUE`.
+localized values, including negative values and `Long.MAX_VALUE`.
 Seven warm runs of 100,000 actual compiled calls had median times of 132.13 ms
 before and 2.79 ms after the change. That is a small-function comparison, not an
 application FPS measurement.
@@ -109,7 +109,7 @@ The final APKs carry `48eb37b` in their VCS metadata.
 A retained Android 16 installation first updated from 0.17.0 to the published
 0.27.1, then to 0.28.0 (50). The last update preserved all 18 saved application
 files byte-for-byte before launch. The catalog, favorites and paused queue position
-remained visible. Russian Settings at 320 dp/font scale 1.3 scrolled to the bottom
+remained visible. Localized Settings at 320 dp/font scale 1.3 scrolled to the bottom
 with its fixed Close button; Close and drag dismissal worked. Local playback
 continued after Home, the media session reported PLAYING, and a media Pause command
 returned to the paused player. The application crash buffer remained empty.
@@ -161,7 +161,7 @@ Android debug/release and both Lint variants passed (zero errors, 53 warnings
 per variant). Both APKs passed v2 signature and 16 KiB ZIP alignment checks,
 retained the original certificate and carry `f74ed7e` in their VCS metadata.
 An Android 15 installation updated from 0.27.0 (48) to 0.27.1 (49), retaining all
-16 saved application files byte-for-byte before launch. Russian Settings at
+16 saved application files byte-for-byte before launch. Localized Settings at
 320 dp/font scale 1.3 retained its fixed Close button after scrolling; Close and
 drag dismissal worked, with an empty crash buffer. This remains emulator evidence.
 
@@ -253,7 +253,7 @@ Reinstalling the final APK built from `535b65c` again retained all 16 files befo
 launch and all 12 tables afterwards; the later 2,621 ms position also survived.
 
 Manual interaction checked presets, 0.05 steps, speed-sheet drag and button
-dismissal, Settings scrolling, both themes and Russian controls at 320 dp with
+dismissal, Settings scrolling, both themes and localized controls at 320 dp with
 font scale 1.3. Local playback continued after Home; the system Pause command
 stopped it at 2,621 ms, and returning to the player showed that position. The
 crash buffer contained no AndroidRuntime exception from these flows. The emulator
@@ -264,7 +264,7 @@ physical-device FPS, battery use or physical sound.
 
 The audit covered shared screens and state publication, catalog costs, playback
 observation, platform adapters, native dependencies, packaging, update trust and
-the English/Russian guides. The existing shared/platform boundaries, release path
+the English documentation. The existing shared/platform boundaries, release path
 and documentation language-suffix structure remain. No runtime dependency,
 service, idle poll or permanent diagnostic/test scaffold was added.
 
@@ -343,7 +343,7 @@ first launch. After launch all 11 SQLite tables matched; queue IDs, order, curso
 and paused position at 8,910 ms survived. MediaSession exposed that same position
 without starting playback.
 
-The emulator used host GPU rendering. Russian Settings, its lazy-list bottom,
+The emulator used host GPU rendering. Localized Settings, its lazy-list bottom,
 switch motion, both themes, track actions and deletion cancellation were checked
 at 320 dp and font scale 1.3. No AndroidRuntime exception appeared in those flows.
 These checks do not establish physical-device frame rate, battery use or sound.
@@ -401,7 +401,7 @@ all native and transitive code. Package inspection found no duplicated applicati
 or dependency classes; repeated versioned `module-info` entries belong to their
 individual JARs.
 
-English and Russian documentation now explain same-field conflict resolution,
+The English documentation now explains same-field conflict resolution,
 local-file backups and the correct format-3 minimum version. README introduces
 the product and routes detailed controls to the user guide. Earlier verification
 history is linked instead of copied into the current record.

@@ -101,7 +101,7 @@ class UpdateInstaller(private val app: AndroidApplication) : UpdateInstallation 
                         check(prefs.edit().putString("asset", asset.toJson()).commit())
                         val request =
                             DownloadManager.Request(Uri.parse(asset.url))
-                                .setTitle("spotygram ${asset.version}")
+                                .setTitle("MLib ${asset.version}")
                                 .setDescription(tr(R.string.update_downloading))
                                 .setMimeType("application/vnd.android.package-archive")
                                 .setNotificationVisibility(
@@ -283,7 +283,7 @@ class UpdateInstaller(private val app: AndroidApplication) : UpdateInstallation 
                 Intent(Intent.ACTION_VIEW)
                     .setDataAndType(uri, "application/vnd.android.package-archive")
                     .apply {
-                        clipData = ClipData.newRawUri("Spotygram update", uri)
+                        clipData = ClipData.newRawUri("MLib update", uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
             )

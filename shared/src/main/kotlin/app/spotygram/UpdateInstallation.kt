@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONObject
 
 data class UpdateAsset(val version: String, val size: Long, val sha256: String, val abi: String) {
-    val url get() = "https://github.com/Krablante/spotygram/releases/download/v$version/" +
+    val url get() = "https://github.com/ginjeira/MLib/releases/download/v$version/" +
         AppText.platform.assetName(version, abi)
 
     fun valid() = Regex("[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6}").matches(version) &&
