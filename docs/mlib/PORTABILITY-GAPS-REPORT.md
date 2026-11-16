@@ -63,7 +63,7 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 | ACQ-02 — Classificação multi-faixa para artista | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
 | ACQ-03 — Fixtures de protocolo para pesquisa/callbacks | P1 | Implementado, não provado | 0/1 |
 | ACQ-04 — Ordem, paginação e limite de recolha | P2 | Adaptação mais ampla; limite por validar | 1 |
-| ACQ-05 — Exclusividade do turno e confirmação de libertação do bot | P0 | Mutex local não garantia conclusão remota nem reservava pesquisas com resultados | 1 |
+| ACQ-05 — Exclusividade do turno e confirmação de libertação do bot | P0 | Implementação submetida a CI; aceitação live pendente | 1 |
 | SRC-01 — Destino Telegram e fontes de deduplicação | P1 | Parcial | 2 |
 | DED-01 — Regras de duplicados de faixas | P1 | Port directo; golden tests em falta | 0/2 |
 | DED-02 — Merge de metadata de faixas | P1 | Em falta/modelo diferente | 2 |
