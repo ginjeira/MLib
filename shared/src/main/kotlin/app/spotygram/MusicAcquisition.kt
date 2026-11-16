@@ -381,12 +381,29 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val existing = app.library.state.value.playlists.firstOrNull {
                         it.name.equals(playlistName, ignoreCase = true)
                     }
+                    val description = "Playlist obtida via MCat (${session.search.provider.wireValue.uppercase()}) para $destinationTitle"
+                    val firstTrackCover = item.tracks.firstOrNull()?.art.orEmpty()
+                    val cover = firstTrackCover.takeIf {
+                        it.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(it)
+                    } ?: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
                     playlistId =
                         if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)
+                            if (existing.description.isBlank() || existing.coverUrl.isBlank()) {
+                                app.library.updatePlaylistMetadata(
+                                    existing.id,
+                                    existing.description.ifBlank { description },
+                                    existing.coverUrl.ifBlank { cover },
+                                )
+                            }
                             existing.id
                         } else {
-                            app.library.createPlaylist(playlistName, ids)
+                            app.library.createPlaylist(
+                                name = playlistName,
+                                tracks = ids,
+                                description = description,
+                                coverUrl = cover,
+                            )
                         }
                 }
             }
