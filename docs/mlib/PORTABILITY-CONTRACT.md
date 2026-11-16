@@ -19,12 +19,14 @@ Este contrato define comportamento observável. As fixtures em `desktop/src/test
 ## Recepção/conclusão (comportamento MCat de referência)
 - Recolher apenas mensagens de áudio novas após o cursor capturado imediatamente antes de seleccionar a opção.
 - Desduplicar IDs de mensagem e preservar ordem cronológica.
-- Contagem esperada positiva: terminar quando a contagem for atingida.
-- Sinais textuais MCat (case-insensitive): `finished`, `download complete`, `completed`, `concluído`, `todas as faixas`, `process complete`, `done!`, `pronto!`; só concluir com pelo menos um áudio.
-- Pedido simples: terminar após a primeira faixa válida.
-- Colecção sem contagem/sinal: terminar após 9 segundos sem nova faixa, desde que tenha chegado pelo menos uma.
-- Deadline MCat: 45 s para simples; 240 s para multi. Sem áudio = falha; com áudio mas sem critério = resultado parcial/timeout, não sucesso integral.
-- MLib deverá registar o critério terminal; a implementação actual que exige exactamente `Finished.` não cumpre este contrato (ACQ-01).
+- A contagem esperada positiva é um indicador de progresso, não uma confirmação de que o bot libertou o turno. Atingir 20/20 sem sinal final continua pendente.
+- Sinais textuais MCat (case-insensitive): `finish`, `finished`, `download complete`, `completed`, `concluído`, `todas as faixas`, `process complete`, `done!`, `pronto!`.
+- Uma colecção 20/18 com sinal final `finish` está concluída com as 18 faixas recebidas; a contagem esperada não bloqueia faixas indisponíveis, incluindo por restrições geográficas.
+- Pedido simples: a primeira faixa é recolhida, mas o turno só é libertado com sinal final explícito.
+- Silêncio de 9 segundos é apenas um indicador de inactividade; não prova que o bot terminou.
+- Deadline: 45 s para simples; 240 s para multi. Sem áudio e sem sinal = falha pendente; com áudio mas sem sinal = resultado parcial pendente, sem libertar o bot.
+- Um novo pedido só pode ser enviado depois do sinal terminal da opção anterior. A serialização por Mutex não substitui esta confirmação.
+- Em timeout, persistir a conversa, o cursor e as opções pendentes. A retoma espera o sinal terminal depois do cursor antes de reconstruir a pesquisa; contagem, silêncio ou descarte não libertam a conversa.
 
 ## Encaminhamento e biblioteca
 - Encaminhar cada mensagem de áudio individualmente por TDLib `forwardMessages`; não descarregar/re-enviar áudio.
@@ -48,3 +50,7 @@ TDLib já autenticada, Kotlin, SQLite e CloudSync MLib são os mecanismos. GramJ
 - **Paridade de fonte:** golden cases demonstram o mesmo resultado da função MCat de referência.
 - **Teste automatizado:** teste executado e aprovado no commit indicado.
 - **Teste live aprovado:** evidência real Telegram/dispositivo, com data e execução. Build CI não substitui teste live.
+
+
+## Exclusividade do turno Telegram (ACQ-05)
+A conversa stateful do bot fica reservada desde que a pesquisa devolve opções até à chegada de um sinal terminal explícito. Em timeout, o job conserva chat/cursor/opções e a retoma aguarda o sinal final antes de enviar qualquer nova pesquisa ou selecção. Não se pode avançar para a opção seguinte com base apenas na contagem, no silêncio ou na primeira faixa.

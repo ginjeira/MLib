@@ -63,6 +63,7 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 | ACQ-02 — Classificação multi-faixa para artista | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
 | ACQ-03 — Fixtures de protocolo para pesquisa/callbacks | P1 | Implementado, não provado | 0/1 |
 | ACQ-04 — Ordem, paginação e limite de recolha | P2 | Adaptação mais ampla; limite por validar | 1 |
+| ACQ-05 — Exclusividade do turno e confirmação de libertação do bot | P0 | Mutex local não garantia conclusão remota nem reservava pesquisas com resultados | 1 |
 | SRC-01 — Destino Telegram e fontes de deduplicação | P1 | Parcial | 2 |
 | DED-01 — Regras de duplicados de faixas | P1 | Port directo; golden tests em falta | 0/2 |
 | DED-02 — Merge de metadata de faixas | P1 | Em falta/modelo diferente | 2 |
@@ -100,7 +101,7 @@ Estas áreas necessitam de testes e ajustes identificados, mas não justificam r
 **Gate:** uma pessoa externa identifica comportamento esperado e ficheiro/teste MLib correspondente para cada capacidade.
 
 ### Wave 1 — Protocolo de pesquisa e recepção
-Corrigir ACQ-01 (contagem fiável, sinais finais MCat, faixa única, silêncio, deadlines 45s/240s, ausência de áudio e resultados parciais); ACQ-02 (artist só multi quando a opção/contagem exigir); fechar callbacks, mensagens editadas/novas, polling, cursor, paginação, ordem e limite; logs por opção sem dados sensíveis. Gate: track/album/playlist/artist terminam/falham correctamente sem depender de texto que o bot não enviou.
+Corrigir ACQ-01 (contagem esperada como indicador, sinais finais MCat incluindo finish/finished, colecções com menos faixas recebidas, faixa única e resultados parciais); ACQ-02 (artist só multi quando a opção/contagem exigir); ACQ-05 (reservar a conversa desde a pesquisa com resultados até ao sinal terminal explícito; contagem e silêncio nunca libertam o bot); fechar callbacks, mensagens editadas/novas, polling, cursor, paginação e ordem cronológica. Em timeout sem sinal, persistir conversa/cursor e aguardar a conclusão antes de retomar ou enviar qualquer pedido. Gate: nenhum segundo pedido é enviado enquanto o bot não confirmar que terminou o anterior.
 
 ### Wave 2 — Destinos e deduplicação
 Implementar SRC-01; golden cross-language DED-01 e identidade Telegram; DED-02 com merge controlado preservando formato, bitrate, duração, tamanho, capas, artista, álbum, favoritos e relações; definir duplicados na mesma resposta, biblioteca, destino e fontes. Gate: pedidos repetidos não criam duplicados; melhores metadados preservados; nada é removido silenciosamente.
@@ -127,8 +128,8 @@ Executar T01–T20 numa conta Telegram real; builds Android ARM64/x86_64 e Deskt
 | T01 | Track / Deezer e SoundCloud | Filtros aplicados; resultados actuais; expiração 20 min |
 | T02 | Album/playlist/artist | Tipo correcto; sem resultados obsoletos; artist pode ser uma ou várias faixas |
 | T03 | Callbacks/teclado | Payload TDLib exacto; mensagem editada/nova; sem selecção errada |
-| T04 | Conclusão faixa | Primeira faixa termina pedido simples; sem áudio falha claramente; sinais MCat |
-| T05 | Conclusão colecção | Contagem/sinal/silêncio; parcial reportado e recuperável |
+| T04 | Conclusão faixa | A primeira faixa é recolhida, mas o turno só termina com sinal final explícito; sem áudio e sem sinal fica pendente |
+| T05 | Conclusão colecção | 20/18 com finish conclui; 20/18 sem sinal fica pendente; 20/20 sem sinal também aguarda; retoma só após sinal final |
 | T06 | Mais de 100 mensagens | Paginação sem perda/repetição/troca; limite explícito |
 | T07 | Encaminhamento | Mensagens individuais, metadata correcta, falhas isoladas |
 | T08 | Deduplicação | Repetição não cria duplicados; fontes consultadas; artistas distintos não fundidos |
@@ -168,3 +169,16 @@ Executar T01–T20 numa conta Telegram real; builds Android ARM64/x86_64 e Deskt
 ## 10. Definição de portabilidade concluída
 
 A portabilidade só pode ser declarada concluída quando as lacunas P0/P1 estiverem fechadas ou formalmente excluídas, playlists/álbuns/capas estiverem integrados no modelo MLib, golden/unit/migration/CloudSync passarem, T01–T20 tiverem evidência, CI confirmar Android ARM64/x86_64 e Desktop e os documentos apontarem para o mesmo estado. Teste live e build são provas distintas.
+
+
+## 11. Aditamento Wave 1 — Exclusividade do turno do bot (16-11-2026)
+
+Foi identificado um requisito adicional: o bot Telegram só aceita um novo pedido depois de terminar o anterior. O Mutex apenas serializa chamadas locais; não prova que o worker remoto terminou.
+
+**Regra vinculativa:** uma pesquisa que devolve opções reserva o turno. A reserva só é libertada quando chega uma mensagem terminal explícita do bot (finish, finished ou outro sinal reconhecido). Atingir a contagem esperada, receber uma faixa única ou observar 9 segundos de silêncio não liberta o turno.
+
+**Disponibilidade parcial:** a contagem esperada é indicativa. Se forem esperadas 20 faixas e o bot enviar 18, um sinal final finish confirma a conclusão das 18 disponíveis; não se inventam nem se aguardam indefinidamente as duas em falta, que podem estar indisponíveis por restrições geográficas. Sem sinal final, o pedido permanece pendente mesmo com 20/20.
+
+**Timeout e recuperação:** conservar a opção actual e as seguintes, o identificador da conversa e o cursor da última mensagem observada. Não enviar a opção seguinte nem uma nova pesquisa. A retoma aguarda primeiro o sinal final após esse cursor; só depois reconstrói a pesquisa. Descartar o job não pode desbloquear artificialmente uma conversa cujo fim ainda não foi confirmado.
+
+**Testes obrigatórios:** 20/18 + finish; 20/18 sem sinal; 20/20 sem sinal; faixa única sem sinal; finish case-insensitive; ausência de segunda opção/pesquisa antes do sinal; retoma com sinal já recebido ou que chega durante a espera. A implementação deve ser marcada como concluída apenas após CI e revisão do fluxo.
