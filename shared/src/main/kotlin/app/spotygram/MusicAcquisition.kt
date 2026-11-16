@@ -539,6 +539,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         var pending = state.value.pendingJob ?: readPendingJob()
             ?: error("Não existe nenhuma aquisição interrompida para retomar.")
         state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
+        // Block all other entry points while the persisted bot turn is being reconciled.
+        activeSearchId = "pending-resume"
         try {
             if (pending.awaitingBotCompletion) {
                 waitForBotCompletionSignal(pending.botChatId, pending.botMessageCursor)
