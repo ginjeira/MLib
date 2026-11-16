@@ -98,6 +98,9 @@ fun SpotygramUI(
     var managedPlaylist by remember { mutableStateOf<Playlist?>(null) }
     var rename by remember { mutableStateOf(false) }
     var renameText by remember { mutableStateOf("") }
+    var editPlaylistDetails by remember { mutableStateOf(false) }
+    var playlistDescription by remember { mutableStateOf("") }
+    var playlistCoverUrl by remember { mutableStateOf("") }
     var delete by remember { mutableStateOf(false) }
     var confirmLogout by remember { mutableStateOf(false) }
     var deletingImportId by remember { mutableStateOf<String?>(null) }
@@ -1134,6 +1137,15 @@ fun SpotygramUI(
                                                     sheet = "order"
                                                 }
                                                 ActionRow(
+                                                    Icons.Rounded.Image,
+                                                    "Descrição e capa",
+                                                ) {
+                                                    playlistDescription = p.description
+                                                    playlistCoverUrl = p.coverUrl
+                                                    sheet = ""
+                                                    editPlaylistDetails = true
+                                                }
+                                                ActionRow(
                                                     Icons.Rounded.Edit,
                                                     tr(R.string.rename),
                                                 ) {
@@ -1207,6 +1219,48 @@ fun SpotygramUI(
                         },
                         dismissButton = {
                             TextButton(onClick = { rename = false }) { Text(tr(R.string.cancel)) }
+                        },
+                    )
+                if (editPlaylistDetails)
+                    GlassDialog(
+                        onDismissRequest = { editPlaylistDetails = false },
+                        title = { Text("Descrição e capa da playlist") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                OutlinedTextField(
+                                    value = playlistDescription,
+                                    onValueChange = { playlistDescription = it.take(512) },
+                                    label = { Text("Descrição") },
+                                    minLines = 2,
+                                    maxLines = 4,
+                                )
+                                OutlinedTextField(
+                                    value = playlistCoverUrl,
+                                    onValueChange = { playlistCoverUrl = it.take(4096) },
+                                    label = { Text("URL da capa") },
+                                    singleLine = true,
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    val id = managedPlaylist?.id
+                                    if (id != null) app.action {
+                                        app.library.updatePlaylistMetadata(
+                                            id,
+                                            playlistDescription,
+                                            playlistCoverUrl,
+                                        )
+                                    }
+                                    editPlaylistDetails = false
+                                },
+                            ) { Text(tr(R.string.save)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { editPlaylistDetails = false }) {
+                                Text(tr(R.string.cancel))
+                            }
                         },
                     )
                 if (delete)
