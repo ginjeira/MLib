@@ -186,6 +186,13 @@ internal object MusicAcquisitionRules {
         return clean.ifEmpty { title }
     }
 
+    fun isGenericAlbumCover(url: String): Boolean =
+        url.isBlank() ||
+            url.contains("photo-1514525253161") ||
+            url.contains("photo-1511671782779") ||
+            url.contains("photo-1511192336575") ||
+            url.contains("unsplash.com")
+
     /** Exact port of MCat Player's areAlbumsDuplicate(). */
     fun areAlbumsDuplicate(
         firstTitle: String,
