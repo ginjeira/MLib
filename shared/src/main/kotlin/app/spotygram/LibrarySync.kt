@@ -161,6 +161,11 @@ class LibrarySync(
                                     value.isNotBlank() &&
                                     value.length <= 80
                             )
+                        "metadata" -> {
+                            require(parts.size == 3 && value is JSONObject)
+                            require(value.optString("description").length <= 512)
+                            require(value.optString("cover").length <= 4096)
+                        }
                         "deleted" -> require(parts.size == 3 && value is Boolean)
                         "member" ->
                             require(
@@ -240,12 +245,13 @@ class LibrarySync(
                     if (c.getInt(1) == 1) seed["favorite/$id"] = true
                 }
             }
-        db.rawQuery("SELECT id,name FROM playlists", null).use { c ->
+        db.rawQuery("SELECT id,name,description,cover_url FROM playlists", null).use { c ->
             while (c.moveToNext()) {
                 val id = c.getLong(0)
                 val uid = UUID.randomUUID().toString()
                 db.execSQL("UPDATE playlists SET sync_id=? WHERE id=?", arrayOf<Any>(uid, id))
                 seed["playlist/$uid/name"] = c.getString(1)
+                seed["playlist/$uid/metadata"] = JSONObject().put("description", c.getString(2)).put("cover", c.getString(3))
                 val ids = playlistTracks(db, id)
                 seed["playlist/$uid/order"] = JSONArray(ids)
                 for (track in ids) seed["playlist/$uid/member/$track"] = true
@@ -742,6 +748,11 @@ class LibrarySync(
                         },
                     )
             db.execSQL("UPDATE playlists SET name=? WHERE id=?", arrayOf<Any>(name, local))
+            val metadata = value("playlist/$uid/metadata") as? JSONObject
+            if (metadata != null) db.execSQL(
+                "UPDATE playlists SET description=?,cover_url=? WHERE id=?",
+                arrayOf<Any>(metadata.optString("description"), metadata.optString("cover"), local),
+            )
             val prefix = "playlist/$uid/member/"
             val members =
                 playlistRows[uid]
