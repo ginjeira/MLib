@@ -36,6 +36,40 @@ class LibraryMigrationTest {
     }
 
     @Test
+    fun playlistDescriptionAndCoverPersistAndSynchronize() = runBlocking {
+        val root = Files.createTempDirectory("mlib-playlist-metadata").toFile()
+        val library = Library(MigrationPlatform(root))
+        try {
+            library.reload()
+            val id = library.createPlaylist(
+                name = "Hair Metal Essentials",
+                description = "Playlist obtida via MCat (DEEZER) para GinjMusic",
+                coverUrl = "https://example.invalid/hair-metal.jpg",
+            )
+            val playlist = library.state.value.playlists.single()
+            assertEquals(id, playlist.id)
+            assertEquals("Playlist obtida via MCat (DEEZER) para GinjMusic", playlist.description)
+            assertEquals("https://example.invalid/hair-metal.jpg", playlist.coverUrl)
+            assertTrue(library.sync.records().any { it.key.endsWith("/metadata") && it.value.contains("hair-metal.jpg") })
+        } finally {
+            library.close()
+        }
+        try {
+            val reopened = Library(MigrationPlatform(root))
+            try {
+                reopened.reload()
+                val playlist = reopened.state.value.playlists.single()
+                assertEquals("Playlist obtida via MCat (DEEZER) para GinjMusic", playlist.description)
+                assertEquals("https://example.invalid/hair-metal.jpg", playlist.coverUrl)
+            } finally {
+                reopened.close()
+            }
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun completingDeletedTargetAlbumDoesNotCreateReplacement() = runBlocking {
         val root = Files.createTempDirectory("mlib-deleted-album").toFile()
         val library = Library(MigrationPlatform(root))
