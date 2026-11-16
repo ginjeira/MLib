@@ -680,7 +680,12 @@ class Library(private val platform: Platform) : AutoCloseable {
             reload()
         }
 
-    suspend fun createPlaylist(name: String, tracks: List<String> = emptyList()): Long =
+    suspend fun createPlaylist(
+        name: String,
+        tracks: List<String> = emptyList(),
+        description: String = "",
+        coverUrl: String = "",
+    ): Long =
         withContext(Dispatchers.IO) {
             require(name.isNotBlank()) { tr(R.string.playlist_name_required) }
             val id = writableDatabase.transaction {
@@ -690,6 +695,8 @@ class Library(private val platform: Platform) : AutoCloseable {
                         null,
                         Values().apply {
                             put("name", name.trim().take(80))
+                            put("description", description.trim().take(512))
+                            put("cover_url", coverUrl.trim().take(4096))
                             put("account", sync.account)
                         },
                     )
@@ -703,6 +710,7 @@ class Library(private val platform: Platform) : AutoCloseable {
                 val values =
                     linkedMapOf<String, Any?>(
                         "playlist/$uid/name" to name.trim().take(80),
+                        "playlist/$uid/metadata" to JSONObject().put("description", description.trim().take(512)).put("cover", coverUrl.trim().take(4096)),
                         "playlist/$uid/order" to JSONArray(ids),
                     )
                 for (track in ids) values["playlist/$uid/member/$track"] = true
