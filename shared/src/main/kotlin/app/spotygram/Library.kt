@@ -78,8 +78,16 @@ class Library(private val platform: Platform) : AutoCloseable {
         }
         if (oldVersion < 10) createAlbumStorage(db)
         if (oldVersion < 11) {
-            db.execSQL("ALTER TABLE playlists ADD COLUMN description TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE playlists ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''")
+            fun hasPlaylistColumn(name: String): Boolean =
+                db.rawQuery("PRAGMA table_info(playlists)", null).use { cursor ->
+                    var found = false
+                    while (cursor.moveToNext()) if (cursor.getString(1) == name) found = true
+                    found
+                }
+            if (!hasPlaylistColumn("description"))
+                db.execSQL("ALTER TABLE playlists ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            if (!hasPlaylistColumn("cover_url"))
+                db.execSQL("ALTER TABLE playlists ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''")
         }
         if (oldVersion < 6) sync.install(db)
         if (oldVersion < 7) sync.migrate(db)
