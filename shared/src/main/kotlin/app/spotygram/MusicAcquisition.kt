@@ -347,8 +347,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val parsedName = MusicAcquisitionRules.parseArtistAndTitle(item.option.title)
                     val title = targetAlbum?.title
                         ?: parsedName.title.ifBlank { MusicAcquisitionRules.cleanCollectionTitle(item.option.title) }
-                    val artist = targetAlbum?.artist?.takeIf(String::isNotBlank)
-                        ?: parsedName.artist.ifBlank { first.artist }
+                    val artist = targetAlbum?.artist?.takeIf {
+                        it.isNotBlank() && !it.equals("Artista Desconhecido", ignoreCase = true)
+                    } ?: parsedName.artist.ifBlank { first.artist }
                     // MCat first checks the explicitly selected album, then its
                     // own areAlbumsDuplicate() rules before creating a new one.
                     val existingAlbum = targetAlbum ?: app.library.state.value.albums.firstOrNull {
@@ -357,8 +358,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val existingCover = existingAlbum?.coverUrl.orEmpty()
                     val trackCover = first.art
                     val cover = when {
-                        existingCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(existingCover) -> existingCover
-                        trackCover.isNotBlank() && !MusicAcquisitionRules.isGenericAlbumCover(trackCover) -> trackCover
+                        existingCover.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(existingCover) -> existingCover
+                        trackCover.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(trackCover) -> trackCover
                         else -> MusicAcquisitionRules.genreCoverPreset("$title $artist")
                     }
                     val albumId = app.library.createOrUpdateAlbum(
@@ -696,11 +697,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         var finished = false
         var quietCompletion = false
         val maxWait = if (multiTrack) 240_000L else 45_000L
-        // Collection bots may send tracks in batches with sizeable gaps. A
-        // nine-second quiet window truncated playlists after their first item.
+        // Match MCat Player's nine-second quiet window for multi-track results.
         val quietWindow = 9_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
+            // MCat waits two seconds before each getMessages poll.
+            delay(2_000)
             // Advance the Telegram history cursor after every poll. Previously
             // every two-second poll re-paged the entire history back to the
             // selection message (up to 2,000 messages / 20 requests), leaving
@@ -730,7 +732,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 quietCompletion = true
                 break
             }
-            delay(2_000)
         }
         val timedOut = multiTrack &&
             System.currentTimeMillis() - started >= maxWait &&
