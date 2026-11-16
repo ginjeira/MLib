@@ -125,63 +125,44 @@ class MusicAcquisition(private val app: SpotygramApp) {
             // query with "Searching for", then the same inline message is used
             // to select content type and provider. Do not invent a separate
             // Track -> Playlist -> resend-query sequence.
-            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 30_000) {
-                !it.optBoolean("is_outgoing") &&
-                    (messageText(it).contains("searching for", ignoreCase = true) ||
-                        hasInlineKeyboard(it))
-            } ?: run {
-                val reply = history(botChatId, 50)
-                    .asSequence()
-                    .filter { it.optLong("id") > sent.getLong("id") }
-                    .filter { !it.optBoolean("is_outgoing") }
-                    .maxByOrNull { it.optLong("id") }
-                val replyText = reply?.let(::messageText)?.trim().orEmpty()
-                if (replyText.isNotBlank()) {
-                    error("Resposta do bot não reconhecida: ${replyText.take(180)}")
-                }
-                error("O bot de música não respondeu à pesquisa em 30 segundos.")
-            }
+            var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 8_000) {
+                messageText(it).contains("Searching for")
+            } ?: error("O bot do Telegram não respondeu a tempo à pesquisa.")
 
             val typeMarker = "in '${contentType.wireValue}'"
-            if (!messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
+            if (!messageText(resultMessage).contains(typeMarker)) {
                 state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
                 if (clickButton(resultMessage, contentType.wireValue)) {
                     resultMessage = waitForBotUpdate(
-                        botChatId, resultMessage.getLong("id"), 12_000,
-                    ) { messageText(it).contains(typeMarker, ignoreCase = true) } ?: resultMessage
+                        botChatId, resultMessage.getLong("id"), 4_800,
+                    ) { messageText(it).contains(typeMarker) } ?: resultMessage
                 }
-            }
-            check(messageText(resultMessage).contains(typeMarker, ignoreCase = true)) {
-                "O bot não confirmou o tipo de conteúdo ${contentType.wireValue}."
             }
 
             val providerMarker = "from '${provider.wireValue}'"
-            if (!messageText(resultMessage).contains(providerMarker, ignoreCase = true)) {
+            if (!messageText(resultMessage).contains(providerMarker)) {
                 state.value = state.value.copy(progress = "A seleccionar o fornecedor…")
                 if (clickButton(resultMessage, provider.wireValue)) {
                     resultMessage = waitForBotUpdate(
-                        botChatId, resultMessage.getLong("id"), 12_000,
-                    ) { messageText(it).contains(providerMarker, ignoreCase = true) } ?: resultMessage
+                        botChatId, resultMessage.getLong("id"), 4_800,
+                    ) { messageText(it).contains(providerMarker) } ?: resultMessage
                 }
-            }
-            check(messageText(resultMessage).contains(providerMarker, ignoreCase = true)) {
-                "O bot não confirmou o fornecedor ${provider.wireValue}."
             }
 
             var effectiveProvider = provider
             var options = parseResults(messageText(resultMessage))
-            // MCat Player falls back to SoundCloud when Deezer has no album
-            // results. Keep the same search message/session and record the
-            // provider that actually produced the options.
-            if (options.isEmpty() && contentType == AcquisitionContentType.ALBUM &&
+            // The dedicated MCat album-download flow falls back to SoundCloud;
+            // ordinary album searches do not.
+            if (options.isEmpty() && targetAlbumId != null &&
+                contentType == AcquisitionContentType.ALBUM &&
                 provider == AcquisitionProvider.DEEZER
             ) {
                 state.value = state.value.copy(progress = "Sem álbuns no Deezer; a tentar SoundCloud…")
                 if (clickButton(resultMessage, AcquisitionProvider.SOUNDCLOUD.wireValue)) {
                     resultMessage = waitForBotUpdate(
-                        botChatId, resultMessage.getLong("id"), 12_000,
-                    ) { messageText(it).contains("from 'soundcloud'", ignoreCase = true) } ?: resultMessage
-                    if (messageText(resultMessage).contains("from 'soundcloud'", ignoreCase = true)) {
+                        botChatId, resultMessage.getLong("id"), 3_600,
+                    ) { messageText(it).contains("from 'soundcloud'") } ?: resultMessage
+                    if (messageText(resultMessage).contains("from 'soundcloud'")) {
                         effectiveProvider = AcquisitionProvider.SOUNDCLOUD
                         options = parseResults(messageText(resultMessage))
                     }
@@ -770,15 +751,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
         timeoutMs: Long,
         predicate: (JSONObject) -> Boolean,
     ): JSONObject? {
-        val started = System.currentTimeMillis()
-        while (System.currentTimeMillis() - started < timeoutMs) {
-            val match = history(chatId, 50)
-                .asSequence()
-                .filter { it.optLong("id") > afterMessageId }
-                .filter(predicate)
-                .maxByOrNull { it.getLong("id") }
+        repeat((timeoutMs / 1_000L).toInt().coerceAtLeast(1)) {
+            val match = history(chatId, 5)
+                .firstOrNull { it.optLong("id") > afterMessageId && predicate(it) }
             if (match != null) return match
-            delay(500)
+            delay(1_000)
         }
         return null
     }
@@ -811,25 +788,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
         timeoutMs: Long,
         predicate: (JSONObject) -> Boolean,
     ): JSONObject? {
-        val started = System.currentTimeMillis()
-        while (System.currentTimeMillis() - started < timeoutMs) {
+        repeat((timeoutMs / 600L).toInt().coerceAtLeast(1)) {
             val edited = runCatching {
-                request(
-                    json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId)
-                )
+                request(json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId))
             }.getOrNull()
             if (edited != null && predicate(edited)) return edited
-
-            val replacement = history(chatId, 50)
-                .asSequence()
-                .filter { it.optLong("id") > previousMessageId }
-                .filter { !it.optBoolean("is_outgoing") }
-                .filter(predicate)
-                .maxByOrNull { it.optLong("id") }
-            if (replacement != null) return replacement
-            delay(400)
+            delay(600)
         }
-        return null
+        return nulll
     }
 
     private suspend fun request(
