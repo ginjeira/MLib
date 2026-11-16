@@ -151,6 +151,15 @@ fun PlaylistsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall,
                         )
+                        if (playlist.description.isNotBlank()) {
+                            Text(
+                                playlist.description,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                     IconButton(onClick = { onMore(playlist) }) {
                         Icon(
