@@ -139,6 +139,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     // A single lane is intentional: the bot conversation is stateful and its
     // messages/callbacks must not be interleaved by simultaneous MLib requests.
     private val botLane = Mutex()
+    private val resumeLane = Mutex()
     private val searches = linkedMapOf<String, SearchSession>()
     private var activeSearchId: String? = null
     private val pendingJobKey = "mlib_pending_music_acquisition"
@@ -536,7 +537,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
      * The destination is refreshed first, so audio forwarded just before a crash
      * is indexed and reused instead of being forwarded a second time.
      */
-    suspend fun resumePending(): AcquisitionOutcome {
+    suspend fun resumePending(): AcquisitionOutcome = resumeLane.withLock {
         var pending = state.value.pendingJob ?: readPendingJob()
             ?: error("Não existe nenhuma aquisição interrompida para retomar.")
         state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
