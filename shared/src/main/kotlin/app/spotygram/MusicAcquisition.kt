@@ -594,8 +594,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             ?: if (session.search.contentType == AcquisitionContentType.PLAYLIST ||
                 session.search.contentType == AcquisitionContentType.ALBUM
             ) 0 else 1
-        val multiTrack = session.search.contentType == AcquisitionContentType.PLAYLIST ||
-            session.search.contentType == AcquisitionContentType.ALBUM || expectedCount > 1
+        val multiTrack = session.search.contentType != AcquisitionContentType.TRACK || expectedCount > 1
         val collection = collectAudioMessages(
             botChatId = botChatId,
             afterMessageId = latestBeforeSelection,
