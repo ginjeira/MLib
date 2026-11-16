@@ -345,4 +345,71 @@ class MusicAcquisitionRulesTest {
         assertEquals(5, fixture.getJSONArray("cardinalityCases").length())
     }
 
+
+
+    @Test
+    fun wave1GoldenCompletionFixturesMatchMcatProtocol() {
+        val fixture = readPortabilityFixture("mcat-protocol-v1.json")
+        val cases = fixture.getJSONArray("completionCases")
+        for (index in 0 until cases.length()) {
+            val item = cases.getJSONObject(index)
+            val contentType = AcquisitionContentType.valueOf(
+                item.optString("contentType", "playlist").uppercase(),
+            )
+            val expectedCount = item.optInt("expectedCount", 0)
+            val audioCount = item.getInt("receivedAudioCount")
+            val signal = item.optString("signal").takeIf { it.isNotBlank() && it != "null" }
+            val silenceMillis = item.optInt("silenceSeconds", 0) * 1_000L
+            val elapsedMillis = item.optInt("deadlineSeconds", 0).let { seconds ->
+                if (seconds > 0) seconds * 1_000L
+                else if (item.getString("expected") == "fail_no_audio") 45_000L else 0L
+            }
+            val actual = AcquisitionCompletionRules.completionReason(
+                contentType, expectedCount, audioCount,
+                signal?.let(AcquisitionCompletionRules::isCompletionSignal) == true,
+                silenceMillis, elapsedMillis,
+            )
+            val expected = when (item.getString("expected")) {
+                "complete_count" -> AcquisitionCompletionReason.EXPECTED_COUNT
+                "complete_signal" -> AcquisitionCompletionReason.COMPLETION_SIGNAL
+                "complete_single" -> AcquisitionCompletionReason.EXPECTED_COUNT
+                "complete_quiet" -> AcquisitionCompletionReason.QUIET_PERIOD
+                "fail_no_audio" -> AcquisitionCompletionReason.DEADLINE_NO_AUDIO
+                "partial_timeout" -> AcquisitionCompletionReason.DEADLINE_PARTIAL
+                else -> error("Unknown completion fixture: ${item.getString("expected")}")
+            }
+            assertEquals("completion fixture ${item.getString("id")}", expected, actual)
+        }
+    }
+
+    @Test
+    fun artistCardinalityUsesExpectedCountInsteadOfContentTypeAlone() {
+        assertEquals(1, AcquisitionCompletionRules.expectedTrackCount("Daft Punk", AcquisitionContentType.ARTIST))
+        assertEquals(1, AcquisitionCompletionRules.expectedTrackCount("Daft Punk (1 track)", AcquisitionContentType.ARTIST))
+        assertEquals(7, AcquisitionCompletionRules.expectedTrackCount("Daft Punk (7 tracks)", AcquisitionContentType.ARTIST))
+        assertFalse(AcquisitionCompletionRules.isMultiTrack(AcquisitionContentType.ARTIST, 1))
+        assertTrue(AcquisitionCompletionRules.isMultiTrack(AcquisitionContentType.ARTIST, 7))
+        assertTrue(AcquisitionCompletionRules.isMultiTrack(AcquisitionContentType.PLAYLIST, 0))
+        assertTrue(AcquisitionCompletionRules.isMultiTrack(AcquisitionContentType.ALBUM, 0))
+        assertFalse(AcquisitionCompletionRules.isMultiTrack(AcquisitionContentType.TRACK, 1))
+    }
+
+    @Test
+    fun completionSignalsAreCaseInsensitiveAndRequireAudioBeforeSuccess() {
+        listOf("Finished.", "Download complete", "COMPLETED", "Todas as faixas concluído",
+            "Process complete", "Done!", "Pronto!").forEach {
+            assertTrue("signal: $it", AcquisitionCompletionRules.isCompletionSignal(it))
+        }
+        assertEquals(null, AcquisitionCompletionRules.completionReason(
+            AcquisitionContentType.PLAYLIST, 0, 0, true, 0, 10_000,
+        ))
+    }
+
+    @Test
+    fun partialDeadlineIsNotReportedAsFullCompletion() {
+        assertEquals(AcquisitionCompletionReason.DEADLINE_PARTIAL,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.ALBUM, 12, 7, false, 1_000, 240_000,
+            ))
+    }
 }

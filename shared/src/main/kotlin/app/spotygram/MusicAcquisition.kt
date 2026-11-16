@@ -46,6 +46,7 @@ enum class AcquisitionJobStatus(val wireValue: String) {
     RUNNING("running"),
     FORWARDING("forwarding"),
     COMPLETED("completed"),
+    PARTIAL("partial"),
     FAILED("failed"),
     SKIPPED_DUPLICATE("skipped_duplicate"),
 }
@@ -107,12 +108,16 @@ private data class AcquiredItem(
     val importedIds: Set<String> = emptySet(),
     val error: String = "",
     val skippedDuplicate: Boolean = false,
+    val partial: Boolean = false,
 )
 
 private data class AudioCollection(
     val messages: List<JSONObject>,
-    val timedOut: Boolean,
-)
+    val completionReason: AcquisitionCompletionReason,
+) {
+    val partial: Boolean
+        get() = completionReason == AcquisitionCompletionReason.DEADLINE_PARTIAL
+}
 
 /**
  * Native MLib implementation of the Telegram bot workflow used by MCat Player.
@@ -309,9 +314,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     completed += item
                     updateJobItem(jobId, index) {
                         it.copy(
-                            status = if (item.skippedDuplicate) AcquisitionJobStatus.SKIPPED_DUPLICATE
-                                else if (item.error.isNotBlank()) AcquisitionJobStatus.FAILED
-                                else AcquisitionJobStatus.COMPLETED,
+                            status = when {
+                                item.skippedDuplicate -> AcquisitionJobStatus.SKIPPED_DUPLICATE
+                                item.partial -> AcquisitionJobStatus.PARTIAL
+                                item.error.isNotBlank() -> AcquisitionJobStatus.FAILED
+                                else -> AcquisitionJobStatus.COMPLETED
+                            },
                             trackIds = item.tracks.map { track -> track.id },
                             error = item.error,
                         )
@@ -408,15 +416,26 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
             }
 
-            val jobSucceeded = state.value.jobs.firstOrNull { it.id == jobId }
-                ?.items?.any {
-                    it.status == AcquisitionJobStatus.COMPLETED ||
-                        it.status == AcquisitionJobStatus.SKIPPED_DUPLICATE
-                } == true
+            val finalItems = state.value.jobs.firstOrNull { it.id == jobId }?.items.orEmpty()
+            val jobSucceeded = finalItems.any {
+                it.status == AcquisitionJobStatus.COMPLETED ||
+                    it.status == AcquisitionJobStatus.PARTIAL ||
+                    it.status == AcquisitionJobStatus.SKIPPED_DUPLICATE
+            }
+            val jobPartial = finalItems.any { it.status == AcquisitionJobStatus.PARTIAL } ||
+                (jobSucceeded && finalItems.any { it.status == AcquisitionJobStatus.FAILED })
             updateJob(jobId) {
                 it.copy(
-                    status = if (jobSucceeded) AcquisitionJobStatus.COMPLETED else AcquisitionJobStatus.FAILED,
-                    error = if (jobSucceeded) "" else "Nenhuma opção foi adquirida com sucesso.",
+                    status = when {
+                        !jobSucceeded -> AcquisitionJobStatus.FAILED
+                        jobPartial -> AcquisitionJobStatus.PARTIAL
+                        else -> AcquisitionJobStatus.COMPLETED
+                    },
+                    error = when {
+                        !jobSucceeded -> "Nenhuma opção foi adquirida com sucesso."
+                        jobPartial -> "Aquisição parcial. Consulta o detalhe de cada opção."
+                        else -> ""
+                    },
                 )
             }
 
@@ -606,23 +625,27 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val clicked = clickNumberButton(searchMessage, option.number)
         if (!clicked) sendText(botChatId, option.number.toString())
 
-        val expectedCount = Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|musicas?)?\\)", RegexOption.IGNORE_CASE)
-            .find(option.title)?.groupValues?.get(1)?.toIntOrNull()
-            ?: if (session.search.contentType == AcquisitionContentType.PLAYLIST ||
-                session.search.contentType == AcquisitionContentType.ALBUM
-            ) 0 else 1
-        val multiTrack = session.search.contentType != AcquisitionContentType.TRACK || expectedCount > 1
+        val expectedCount = AcquisitionCompletionRules.expectedTrackCount(
+            option.title, session.search.contentType,
+        )
         val collection = collectAudioMessages(
             botChatId = botChatId,
             afterMessageId = latestBeforeSelection,
             expectedCount = expectedCount,
-            multiTrack = multiTrack,
+            contentType = session.search.contentType,
         )
         val audioMessages = collection.messages
-        if (collection.timedOut) {
-            error("O bot não enviou a mensagem 'Finished.' dentro do tempo limite. A aquisição ficou incompleta.")
+        if (collection.completionReason == AcquisitionCompletionReason.DEADLINE_NO_AUDIO) {
+            error("O bot não enviou áudio dentro do tempo limite.")
         }
         if (audioMessages.isEmpty()) error("O bot terminou sem devolver áudio para esta opção.")
+        val partialWarning = if (collection.partial) {
+            if (expectedCount > 0) {
+                "Prazo esgotado: resultado parcial (${audioMessages.size}/$expectedCount faixas recebidas)."
+            } else {
+                "Prazo esgotado: resultado parcial (${audioMessages.size} faixa(s)); não foi recebido um sinal de conclusão."
+            }
+        } else ""
         var lastDeliveryError = ""
 
         val importedTracks = mutableListOf<Track>()
@@ -672,7 +695,17 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val byId = app.library.state.value.byId
         val tracks = importedTracks.mapNotNull { byId[it.id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
-        return AcquiredItem(option, tracks, importedIds, lastDeliveryError)
+        val resultWarnings = listOf(partialWarning, lastDeliveryError)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(" ")
+        return AcquiredItem(
+            option = option,
+            tracks = tracks,
+            importedIds = importedIds,
+            error = resultWarnings,
+            partial = collection.partial,
+        )
     }
 
     /**
@@ -707,46 +740,52 @@ class MusicAcquisition(private val app: SpotygramApp) {
         botChatId: Long,
         afterMessageId: Long,
         expectedCount: Int,
-        multiTrack: Boolean,
+        contentType: AcquisitionContentType,
     ): AudioCollection {
         val collected = linkedMapOf<Long, JSONObject>()
         val started = System.currentTimeMillis()
+        val maxWait = AcquisitionCompletionRules.maxWaitMillis(contentType, expectedCount)
         var lastObservedMessageId = afterMessageId
-        var finished = false
-        // The bot's explicit "Finished." message is the completion signal for
-        // every content type. The timeout is only a failure guard when that
-        // message never arrives; silence or an expected track count is not
-        // sufficient to declare a playlist/album/artist download complete.
-        val maxWait = if (multiTrack) 240_000L else 45_000L
+        var lastAudioReceivedAt = 0L
+        var hasCompletionSignal = false
+        var completionReason: AcquisitionCompletionReason? = null
 
         while (System.currentTimeMillis() - started < maxWait) {
-            // MCat waits two seconds before each getMessages poll.
             delay(2_000)
-            // Advance the Telegram history cursor after every poll. Previously
-            // every two-second poll re-paged the entire history back to the
-            // selection message (up to 2,000 messages / 20 requests), leaving
-            // acquisition apparently stuck on one option for minutes.
             val messages = historyAfter(botChatId, lastObservedMessageId)
             for (message in messages) {
                 val id = message.optLong("id")
                 if (id <= lastObservedMessageId) continue
                 lastObservedMessageId = maxOf(lastObservedMessageId, id)
-                if (isAudioMessage(message)) {
-                    if (collected.putIfAbsent(id, message) == null) {
-                        state.value = state.value.copy(
-                            progress = "A receber áudio: ${collected.size}" +
-                                if (expectedCount > 0) "/$expectedCount" else " faixa(s)",
-                        )
-                    }
+                if (isAudioMessage(message) && collected.putIfAbsent(id, message) == null) {
+                    lastAudioReceivedAt = System.currentTimeMillis()
+                    state.value = state.value.copy(
+                        progress = "A receber áudio: ${collected.size}" +
+                            if (expectedCount > 0) "/$expectedCount" else " faixa(s)",
+                    )
                 }
-                if (isCompletionMessage(message)) finished = true
+                if (isCompletionMessage(message)) hasCompletionSignal = true
             }
-            if (finished) break
+
+            val now = System.currentTimeMillis()
+            completionReason = AcquisitionCompletionRules.completionReason(
+                contentType = contentType,
+                expectedCount = expectedCount,
+                audioCount = collected.size,
+                hasCompletionSignal = hasCompletionSignal,
+                silenceMillis = if (lastAudioReceivedAt == 0L) 0L else now - lastAudioReceivedAt,
+                elapsedMillis = now - started,
+            )
+            if (completionReason != null) break
         }
-        val timedOut = !finished
+
+        if (completionReason == null) {
+            completionReason = if (collected.isEmpty()) AcquisitionCompletionReason.DEADLINE_NO_AUDIO
+            else AcquisitionCompletionReason.DEADLINE_PARTIAL
+        }
         return AudioCollection(
             messages = collected.values.sortedByDescending { it.getLong("id") },
-            timedOut = timedOut,
+            completionReason = completionReason,
         )
     }
 
@@ -1001,7 +1040,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private fun isCompletionMessage(message: JSONObject): Boolean =
-        messageText(message).trim().equals("Finished.", ignoreCase = true)
+        AcquisitionCompletionRules.isCompletionSignal(messageText(message))
 
     private fun isSameRecording(candidate: Track, existing: Track): Boolean =
         MusicAcquisitionRules.isSameRecording(candidate, existing)

@@ -59,8 +59,8 @@ Regra: portar semântica e resultados, adaptando o mecanismo à arquitectura MLi
 
 | ID | Prioridade | Estado observado | Wave |
 |---|---:|---|---:|
-| ACQ-01 — Critérios de conclusão da recepção de áudio | P0 | Diferença funcional | 1 |
-| ACQ-02 — Classificação multi-faixa para artista | P0 | Diferença funcional | 1 |
+| ACQ-01 — Critérios de conclusão da recepção de áudio | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
+| ACQ-02 — Classificação multi-faixa para artista | P0 | Implementação Wave 1 submetida a CI; gate pendente | 1 |
 | ACQ-03 — Fixtures de protocolo para pesquisa/callbacks | P1 | Implementado, não provado | 0/1 |
 | ACQ-04 — Ordem, paginação e limite de recolha | P2 | Adaptação mais ampla; limite por validar | 1 |
 | SRC-01 — Destino Telegram e fontes de deduplicação | P1 | Parcial | 2 |

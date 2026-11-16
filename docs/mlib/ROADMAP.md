@@ -286,3 +286,11 @@ Do not mark the port complete until CI and live Telegram acceptance have passed.
 The detailed, binding gap register and acceptance criteria are maintained in `docs/mlib/PORTABILITY-GAPS-REPORT.md`. Wave 0 baseline: MLib `7231aa08022863a5a3f22138ff881fcf4045c340` on `feat/mlib-independent-identity`; MCat Player `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`; SQLite schema **11** (confirmed in `Library.kt`). The old schema-8 statement in persistence documentation is superseded by the 16-Nov addendum.
 
 Do not interpret earlier roadmap statements that acquisition is “implemented” as proof of MCat parity. Record separately: code present, source parity (golden tests), automated test result, and live Telegram/device acceptance. ACQ-01/02 remain P0 and block Wave 2+ progression until Wave 1 is closed. The report's Wave 0–7 sequence is authoritative for the MCat Player port; this broader product roadmap remains historical context.
+
+
+## Wave 1 — protocolo de pesquisa e recepção (em execução)
+
+- ACQ-01: critérios MCat de contagem, sinais textuais, faixa única, silêncio de 9 segundos e deadlines de 45/240 segundos.
+- ACQ-02: `artist` só é multi-faixa quando a contagem esperada é superior a uma; playlists/álbuns sem contagem continuam multi-faixa.
+- Áudio recebido sem critério terminal até ao deadline é preservado e reportado como parcial; ausência de áudio é falha.
+- Gate pendente: testes automatizados, CI e validação funcional live Telegram. A retoma idempotente de resultados parciais permanece na Wave 6.

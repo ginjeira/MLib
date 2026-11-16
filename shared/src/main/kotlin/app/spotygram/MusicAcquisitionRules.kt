@@ -262,4 +262,62 @@ internal object MusicAcquisitionRules {
 
     fun findEquivalentCandidate(candidate: Track, candidates: List<Track>): Int =
         candidates.indexOfFirst { isSameRecording(candidate, it) }
+
+
+internal enum class AcquisitionCompletionReason {
+    EXPECTED_COUNT,
+    COMPLETION_SIGNAL,
+    SINGLE_TRACK,
+    QUIET_PERIOD,
+    DEADLINE_PARTIAL,
+    DEADLINE_NO_AUDIO,
+}
+
+internal object AcquisitionCompletionRules {
+    private val completionSignals = listOf(
+        "finished", "download complete", "completed", "concluído",
+        "todas as faixas", "process complete", "done!", "pronto!",
+    )
+
+    fun expectedTrackCount(title: String, contentType: AcquisitionContentType): Int =
+        Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|m[uú]sicas?)?\\)", RegexOption.IGNORE_CASE)
+            .find(title)?.groupValues?.get(1)?.toIntOrNull()
+            ?: if (contentType == AcquisitionContentType.PLAYLIST ||
+                contentType == AcquisitionContentType.ALBUM
+            ) 0 else 1
+
+    fun isMultiTrack(contentType: AcquisitionContentType, expectedCount: Int): Boolean =
+        contentType == AcquisitionContentType.PLAYLIST ||
+            contentType == AcquisitionContentType.ALBUM || expectedCount > 1
+
+    fun isCompletionSignal(text: String): Boolean =
+        completionSignals.any { text.contains(it, ignoreCase = true) }
+
+    fun maxWaitMillis(contentType: AcquisitionContentType, expectedCount: Int): Long =
+        if (isMultiTrack(contentType, expectedCount)) 240_000L else 45_000L
+
+    fun completionReason(
+        contentType: AcquisitionContentType,
+        expectedCount: Int,
+        audioCount: Int,
+        hasCompletionSignal: Boolean,
+        silenceMillis: Long,
+        elapsedMillis: Long,
+    ): AcquisitionCompletionReason? {
+        val multiTrack = isMultiTrack(contentType, expectedCount)
+        if (audioCount > 0 && expectedCount > 0 && audioCount >= expectedCount)
+            return AcquisitionCompletionReason.EXPECTED_COUNT
+        if (audioCount > 0 && hasCompletionSignal)
+            return AcquisitionCompletionReason.COMPLETION_SIGNAL
+        if (audioCount > 0 && !multiTrack)
+            return AcquisitionCompletionReason.SINGLE_TRACK
+        if (audioCount > 0 && multiTrack && silenceMillis >= 9_000L)
+            return AcquisitionCompletionReason.QUIET_PERIOD
+        if (elapsedMillis >= maxWaitMillis(contentType, expectedCount)) {
+            return if (audioCount > 0) AcquisitionCompletionReason.DEADLINE_PARTIAL
+            else AcquisitionCompletionReason.DEADLINE_NO_AUDIO
+        }
+        return null
+    }
+}
 }
