@@ -178,6 +178,8 @@ fun PlaylistEditor(
     onSaved: (Long) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var coverUrl by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }
     var selected by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     var saving by remember { mutableStateOf(false) }
@@ -252,6 +254,25 @@ fun PlaylistEditor(
                             { query = it },
                             tr(R.string.title_or_artist),
                             Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (!compact) {
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it.take(512) },
+                            label = { Text("Descrição da playlist") },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            minLines = 2,
+                            maxLines = 3,
+                            enabled = !saving,
+                        )
+                        OutlinedTextField(
+                            value = coverUrl,
+                            onValueChange = { coverUrl = it.take(4096) },
+                            label = { Text("URL da capa (opcional)") },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            singleLine = true,
+                            enabled = !saving,
                         )
                     }
                 }
@@ -330,7 +351,7 @@ fun PlaylistEditor(
                 app.action {
                     try {
                         val id =
-                            if (addingTo == null) app.library.createPlaylist(title, ids)
+                            if (addingTo == null) app.library.createPlaylist(title, ids, description, coverUrl)
                             else {
                                 app.library.addToPlaylist(addingTo, ids)
                                 addingTo
