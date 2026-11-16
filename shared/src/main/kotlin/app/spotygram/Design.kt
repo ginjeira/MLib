@@ -62,14 +62,22 @@ val Spectrum = listOf(Red, Amber, Yellow, Green, Cyan, Blue, Violet)
 @Composable
 fun spectrumAccent(index: Int): Color {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    return if (dark) listOf(Cyan, Red, Yellow, Green)[index]
-    else
-        listOf(
-            Color(0xFF086D79),
-            Color(0xFFAE4450),
-            Color(0xFF785A1A),
-            Color(0xFF277347),
-        )[index]
+    // The compact navigation has five destinations: Music, Favorites,
+    // Playlists, Albums and Sources. Keep a colour for every destination
+    // and guard the lookup so a future tab cannot crash composition.
+    val accents =
+        if (dark) {
+            listOf(Cyan, Red, Yellow, Green, Violet)
+        } else {
+            listOf(
+                Color(0xFF086D79),
+                Color(0xFFAE4450),
+                Color(0xFF785A1A),
+                Color(0xFF277347),
+                Color(0xFF66529A),
+            )
+        }
+    return accents.getOrElse(index) { accents.last() }
 }
 
 private val Dark =
