@@ -31,9 +31,6 @@ internal fun AcquisitionSheet(
     var destinations by remember { mutableStateOf<List<ChatChoice>>(emptyList()) }
     var destinationId by rememberSaveable { mutableLongStateOf(0L) }
     var destinationMenu by remember { mutableStateOf(false) }
-    var autoCreatePlaylist by rememberSaveable {
-        mutableStateOf(app.prefs.getBoolean("auto_create_acquisition_playlists", true))
-    }
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
@@ -258,22 +255,6 @@ internal fun AcquisitionSheet(
                             "${result.number}. ${result.title}",
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-                if (search.contentType == AcquisitionContentType.PLAYLIST) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = autoCreatePlaylist,
-                            onCheckedChange = { enabled ->
-                                autoCreatePlaylist = enabled
-                                app.prefs.edit().putBoolean("auto_create_acquisition_playlists", enabled).apply()
-                            },
-                            enabled = !state.acquiring && !hasPendingJob,
-                        )
-                        Text(
-                            tr(R.string.acquisition_auto_playlist),
-                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
