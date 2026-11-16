@@ -611,17 +611,32 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val collected = linkedMapOf<Long, JSONObject>()
         val started = System.currentTimeMillis()
         var lastAudioAt = 0L
+        var lastObservedMessageId = afterMessageId
         var finished = false
         var quietCompletion = false
-        val maxWait = if (multiTrack) 240_000L else 45_000L
+        val maxWait = if (multiTrack) 360_000L else 45_000L
+        // Collection bots may send tracks in batches with sizeable gaps. A
+        // nine-second quiet window truncated playlists after their first item.
+        val quietWindow = 30_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
-            val messages = historyAfter(botChatId, afterMessageId)
+            // Advance the Telegram history cursor after every poll. Previously
+            // every two-second poll re-paged the entire history back to the
+            // selection message (up to 2,000 messages / 20 requests), leaving
+            // acquisition apparently stuck on one option for minutes.
+            val messages = historyAfter(botChatId, lastObservedMessageId)
             for (message in messages) {
                 val id = message.optLong("id")
-                if (id <= afterMessageId) continue
+                if (id <= lastObservedMessageId) continue
+                lastObservedMessageId = maxOf(lastObservedMessageId, id)
                 if (isAudioMessage(message)) {
-                    if (collected.putIfAbsent(id, message) == null) lastAudioAt = System.currentTimeMillis()
+                    if (collected.putIfAbsent(id, message) == null) {
+                        lastAudioAt = System.currentTimeMillis()
+                        state.value = state.value.copy(
+                            progress = "A receber áudio: ${collected.size}" +
+                                if (expectedCount > 0) "/$expectedCount" else " faixa(s)",
+                        )
+                    }
                 }
                 if (isCompletionMessage(message)) finished = true
             }
@@ -629,7 +644,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             if (finished && collected.isNotEmpty()) break
             if (!multiTrack && collected.isNotEmpty()) break
             if (multiTrack && collected.isNotEmpty() && lastAudioAt > 0 &&
-                System.currentTimeMillis() - lastAudioAt >= 9_000L
+                System.currentTimeMillis() - lastAudioAt >= quietWindow
             ) {
                 quietCompletion = true
                 break
