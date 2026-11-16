@@ -363,8 +363,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         title = existingAlbum?.title ?: title,
                         artist = existingAlbum?.artist?.takeIf(String::isNotBlank) ?: artist,
                         tracks = item.tracks.map { it.id },
-                        year = existingAlbum?.year?.ifBlank { java.time.Year.now().value.toString() }
-                            ?: java.time.Year.now().value.toString(),
+                        year = existingAlbum?.year ?: java.time.Year.now().value.toString(),
                         coverUrl = cover,
                         genre = existingAlbum?.genre.orEmpty(),
                         targetAlbumId = existingAlbum?.id,
@@ -625,7 +624,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 )
                 val messages = forwarded.optJSONArray("messages") ?: JSONArray()
                 val destinationMessage = messages.optJSONObject(0)
-                val track = destinationMessage?.let { app.parseTrack(it, destinationTitle) }
+                val track = destinationMessage?.let { parseAcquiredTrack(it, destinationTitle) }
                 if (track == null) {
                     lastDeliveryError = "O Telegram não confirmou a entrega de uma mensagem de áudio."
                     continue
@@ -650,6 +649,34 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val tracks = importedTracks.mapNotNull { byId[it.id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
         return AcquiredItem(option, tracks, importedIds, lastDeliveryError)
+    }
+
+    /**
+     * GramJS reads DocumentAttributeAudio.title/performer/duration when the bot
+     * sends audio as a document. TDLib exposes those fields in the document's
+     * attributes array, so map them onto the native Track parsed by the app.
+     */
+    private fun parseAcquiredTrack(message: JSONObject, destinationTitle: String): Track? {
+        val track = app.parseTrack(message, destinationTitle) ?: return null
+        val content = message.optJSONObject("content") ?: return track
+        val isDocument = content.kind() == "messageDocument"
+        val media = content.optJSONObject(if (isDocument) "document" else "audio") ?: return track
+        val audioAttribute = media.optJSONArray("attributes")?.let { attributes ->
+            (0 until attributes.length())
+                .mapNotNull { attributes.optJSONObject(it) }
+                .firstOrNull { it.kind() == "documentAttributeAudio" }
+        }
+        val title = media.optString("title")
+            .ifBlank { audioAttribute?.optString("title").orEmpty() }
+            .ifBlank { track.title }
+        val artist = media.optString("performer")
+            .ifBlank { audioAttribute?.optString("performer").orEmpty() }
+            .ifBlank { track.artist }
+        val duration = media.optInt("duration")
+            .takeIf { it > 0 }
+            ?: audioAttribute?.optInt("duration")?.takeIf { it > 0 }
+            ?: track.duration
+        return track.copy(title = title, artist = artist, duration = duration)
     }
 
     private suspend fun collectAudioMessages(
