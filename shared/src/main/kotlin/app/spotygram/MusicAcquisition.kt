@@ -464,7 +464,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     else -> ""
                 },
             )
-            val remainingJob = pending.takeIf { failedCount > 0 }
+            val incompleteTitles = completed
+                .filter { it.error.isNotEmpty() }
+                .map { it.option.title }
+            val remainingJob = pending.copy(selectedTitles = incompleteTitles)
+                .takeIf { incompleteTitles.isNotEmpty() }
             if (remainingJob == null) clearPendingJob() else persistPendingJob(remainingJob)
             state.value = state.value.copy(
                 acquiring = false,
