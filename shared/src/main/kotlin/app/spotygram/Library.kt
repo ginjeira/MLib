@@ -15,7 +15,7 @@ class Library(private val platform: Platform) : AutoCloseable {
     val sync: LibrarySync = LibrarySync(platform, { writableDatabase }, { reload() })
     private val publishing = Mutex()
     private val storage = lazy {
-        platform.openDatabase("library.db", 10, ::onCreate, ::onUpgrade, ::onOpen)
+        platform.openDatabase("library.db", 11, ::onCreate, ::onUpgrade, ::onOpen)
     }
     private val database
         get() = storage.value
@@ -39,7 +39,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         db.execSQL(
             "CREATE TABLE sources(id INTEGER PRIMARY KEY,title TEXT,cursor INTEGER DEFAULT 0,complete INTEGER DEFAULT 0,document_cursor INTEGER DEFAULT 0,documents_complete INTEGER DEFAULT 0,newest INTEGER DEFAULT 0,document_newest INTEGER DEFAULT 0)"
         )
-        db.execSQL("CREATE TABLE playlists(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT)")
+        db.execSQL("CREATE TABLE playlists(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,description TEXT NOT NULL DEFAULT '',cover_url TEXT NOT NULL DEFAULT '')")
         db.execSQL(
             "CREATE TABLE playlist_tracks(playlist INTEGER,track TEXT,position INTEGER,PRIMARY KEY(playlist,track))"
         )
@@ -77,6 +77,10 @@ class Library(private val platform: Platform) : AutoCloseable {
             createProfileStorage(db)
         }
         if (oldVersion < 10) createAlbumStorage(db)
+        if (oldVersion < 11) {
+            db.execSQL("ALTER TABLE playlists ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE playlists ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''")
+        }
         if (oldVersion < 6) sync.install(db)
         if (oldVersion < 7) sync.migrate(db)
     }
@@ -263,13 +267,13 @@ class Library(private val platform: Platform) : AutoCloseable {
                         .add(c.getString(1))
                 }
             db.rawQuery(
-                    "SELECT id,name FROM playlists WHERE account=? ORDER BY name",
+                    "SELECT id,name,description,cover_url FROM playlists WHERE account=? ORDER BY name",
                     arrayOf(sync.account.toString()),
                 )
                 .use { c ->
                     while (c.moveToNext()) {
                         lists +=
-                            Playlist(c.getLong(0), c.getString(1), members[c.getLong(0)].orEmpty())
+                            Playlist(c.getLong(0), c.getString(1), members[c.getLong(0)].orEmpty(), c.getString(2), c.getString(3))
                     }
                 }
             val albums = mutableListOf<Album>()
