@@ -74,6 +74,7 @@ private data class AcquiredItem(
     val tracks: List<Track>,
     val importedIds: Set<String> = emptySet(),
     val error: String = "",
+    val skippedDuplicate: Boolean = false,
 )
 
 private data class AudioCollection(
@@ -280,7 +281,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             var playlistId: Long? = null
             val acquiredAlbums = mutableListOf<String>()
             if (session.search.contentType == AcquisitionContentType.ALBUM) {
-                for (item in completed.filter { it.tracks.isNotEmpty() }) {
+                for (item in completed.filter { it.tracks.isNotEmpty() && !it.skippedDuplicate }) {
                     val first = item.tracks.first()
                     val targetAlbum = session.targetAlbumId?.let { id ->
                         app.library.state.value.albums.firstOrNull { it.id == id }
@@ -468,6 +469,18 @@ class MusicAcquisition(private val app: SpotygramApp) {
         destinationTitle: String,
     ): AcquiredItem {
         val botChatId = session.botChatId
+        val parsedOption = MusicAcquisitionRules.parseArtistAndTitle(option.title)
+        val allowedDedupChats = app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
+            .apply { add(destinationChatId) }
+        val existingOption = app.library.state.value.tracks.firstOrNull { track ->
+            track.chatId in allowedDedupChats &&
+                MusicAcquisitionRules.areTracksDuplicate(
+                    parsedOption.title, parsedOption.artist, track.title, track.artist,
+                )
+        }
+        if (existingOption != null) {
+            return AcquiredItem(option, listOf(existingOption), skippedDuplicate = true)
+        }
         val latestBeforeSelection = latestMessageId(botChatId)
         val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)
@@ -498,102 +511,58 @@ class MusicAcquisition(private val app: SpotygramApp) {
             else -> ""
         }
 
-        val parsedPairs = audioMessages.mapNotNull { message ->
-            app.parseTrack(message, "Music bot")?.let { message to it }
-        }
-        if (parsedPairs.isEmpty()) error("As mensagens recebidas não contêm áudio compatível.")
-
-        val existingTracks = app.library.state.value.tracks
-        val orderedIds = MutableList<String?>(parsedPairs.size) { null }
-        val pendingMessages = mutableListOf<JSONObject>()
-        val pendingPositions = mutableListOf<Int>()
-        val pendingCandidates = mutableListOf<Track>()
-        val duplicatePendingPositions = mutableMapOf<Int, Int>()
-        val seen = mutableSetOf<String>()
-        for ((index, pair) in parsedPairs.withIndex()) {
-            val sourceTrack = pair.second
-            val recordingKey = sourceTrack.fileKey.ifBlank {
-                "${normalizeMusicText(sourceTrack.title)}|${normalizeMusicText(sourceTrack.artist)}|${sourceTrack.duration}"
-            }
-            if (!seen.add(recordingKey)) continue
-            val existing = existingTracks.firstOrNull { isSameRecording(sourceTrack, it) }
-            if (existing != null) {
-                orderedIds[index] = existing.id
-            } else {
-                // Also deduplicate against candidates in this same bot response.
-                // Different Telegram file IDs can still describe the same recording.
-                val pendingDuplicate = MusicAcquisitionRules.findEquivalentCandidate(
-                    sourceTrack, pendingCandidates,
-                )
-                if (pendingDuplicate >= 0) {
-                    duplicatePendingPositions[index] = pendingDuplicate
-                } else {
-                    pendingMessages += pair.first
-                    pendingPositions += index
-                    pendingCandidates += sourceTrack
-                }
-            }
-        }
-
+        val importedTracks = mutableListOf<Track>()
         val importedIds = mutableSetOf<String>()
-        if (pendingMessages.isNotEmpty()) {
-            val importedTracks = mutableListOf<Track>()
-            var deliveryFailures = 0
-            // MCat forwards each Telegram message independently. Keep that
-            // isolation: one failed message must not cancel the remaining tracks.
-            for ((index, sourceMessage) in pendingMessages.withIndex()) {
-                try {
-                    val forwarded = request(
-                        json(
-                            "forwardMessages",
-                            "chat_id" to destinationChatId,
-                            "topic_id" to JSONObject.NULL,
-                            "from_chat_id" to botChatId,
-                            "message_ids" to JSONArray().put(sourceMessage.getLong("id")),
-                            "options" to JSONObject.NULL,
-                            "send_copy" to false,
-                            "remove_caption" to false,
-                        ),
-                        timeout = 120_000,
-                    )
-                    val messages = forwarded.optJSONArray("messages") ?: JSONArray()
-                    val destinationMessage = messages.optJSONObject(0)
-                    val track = destinationMessage?.let { app.parseTrack(it, destinationTitle) }
-                    if (track == null) {
-                        deliveryFailures++
-                        continue
-                    }
-                    importedTracks += track
-                    orderedIds[pendingPositions[index]] = track.id
-                    importedIds += track.id
-                } catch (error: Throwable) {
-                    if (error is CancellationException) throw error
+        var deliveryFailures = 0
+
+        // MCat forwards every received audio message separately. Preserve that
+        // one-message-per-request behaviour and continue after an individual
+        // forwarding failure.
+        for (sourceMessage in audioMessages) {
+            try {
+                val forwarded = request(
+                    json(
+                        "forwardMessages",
+                        "chat_id" to destinationChatId,
+                        "topic_id" to JSONObject.NULL,
+                        "from_chat_id" to botChatId,
+                        "message_ids" to JSONArray().put(sourceMessage.getLong("id")),
+                        "options" to JSONObject.NULL,
+                        "send_copy" to false,
+                        "remove_caption" to false,
+                    ),
+                    timeout = 120_000,
+                )
+                val messages = forwarded.optJSONArray("messages") ?: JSONArray()
+                val destinationMessage = messages.optJSONObject(0)
+                val track = destinationMessage?.let { app.parseTrack(it, destinationTitle) }
+                if (track == null) {
                     deliveryFailures++
+                    continue
                 }
-            }
-            if (importedTracks.isNotEmpty()) {
-                app.library.upsert(importedTracks)
-                app.library.reload()
-            }
-            if (importedTracks.isEmpty()) {
-                error("O Telegram não confirmou a entrega do áudio ao destino.")
-            }
-            if (deliveryFailures > 0) {
-                partialError = listOf(
-                    partialError,
-                    "$deliveryFailures de ${pendingMessages.size} mensagens não foram confirmadas no destino.",
-                ).filter { it.isNotBlank() }.joinToString(" ")
+                importedTracks += track
+                importedIds += track.id
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                deliveryFailures++
             }
         }
 
-        // A duplicate candidate follows the outcome of the first matching message.
-        duplicatePendingPositions.forEach { (duplicateIndex, pendingIndex) ->
-            val originalIndex = pendingPositions.getOrNull(pendingIndex)
-            if (originalIndex != null) orderedIds[duplicateIndex] = orderedIds[originalIndex]
+        if (importedTracks.isNotEmpty()) {
+            app.library.upsert(importedTracks)
+            app.library.reload()
         }
-
+        if (importedTracks.isEmpty()) {
+            error("O Telegram não confirmou a entrega do áudio ao destino.")
+        }
+        if (deliveryFailures > 0) {
+            partialError = listOf(
+                partialError,
+                "$deliveryFailures de ${audioMessages.size} mensagens não foram confirmadas no destino.",
+            ).filter { it.isNotBlank() }.joinToString(" ")
+        }
         val byId = app.library.state.value.byId
-        val tracks = orderedIds.filterNotNull().distinct().mapNotNull { id -> byId[id] }
+        val tracks = importedTracks.mapNotNull { byId[it.id] }
         if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
         return AcquiredItem(option, tracks, importedIds, partialError)
     }
