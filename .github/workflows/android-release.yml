@@ -1,6 +1,6 @@
 name: MLib Android release candidate
 
-on:
+'on':
   push:
     tags:
       - 'v*'
