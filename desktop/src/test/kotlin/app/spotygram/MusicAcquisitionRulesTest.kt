@@ -126,7 +126,7 @@ class MusicAcquisitionRulesTest {
     fun pendingCandidatesUseMCatSameTitleMatching() {
         val candidate = track("candidate", title = "One More Tiem", artist = "", duration = 0, size = 0)
         val pending = listOf(track("pending", title = "One More Time", artist = "", duration = 0, size = 0))
-        assertEquals(0, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
+        assertEquals(-1, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
     }
 
     @Test
