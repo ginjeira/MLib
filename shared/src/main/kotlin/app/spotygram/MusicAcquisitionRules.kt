@@ -156,6 +156,64 @@ internal object MusicAcquisitionRules {
         return false
     }
 
+    private fun cleanAlbumTitle(title: String, artist: String): String {
+        if (title.isEmpty()) return ""
+        var clean = title
+            .replace(Regex("^\\\\d+[.\\\\-)]\\\\s*"), "")
+            .replace(Regex("\\\\(\\\\d+\\\\s*🎵\\\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\\\s*\\\\((?:19|20)\\\\d{2}\\\\)\\\\s*"), " ")
+            .replace(Regex("\\\\s*\\\\[(?:19|20)\\\\d{2}\\\\]\\\\s*"), " ")
+            .replace(Regex("\\\\s*-\\\\s*(?:single|ep|deluxe|remaster(?:ed)?)\\\\b", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\\\s*\\\\((?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\\\s*\\\\[(?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\\\]", RegexOption.IGNORE_CASE), "")
+            .trim()
+        val parts = clean.split('-')
+        if (parts.size >= 2) {
+            val prefixArtist = cleanMusicString(parts.first())
+            val suffixTitle = parts.drop(1).joinToString("-").trim()
+            val normalizedArtist = cleanMusicString(artist)
+            if (normalizedArtist.isNotEmpty() &&
+                (prefixArtist == normalizedArtist ||
+                    normalizedArtist.contains(prefixArtist) ||
+                    prefixArtist.contains(normalizedArtist))
+            ) {
+                clean = suffixTitle
+            } else if (normalizedArtist.isEmpty() || normalizedArtist == "artista desconhecido") {
+                clean = suffixTitle
+            }
+        }
+        clean = clean.replace(Regex("\\\\s*-\\\\s*Sele[cç][aã]o\\\\b", RegexOption.IGNORE_CASE), "").trim()
+        return clean.ifEmpty { title }
+    }
+
+    /** Exact port of MCat Player's areAlbumsDuplicate(). */
+    fun areAlbumsDuplicate(
+        firstTitle: String,
+        firstArtist: String,
+        secondTitle: String,
+        secondArtist: String,
+    ): Boolean {
+        val firstClean = cleanMusicString(cleanAlbumTitle(firstTitle, firstArtist))
+        val secondClean = cleanMusicString(cleanAlbumTitle(secondTitle, secondArtist))
+        if (firstClean.isEmpty() || secondClean.isEmpty()) return false
+        val firstArt = cleanMusicString(firstArtist)
+        val secondArt = cleanMusicString(secondArtist)
+        val artistMatches = firstArt.isEmpty() || secondArt.isEmpty() ||
+            firstArt == "artista desconhecido" || secondArt == "artista desconhecido" ||
+            firstArt == secondArt || firstArt.contains(secondArt) || secondArt.contains(firstArt)
+        if (firstClean == secondClean && artistMatches) return true
+        if ((firstClean.contains(secondClean) || secondClean.contains(firstClean)) &&
+            artistMatches && (firstArt.isNotEmpty() || secondArt.isNotEmpty())
+        ) {
+            val minLength = minOf(firstClean.length, secondClean.length)
+            val maxLength = maxOf(firstClean.length, secondClean.length)
+            if (minLength.toDouble() / maxLength > 0.55) return true
+        }
+        val firstCombined = cleanMusicString("$firstArt $firstClean")
+        val secondCombined = cleanMusicString("$secondArt $secondClean")
+        return firstCombined.isNotEmpty() && firstCombined == secondCombined
+    }
+
     fun isSameRecording(candidate: Track, existing: Track): Boolean =
         areTracksDuplicate(candidate.title, candidate.artist, existing.title, existing.artist)
 
