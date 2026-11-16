@@ -5,6 +5,7 @@ name: MLib baseline validation
 on:
   push:
     branches:
+      - main
       - feat/mlib-independent-identity
     paths:
       - 'app/**'
