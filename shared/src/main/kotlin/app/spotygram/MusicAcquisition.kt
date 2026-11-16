@@ -295,15 +295,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
             )
             state.value = state.value.copy(jobs = (listOf(job) + state.value.jobs).take(30))
             val destinationChoice = app.telegram.rememberChat(destination)
-            app.library.source(destinationChoice, true)
-            // A source marked complete can still have new messages since its
-            // previous scan. Always catch up before deduplication, not only on
-            // first-time indexing; this also closes the crash-after-forward gap.
-            state.value = state.value.copy(progress = "A actualizar o histórico do destino para evitar duplicados…")
-            app.refresh()
-            check(app.library.state.value.sources.firstOrNull { it.id == destinationChatId }?.fullyIndexed == true) {
-                "Não foi possível indexar completamente o destino. A aquisição foi interrompida para evitar duplicados."
-            }
 
             val completed = mutableListOf<AcquiredItem>()
             selected.forEachIndexed { index, option ->
@@ -333,6 +324,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
                 delay(1_000)
             }
+
+            // MCat adds the destination to the active sources and refreshes
+            // its messages after processing the job, not before selecting bot results.
+            app.library.source(destinationChoice, true)
+            app.refresh()
 
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
             val importedIds = completed.flatMap { it.importedIds }.toSet()
