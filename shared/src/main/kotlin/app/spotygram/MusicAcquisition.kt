@@ -255,8 +255,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 currentPending.provider == session.search.provider &&
                 currentPending.selectedTitles.size == selected.size &&
                 currentPending.selectedTitles.zip(selected).all { (saved, current) ->
-                    normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(saved)) ==
-                        normalizeMusicText(MusicAcquisitionRules.cleanCollectionTitle(current.title))
+                    MusicAcquisitionRules.cleanCollectionTitle(saved).equals(
+                        MusicAcquisitionRules.cleanCollectionTitle(current.title),
+                        ignoreCase = true,
+                    )
                 } &&
                 currentPending.destinationChatId == destinationChatId &&
                 currentPending.telegramUserId == telegramUserId &&
