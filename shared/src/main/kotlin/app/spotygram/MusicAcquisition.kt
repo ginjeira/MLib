@@ -681,18 +681,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         destinationTitle: String,
     ): AcquiredItem {
         val botChatId = session.botChatId
-        val parsedOption = MusicAcquisitionRules.parseArtistAndTitle(option.title)
+        // Do not skip an entire collection because its first track already exists.
+        // Partial retries must still fetch missing tracks and release the bot turn.
         val allowedDedupChats = app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
             .apply { add(destinationChatId) }
-        val existingOption = app.library.state.value.tracks.firstOrNull { track ->
-            track.chatId in allowedDedupChats &&
-                MusicAcquisitionRules.areTracksDuplicate(
-                    parsedOption.title, parsedOption.artist, track.title, track.artist,
-                )
-        }
-        if (existingOption != null) {
-            return AcquiredItem(option, listOf(existingOption), skippedDuplicate = true)
-        }
         val latestBeforeSelection = latestMessageId(botChatId)
         val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)
@@ -746,13 +738,29 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val deliveryErrors = mutableListOf<String>()
 
         val importedTracks = mutableListOf<Track>()
+        val reusedTracks = mutableListOf<Track>()
         val importedIds = mutableSetOf<String>()
 
-        // MCat forwards every received audio message separately. Preserve that
-        // one-message-per-request behaviour and continue after an individual
-        // forwarding failure.
+        // Deduplicate each received recording independently. This is essential
+        // when a partial collection is resumed: existing tracks stay reused,
+        // while newly arrived tracks are still forwarded to the target.
         for (sourceMessage in audioMessages) {
             try {
+                val candidate = parseAcquiredTrack(sourceMessage, destinationTitle)
+                if (candidate == null) {
+                    deliveryErrors += "Não foi possível interpretar uma mensagem de áudio do bot."
+                    continue
+                }
+                val existingTrack = app.library.state.value.tracks.firstOrNull { track ->
+                    track.chatId in allowedDedupChats &&
+                        MusicAcquisitionRules.areTracksDuplicate(
+                            candidate.title, candidate.artist, track.title, track.artist,
+                        )
+                }
+                if (existingTrack != null) {
+                    reusedTracks += existingTrack
+                    continue
+                }
                 val forwarded = request(
                     json(
                         "forwardMessages",
@@ -785,12 +793,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             app.library.upsert(importedTracks)
             app.library.reload()
         }
-        if (importedTracks.isEmpty()) {
-            error("O Telegram não confirmou a entrega do áudio ao destino.")
-        }
         val byId = app.library.state.value.byId
-        val tracks = importedTracks.mapNotNull { byId[it.id] }
-        if (tracks.isEmpty()) error("Não foi possível importar nenhuma faixa desta opção.")
+        val tracks = (importedTracks.mapNotNull { byId[it.id] } + reusedTracks)
+            .distinctBy { it.id }
+        if (tracks.isEmpty()) {
+            error("O Telegram não confirmou a entrega de áudio novo ou reutilizável para esta opção.")
+        }
         val resultWarnings = (listOf(partialWarning) + deliveryErrors)
             .filter { it.isNotBlank() }
             .distinct()
@@ -800,6 +808,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             tracks = tracks,
             importedIds = importedIds,
             error = resultWarnings,
+            skippedDuplicate = importedTracks.isEmpty() && reusedTracks.isNotEmpty(),
             partial = collection.partial || !collection.botFinished ||
                 (tracks.isNotEmpty() && deliveryErrors.isNotEmpty()),
             botFinished = collection.botFinished,
