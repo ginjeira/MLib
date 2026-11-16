@@ -38,11 +38,10 @@ jobs:
       MLIB_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MLIB_ANDROID_KEYSTORE_PASSWORD }}
       MLIB_ANDROID_KEY_ALIAS: ${{ secrets.MLIB_ANDROID_KEY_ALIAS }}
       MLIB_ANDROID_KEY_PASSWORD: ${{ secrets.MLIB_ANDROID_KEY_PASSWORD }}
-      PUBLISH_DRAFT: ${{ github.event_name == 'push' || inputs.publish_draft }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.release_tag }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
           fetch-depth: 0
       - uses: actions/setup-java@v6
         with:
@@ -115,12 +114,12 @@ jobs:
           sha256sum "$OUTPUT"/*.apk | tee "$OUTPUT/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
-          name: mlib-android-${{ inputs.release_tag }}
+          name: mlib-android-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           path: ${{ runner.temp }}/mlib-release-state/releases/${{ env.MLIB_VERSION }}/*
           if-no-files-found: error
           retention-days: 30
       - name: Create GitHub draft release
-        if: ${{ inputs.publish_draft }}
+        if: ${{ github.event_name == 'push' || inputs.publish_draft }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
