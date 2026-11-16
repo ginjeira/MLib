@@ -173,4 +173,24 @@ class MusicAcquisitionRulesTest {
     fun matchingArtistUsesMCatMatchingWithoutDurationConstraint() {
         assertTrue(MusicAcquisitionRules.isSameRecording(track("a"), track("b", duration = 400)))
     }
+
+    @Test
+    fun albumMatchingUsesMCatTitleCleanupAndCompatibleArtistRules() {
+        assertTrue(
+            MusicAcquisitionRules.areAlbumsDuplicate(
+                "Daft Punk - Discovery (Deluxe Edition) (2001)",
+                "Daft Punk",
+                "Discovery",
+                "Daft Punk",
+            )
+        )
+        assertFalse(
+            MusicAcquisitionRules.areAlbumsDuplicate(
+                "Discovery",
+                "Daft Punk",
+                "Discovery",
+                "Justice",
+            )
+        )
+    }
 }
