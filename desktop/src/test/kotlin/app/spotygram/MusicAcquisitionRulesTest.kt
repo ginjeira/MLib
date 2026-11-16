@@ -111,7 +111,7 @@ class MusicAcquisitionRulesTest {
     @Test
     fun collectionTitleRemovesTrackCountButPreservesEdition() {
         assertEquals("Greatest Hits (Deluxe Edition)", MusicAcquisitionRules.cleanCollectionTitle("Greatest Hits (Deluxe Edition) (18 🎵)"))
-        assertEquals("Album (2024)", MusicAcquisitionRules.cleanCollectionTitle("Album (2024)"))
+        assertEquals("Album", MusicAcquisitionRules.cleanCollectionTitle("Album (2024)"))
         assertEquals("My Playlist", MusicAcquisitionRules.cleanCollectionTitle("01. My Playlist (18 🎵) 🎧"))
     }
 
