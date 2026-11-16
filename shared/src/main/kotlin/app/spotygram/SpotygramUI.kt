@@ -550,7 +550,9 @@ fun SpotygramUI(
                                                         .liquidGlass(31.dp, strong = true)
                                                         .padding(horizontal = 5.dp)
                                             ) {
-                                                val cellWidth = maxWidth / 4
+                                                // Five destinations are rendered below; the selection lens must use the same
+                                                // one-fifth cell width as the weighted navigation buttons.
+                                                val cellWidth = maxWidth / 5
                                                 val offset by
                                                     animateDpAsState(
                                                         cellWidth * tab,
