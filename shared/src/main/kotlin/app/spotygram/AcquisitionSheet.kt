@@ -292,6 +292,53 @@ internal fun AcquisitionSheet(
             }
         }
 
+        if (state.jobs.isNotEmpty()) {
+            HorizontalDivider()
+            Text("Pedidos recentes", style = MaterialTheme.typography.titleSmall)
+            state.jobs.take(5).forEach { job ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    ),
+                ) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Text(job.query, style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "${job.provider.wireValue.uppercase()} · ${job.contentType.wireValue.uppercase()} · ${job.destinationTitle}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "Estado: ${job.status.wireValue}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (job.status == AcquisitionJobStatus.FAILED)
+                                MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                        job.items.forEach { item ->
+                            Text(
+                                "${item.optionNumber}. ${item.title} — ${item.status.wireValue}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            if (item.error.isNotBlank()) {
+                                Text(
+                                    item.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                        if (job.error.isNotBlank()) {
+                            Text(job.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+
         if (state.error.isNotBlank()) {
             Text(
                 state.error,
