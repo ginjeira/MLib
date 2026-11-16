@@ -419,7 +419,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
             }
             if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
-                for (item in completed.filter { it.tracks.isNotEmpty() && !it.skippedDuplicate }) {
+                // A playlist is a collection in its own right: reuse existing tracks,
+                // but never suppress the playlist merely because every track
+                // was already present in the library.
+                for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val playlistName = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
                     val existing = app.library.state.value.playlists.firstOrNull {
