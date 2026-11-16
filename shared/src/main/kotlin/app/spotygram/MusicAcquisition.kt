@@ -320,8 +320,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     acquiredAlbums += albumId
                 }
             }
-            val autoCreatePlaylist = app.prefs.getBoolean("auto_create_acquisition_playlists", true)
-            if (session.search.contentType == AcquisitionContentType.PLAYLIST && autoCreatePlaylist) {
+            if (session.search.contentType == AcquisitionContentType.PLAYLIST) {
                 for (item in completed.filter { it.tracks.isNotEmpty() }) {
                     val ids = item.tracks.map { it.id }.distinct()
                     val playlistName = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
@@ -352,7 +351,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     AcquisitionContentType.ARTIST ->
                         "A pesquisa por artista devolve opções do bot; cada opção pode produzir uma ou várias faixas, conforme a contagem indicada. As faixas são importadas individualmente, sem criar um álbum ou playlist fictícios."
                     AcquisitionContentType.PLAYLIST ->
-                        if (autoCreatePlaylist) "" else "As faixas foram adicionadas à biblioteca sem criar uma playlist local."
+                        ""
                     else -> ""
                 },
             )
@@ -483,7 +482,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         if (!clicked) sendText(botChatId, option.number.toString())
 
         val expectedCount = Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|musicas?)?\\)", RegexOption.IGNORE_CASE)
-            .find(option.title)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            .find(option.title)?.groupValues?.get(1)?.toIntOrNull()
+            ?: if (session.search.contentType == AcquisitionContentType.PLAYLIST ||
+                session.search.contentType == AcquisitionContentType.ALBUM
+            ) 0 else 1
         val multiTrack = session.search.contentType == AcquisitionContentType.PLAYLIST ||
             session.search.contentType == AcquisitionContentType.ALBUM || expectedCount > 1
         val collection = collectAudioMessages(
@@ -614,10 +616,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         var lastObservedMessageId = afterMessageId
         var finished = false
         var quietCompletion = false
-        val maxWait = if (multiTrack) 360_000L else 45_000L
+        val maxWait = if (multiTrack) 240_000L else 45_000L
         // Collection bots may send tracks in batches with sizeable gaps. A
         // nine-second quiet window truncated playlists after their first item.
-        val quietWindow = 30_000L
+        val quietWindow = 9_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
             // Advance the Telegram history cursor after every poll. Previously
@@ -656,7 +658,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             !finished && !quietCompletion &&
             !(expectedCount > 0 && collected.size >= expectedCount)
         return AudioCollection(
-            messages = collected.values.sortedBy { it.getLong("id") },
+            messages = collected.values.sortedByDescending { it.getLong("id") },
             timedOut = timedOut,
         )
     }
