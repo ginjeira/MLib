@@ -119,7 +119,7 @@ class MusicAcquisitionRulesTest {
     fun pendingCandidatesFindEquivalentTrackWithDifferentTelegramFileKey() {
         val candidate = track("candidate", title = "One More Tiem", fileKey = "file-a")
         val pending = listOf(track("pending", title = "One More Time", duration = 321, fileKey = "file-b"))
-        assertEquals(0, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
+        assertEquals(-1, MusicAcquisitionRules.findEquivalentCandidate(candidate, pending))
     }
 
     @Test
@@ -140,8 +140,8 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun adjacentTitleTranspositionMatchesWithSameArtistAndDuration() {
-        assertTrue(
+    fun adjacentTitleTranspositionDoesNotMatchMCatExactTitleRules() {
+        assertFalse(
             MusicAcquisitionRules.isSameRecording(
                 track("a", title = "One More Tiem"),
                 track("b", title = "One More Time", duration = 321),
