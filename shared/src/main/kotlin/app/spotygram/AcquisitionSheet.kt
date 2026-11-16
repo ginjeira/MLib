@@ -12,7 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun AcquisitionSheet(
@@ -91,7 +93,7 @@ internal fun AcquisitionSheet(
                         color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                     Button(
-                        onClick = { scope.launch { runCatching { acquisition.resumePending() } } },
+                        onClick = { scope.launch { withContext(Dispatchers.IO) { runCatching { acquisition.resumePending() } } } },
                         enabled = auth.type == "authorizationStateReady" && !state.searching && !state.acquiring,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -191,7 +193,7 @@ internal fun AcquisitionSheet(
             onClick = {
                 selected.clear()
                 scope.launch {
-                    runCatching { acquisition.search(query, contentType, provider) }
+                    withContext(Dispatchers.IO) { runCatching { acquisition.search(query, contentType, provider) } }
                 }
             },
             enabled = auth.type == "authorizationStateReady" &&
@@ -262,7 +264,7 @@ internal fun AcquisitionSheet(
                     onClick = {
                         scope.launch {
                             runCatching {
-                                acquisition.acquire(search.id, selected.toList(), destinationId)
+                                withContext(Dispatchers.IO) { acquisition.acquire(search.id, selected.toList(), destinationId) }
                             }
                         }
                     },
