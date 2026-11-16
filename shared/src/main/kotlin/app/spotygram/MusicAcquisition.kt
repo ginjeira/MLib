@@ -341,7 +341,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     acquireOption(session, option, destinationChatId, destinationTitle)
                 } catch (error: Throwable) {
                     if (error is CancellationException) throw error
-                    val cursor = runCatching { latestMessageId(session.botChatId) }.getOrDefault(0L)
+                    val cursor = state.value.pendingJob?.botMessageCursor
+                        ?.takeIf { it > 0L }
+                        ?: runCatching { latestMessageId(session.botChatId) }.getOrDefault(0L)
                     AcquiredItem(
                         option, emptyList(), error = friendly(error), botFinished = false,
                         botChatId = session.botChatId, botMessageCursor = cursor,
@@ -711,9 +713,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
             contentType = session.search.contentType,
         )
         val audioMessages = collection.messages
-        if (collection.completionReason == AcquisitionCompletionReason.DEADLINE_NO_AUDIO) {
-            error("O bot não enviou áudio dentro do tempo limite.")
-        }
         if (audioMessages.isEmpty()) {
             return AcquiredItem(
                 option = option,
