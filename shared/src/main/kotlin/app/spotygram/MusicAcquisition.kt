@@ -155,8 +155,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
         allowPendingJob: Boolean = false,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
-        if (activeSearchId != null &&
-            searches[activeSearchId]?.search?.expiresAt?.let { System.currentTimeMillis() >= it } == true
+        val reservedSearchId = activeSearchId
+        if (reservedSearchId != null &&
+            searches[reservedSearchId]?.search?.expiresAt?.let { System.currentTimeMillis() >= it } == true
         ) activeSearchId = null
         check(activeSearchId == null) {
             "O bot ainda está a aguardar a conclusão da aquisição anterior. Termina-a antes de iniciar outra pesquisa."
