@@ -603,7 +603,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
             multiTrack = multiTrack,
         )
         val audioMessages = collection.messages
-        if (audioMessages.isEmpty()) error("O bot não devolveu áudio para esta opção.")
+        if (collection.timedOut) {
+            error("O bot não enviou a mensagem 'Finished.' dentro do tempo limite. A aquisição ficou incompleta.")
+        }
+        if (audioMessages.isEmpty()) error("O bot terminou sem devolver áudio para esta opção.")
         var lastDeliveryError = ""
 
         val importedTracks = mutableListOf<Track>()
@@ -692,13 +695,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AudioCollection {
         val collected = linkedMapOf<Long, JSONObject>()
         val started = System.currentTimeMillis()
-        var lastAudioAt = 0L
         var lastObservedMessageId = afterMessageId
         var finished = false
-        var quietCompletion = false
+        // The bot's explicit "Finished." message is the completion signal for
+        // every content type. The timeout is only a failure guard when that
+        // message never arrives; silence or an expected track count is not
+        // sufficient to declare a playlist/album/artist download complete.
         val maxWait = if (multiTrack) 240_000L else 45_000L
-        // Match MCat Player's nine-second quiet window for multi-track results.
-        val quietWindow = 9_000L
 
         while (System.currentTimeMillis() - started < maxWait) {
             // MCat waits two seconds before each getMessages poll.
@@ -714,7 +717,6 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 lastObservedMessageId = maxOf(lastObservedMessageId, id)
                 if (isAudioMessage(message)) {
                     if (collected.putIfAbsent(id, message) == null) {
-                        lastAudioAt = System.currentTimeMillis()
                         state.value = state.value.copy(
                             progress = "A receber áudio: ${collected.size}" +
                                 if (expectedCount > 0) "/$expectedCount" else " faixa(s)",
@@ -723,20 +725,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
                 if (isCompletionMessage(message)) finished = true
             }
-            if (expectedCount > 0 && collected.size >= expectedCount) break
-            if (finished && collected.isNotEmpty()) break
-            if (!multiTrack && collected.isNotEmpty()) break
-            if (multiTrack && collected.isNotEmpty() && lastAudioAt > 0 &&
-                System.currentTimeMillis() - lastAudioAt >= quietWindow
-            ) {
-                quietCompletion = true
-                break
-            }
+            if (finished) break
         }
-        val timedOut = multiTrack &&
-            System.currentTimeMillis() - started >= maxWait &&
-            !finished && !quietCompletion &&
-            !(expectedCount > 0 && collected.size >= expectedCount)
+        val timedOut = !finished
         return AudioCollection(
             messages = collected.values.sortedByDescending { it.getLong("id") },
             timedOut = timedOut,
@@ -993,13 +984,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
     }
 
-    private fun isCompletionMessage(message: JSONObject): Boolean {
-        val text = messageText(message).lowercase()
-        return listOf(
-            "finished", "download complete", "completed", "concluído",
-            "todas as faixas", "process complete", "done!", "pronto!",
-        ).any(text::contains)
-    }
+    private fun isCompletionMessage(message: JSONObject): Boolean =
+        messageText(message).trim().equals("Finished.", ignoreCase = true)
 
     private fun isSameRecording(candidate: Track, existing: Track): Boolean =
         MusicAcquisitionRules.isSameRecording(candidate, existing)
