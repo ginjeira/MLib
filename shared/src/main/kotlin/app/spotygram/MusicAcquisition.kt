@@ -287,6 +287,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     if (error is CancellationException) throw error
                     completed += AcquiredItem(option, emptyList(), error = friendly(error))
                 }
+                delay(1_000)
             }
 
             val allTrackIds = completed.flatMap { it.tracks }.map { it.id }.distinct()
