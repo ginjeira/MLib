@@ -1,0 +1,322 @@
+package app.spotygram
+
+/**
+ * Direct Kotlin port of the parsing, sanitizing and duplicate-matching helpers
+ * used by ginjeira/MCat-Player (server.ts and src/utils/trackSanitizer.ts).
+ * Only the language/runtime syntax is adapted; matching rules stay equivalent.
+ */
+internal data class ParsedMusicName(val artist: String, val title: String)
+
+internal object MusicAcquisitionRules {
+    fun parseResults(text: String): List<AcquisitionOption> {
+        val results = mutableListOf<AcquisitionOption>()
+        if (text.isEmpty()) return results
+        text.lineSequence().forEach { line ->
+            val match = Regex("^(\\d+)\\.\\s*(.+)").find(line)
+            if (match != null) {
+                results += AcquisitionOption(
+                    match.groupValues[1].toInt(),
+                    match.groupValues[2].trim(),
+                )
+            }
+        }
+        return results
+    }
+
+    fun sanitizeSearchQuery(value: String): String {
+        if (value.isEmpty()) return ""
+        var query = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFKC)
+        query = query.replace(
+            Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        query = query.replace(
+            Regex("[\\(\\[]\\s*(?:19|20)\\d{2}(?:\\s*[-–/]\\s*(?:(?:19|20)?\\d{2}))?\\s*[\\)\\]]"),
+            " ",
+        )
+        query = query.replace(
+            Regex("[\\(\\[]\\s*(?:official|video|audio|lyrics?|remaster(?:ed)?|hd|4k|hq|visualizer|clip|feat\\.?|ft\\.?|320\\s*kbps|flac|mp3|lossless|cd\\s*rip|mono|stereo|live|acoustic|edit|version|deluxe|bonus|single|ep).*?[\\)\\]]", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        query = query.replace(Regex("\\s*-\\s*sele[cç][aã]o\\b", RegexOption.IGNORE_CASE), " ")
+        query = query.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
+        query = query.replace(
+            Regex("[\\x{1F300}-\\x{1F9FF}\\x{2600}-\\x{26FF}\\x{2700}-\\x{27BF}\\x{1FA00}-\\x{1FAFF}🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
+            " ",
+        )
+        query = query.replace(Regex("[()\\[\\]{}【】《》〔〕「」『』]"), " ")
+        query = query.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
+        query = query.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\x22“”„‟`´]"), " ")
+        query = query.replace(Regex("\\s+"), " ").trim()
+        return query.ifEmpty { value.trim() }
+    }
+
+    private fun sanitizeTrackTitle(rawTitle: String): String {
+        if (rawTitle.isEmpty()) return ""
+        var title = java.text.Normalizer.normalize(rawTitle, java.text.Normalizer.Form.NFKC)
+        title = title.replace(
+            Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        title = title.replace(Regex("[\\u200B-\\u200D\\uFEFF\\u00A0\\u200E\\u200F\\u202A-\\u202E]"), " ")
+        title = title.replace(Regex("\\.(mp3|flac|m4a|wav|aac|ogg|wma)$", RegexOption.IGNORE_CASE), "")
+        title = title.replace(
+            Regex("[\\x{1F300}-\\x{1F9FF}\\x{2600}-\\x{26FF}\\x{2700}-\\x{27BF}\\x{1FA00}-\\x{1FAFF}🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]"),
+            " ",
+        )
+        title = title.replace(
+            Regex("\\s*\\[(?:official|video|audio|lyrics?|remaster(?:ed)?|hd|4k|hq|visualizer|clip|feat\\.?|ft\\.?|320\\s*kbps|flac|mp3|lossless|cd\\s*rip|mono|stereo|live|acoustic|edit|version).*?\\]", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        title = title.replace(
+            Regex("\\s*\\((?:official|video|audio|lyrics?|remaster(?:ed)?|hd|4k|hq|visualizer|clip|feat\\.?|ft\\.?|320\\s*kbps|flac|mp3|lossless|cd\\s*rip|mono|stereo|live|acoustic|edit|version).*?\\)", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        title = title.replace(Regex("[【】《》〔〕「」『』]"), " ")
+        title = title.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
+        title = title.replace(Regex("[•·~_#|\\\\/^*+=<>§©®™✓✗►▶◀«»\\x22“”„‟`´]"), " ")
+        title = title.replace(Regex("\\s+"), " ").trim()
+        return title.ifEmpty { rawTitle.trim() }
+    }
+
+    fun parseArtistAndTitle(raw: String): ParsedMusicName {
+        val clean = sanitizeTrackTitle(raw).replace(Regex("@\\w+"), "").trim()
+        val parts = clean.split('-')
+        if (parts.size >= 2) {
+            val artist = parts.first().trim()
+            val title = parts.drop(1).joinToString("-").trim()
+            if (artist.isNotEmpty() && title.isNotEmpty()) return ParsedMusicName(artist, title)
+        }
+        val by = Regex("^(.*?)\\s+by\\s+(.*?)$", RegexOption.IGNORE_CASE).matchEntire(clean)
+        if (by != null && by.groupValues[1].isNotEmpty() && by.groupValues[2].isNotEmpty()) {
+            return ParsedMusicName(by.groupValues[2].trim(), by.groupValues[1].trim())
+        }
+        return ParsedMusicName("Artista Desconhecido", clean.ifEmpty { raw })
+    }
+
+    fun cleanCollectionTitle(rawName: String): String {
+        if (rawName.isEmpty()) return ""
+        var name = java.text.Normalizer.normalize(rawName, java.text.Normalizer.Form.NFKC)
+        name = name.replace(
+            Regex("[\\(\\[]\\s*\\d+\\s*(?:🎵|🎶|track|tracks|faixas?)?\\s*[\\)\\]]", RegexOption.IGNORE_CASE),
+            " ",
+        )
+        name = name.replace(Regex("\\s*[🎵🎶🎧📻🎼🎤🎸🎹🥁🎺🎷🎻🎙️▶️►▪️●★☆•⭐✨🔥💯]+\\s*$"), "")
+        name = name.replace(Regex("^\\s*\\d+[.\\-)]\\s*"), " ")
+        name = name.replace(Regex("\\s+"), " ").trim()
+        return name.ifEmpty { rawName.trim() }
+    }
+
+    private fun cleanMusicString(value: String): String {
+        if (value.isEmpty()) return ""
+        return java.text.Normalizer.normalize(value.lowercase(), java.text.Normalizer.Form.NFKD)
+            .replace(Regex("[\\u0300-\\u036f]"), "")
+            .replace(
+                Regex("\\s*\\((?:official|video|audio|lyrics|lyric|remastered|remaster|hd|4k|hq|visualizer|clip|feat\\.?|ft\\.?).*?\\)", RegexOption.IGNORE_CASE),
+                "",
+            )
+            .replace(
+                Regex("\\s*\\[(?:official|video|audio|lyrics|lyric|remastered|remaster|hd|4k|hq|visualizer|clip|feat\\.?|ft\\.?).*?\\]", RegexOption.IGNORE_CASE),
+                "",
+            )
+            .replace(
+                Regex("\\s*-\\s*(?:official|video|audio|lyrics|lyric|remastered|remaster).*$", RegexOption.IGNORE_CASE),
+                "",
+            )
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+    }
+
+    /** Exact port of MCat Player's areTracksDuplicate(). */
+    fun areTracksDuplicate(
+        candidateTitle: String,
+        candidateArtist: String,
+        existingTitle: String,
+        existingArtist: String,
+    ): Boolean {
+        val cTitle = cleanMusicString(candidateTitle)
+        val eTitle = cleanMusicString(existingTitle)
+        if (cTitle.isEmpty() || eTitle.isEmpty()) return false
+        val cArtist = cleanMusicString(candidateArtist)
+        val eArtist = cleanMusicString(existingArtist)
+        if (cTitle == eTitle) {
+            if (cArtist.isEmpty() || eArtist.isEmpty() ||
+                cArtist == "artista desconhecido" || eArtist == "artista desconhecido" ||
+                cArtist.contains(eArtist) || eArtist.contains(cArtist)
+            ) return true
+        }
+        val cFull = "$cArtist $cTitle".trim()
+        val eFull = "$eArtist $eTitle".trim()
+        if (cFull == eFull) return true
+        if (cArtist.isNotEmpty() && eFull.contains(cTitle) && eFull.contains(cArtist)) return true
+        if (eArtist.isNotEmpty() && cFull.contains(eTitle) && cFull.contains(eArtist)) return true
+        val cReversed = "$cTitle $cArtist".trim()
+        val eReversed = "$eTitle $eArtist".trim()
+        if (cReversed == eFull || eReversed == cFull) return true
+        return false
+    }
+
+    private fun cleanAlbumTitle(title: String, artist: String): String {
+        if (title.isEmpty()) return ""
+        var clean = title
+            .replace(Regex("^\\d+[.\\-)]\\s*"), "")
+            .replace(Regex("\\(\\d+\\s*🎵\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\((?:19|20)\\d{2}\\)\\s*"), " ")
+            .replace(Regex("\\s*\\[(?:19|20)\\d{2}\\]\\s*"), " ")
+            .replace(Regex("\\s*-\\s*(?:single|ep|deluxe|remaster(?:ed)?)\\b", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\((?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\)", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*\\[(?:deluxe|bonus|expanded|remaster(?:ed)?|edition|special|version).*?\\]", RegexOption.IGNORE_CASE), "")
+            .trim()
+        val parts = clean.split('-')
+        if (parts.size >= 2) {
+            val prefixArtist = cleanMusicString(parts.first())
+            val suffixTitle = parts.drop(1).joinToString("-").trim()
+            val normalizedArtist = cleanMusicString(artist)
+            if (normalizedArtist.isNotEmpty() &&
+                (prefixArtist == normalizedArtist ||
+                    normalizedArtist.contains(prefixArtist) ||
+                    prefixArtist.contains(normalizedArtist))
+            ) {
+                clean = suffixTitle
+            } else if (normalizedArtist.isEmpty() || normalizedArtist == "artista desconhecido") {
+                clean = suffixTitle
+            }
+        }
+        clean = clean.replace(Regex("\\s*-\\s*Sele[cç][aã]o\\b", RegexOption.IGNORE_CASE), "").trim()
+        return clean.ifEmpty { title }
+    }
+
+    fun isGenericAlbumCover(url: String): Boolean =
+        url.isBlank() ||
+            url.contains("photo-1514525253161") ||
+            url.contains("photo-1511671782779") ||
+            url.contains("photo-1511192336575") ||
+            url.contains("unsplash.com")
+
+    /** The acquisition worker's exact generic-cover test in MCat Player. */
+    fun isMCatJobGenericAlbumCover(url: String): Boolean =
+        url.isBlank() || url.contains("photo-1514525253161")
+
+    /** Exact genre-to-cover fallback used by MCat Player. */
+    fun genreCoverPreset(value: String): String {
+        val text = value.lowercase()
+        return when {
+            listOf("rock", "metal", "hard rock", "punk").any(text::contains) ->
+                "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=800&q=80"
+            listOf("jazz", "blues", "soul", "funk").any(text::contains) ->
+                "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&q=80"
+            listOf("classic", "piano", "orquest", "violin", "sinfon").any(text::contains) ->
+                "https://images.unsplash.com/photo-1520523839898-507127040407?w=800&q=80"
+            listOf("hip", "rap", "trap", "urban", "drill").any(text::contains) ->
+                "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&q=80"
+            listOf("electro", "dance", "edm", "house", "techno", "trance", "club").any(text::contains) ->
+                "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80"
+            listOf("car", "condu", "auto", "viagem", "road", "drive", "estrada").any(text::contains) ->
+                "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80"
+            listOf("chill", "relax", "lo-fi", "dormir", "peace", "calm", "medita").any(text::contains) ->
+                "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800&q=80"
+            listOf("treino", "gym", "workout", "fitness", "correr", "run").any(text::contains) ->
+                "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&q=80"
+            listOf("festa", "party", "balada", "noite", "verao", "summer").any(text::contains) ->
+                "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80"
+            listOf("acust", "folk", "guitar", "indie", "voz", "unplugged").any(text::contains) ->
+                "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=800&q=80"
+            listOf("vinil", "retro", "80s", "70s", "90s", "disco", "nostalg").any(text::contains) ->
+                "https://images.unsplash.com/photo-1539185441755-769473a23570?w=800&q=80"
+            listOf("pop", "hits", "top", "radio", "chart").any(text::contains) ->
+                "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+            else -> "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+        }
+    }
+
+    /** Exact port of MCat Player's areAlbumsDuplicate(). */
+    fun areAlbumsDuplicate(
+        firstTitle: String,
+        firstArtist: String,
+        secondTitle: String,
+        secondArtist: String,
+    ): Boolean {
+        val firstClean = cleanMusicString(cleanAlbumTitle(firstTitle, firstArtist))
+        val secondClean = cleanMusicString(cleanAlbumTitle(secondTitle, secondArtist))
+        if (firstClean.isEmpty() || secondClean.isEmpty()) return false
+        val firstArt = cleanMusicString(firstArtist)
+        val secondArt = cleanMusicString(secondArtist)
+        val artistMatches = firstArt.isEmpty() || secondArt.isEmpty() ||
+            firstArt == "artista desconhecido" || secondArt == "artista desconhecido" ||
+            firstArt == secondArt || firstArt.contains(secondArt) || secondArt.contains(firstArt)
+        if (firstClean == secondClean && artistMatches) return true
+        if ((firstClean.contains(secondClean) || secondClean.contains(firstClean)) &&
+            artistMatches && (firstArt.isNotEmpty() || secondArt.isNotEmpty())
+        ) {
+            val minLength = minOf(firstClean.length, secondClean.length)
+            val maxLength = maxOf(firstClean.length, secondClean.length)
+            if (minLength.toDouble() / maxLength > 0.55) return true
+        }
+        val firstCombined = cleanMusicString("$firstArt $firstClean")
+        val secondCombined = cleanMusicString("$secondArt $secondClean")
+        return firstCombined.isNotEmpty() && firstCombined == secondCombined
+    }
+
+    fun isSameRecording(candidate: Track, existing: Track): Boolean =
+        areTracksDuplicate(candidate.title, candidate.artist, existing.title, existing.artist)
+
+    fun findEquivalentCandidate(candidate: Track, candidates: List<Track>): Int =
+        candidates.indexOfFirst { isSameRecording(candidate, it) }
+
+}
+
+internal enum class AcquisitionCompletionReason {
+    EXPECTED_COUNT,
+    COMPLETION_SIGNAL,
+    SINGLE_TRACK,
+    QUIET_PERIOD,
+    DEADLINE_PARTIAL,
+    DEADLINE_NO_AUDIO,
+}
+
+internal object AcquisitionCompletionRules {
+    private val completionSignals = listOf(
+        "download complete", "completed", "concluído",
+        "todas as faixas", "process complete", "done!", "pronto!",
+    )
+    private val finishWord = Regex("(?<![\\p{L}\\p{N}])finish(?:ed)?(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+
+    fun expectedTrackCount(title: String, contentType: AcquisitionContentType): Int =
+        Regex("\\((\\d+)\\s*(?:🎵|faixas?|tracks?|m[uú]sicas?)?\\)", RegexOption.IGNORE_CASE)
+            .find(title)?.groupValues?.get(1)?.toIntOrNull()
+            ?: if (contentType == AcquisitionContentType.PLAYLIST ||
+                contentType == AcquisitionContentType.ALBUM
+            ) 0 else 1
+
+    fun isMultiTrack(contentType: AcquisitionContentType, expectedCount: Int): Boolean =
+        contentType == AcquisitionContentType.PLAYLIST ||
+            contentType == AcquisitionContentType.ALBUM || expectedCount > 1
+
+    fun isCompletionSignal(text: String): Boolean =
+        finishWord.containsMatchIn(text) ||
+            completionSignals.any { text.contains(it, ignoreCase = true) }
+
+    fun isAfterMessageCursor(candidateId: Long, cursorId: Long): Boolean =
+        candidateId > cursorId
+
+    fun maxWaitMillis(contentType: AcquisitionContentType, expectedCount: Int): Long =
+        if (isMultiTrack(contentType, expectedCount)) 240_000L else 45_000L
+
+    fun completionReason(
+        contentType: AcquisitionContentType,
+        expectedCount: Int,
+        audioCount: Int,
+        hasCompletionSignal: Boolean,
+        silenceMillis: Long,
+        elapsedMillis: Long,
+    ): AcquisitionCompletionReason? {
+        if (hasCompletionSignal) return AcquisitionCompletionReason.COMPLETION_SIGNAL
+        // Count and silence are progress hints, never proof that the stateful
+        // Telegram bot has released its conversation for another request.
+        if (elapsedMillis >= maxWaitMillis(contentType, expectedCount)) {
+            return if (audioCount > 0) AcquisitionCompletionReason.DEADLINE_PARTIAL
+            else AcquisitionCompletionReason.DEADLINE_NO_AUDIO
+        }
+        return null
+    }
+}

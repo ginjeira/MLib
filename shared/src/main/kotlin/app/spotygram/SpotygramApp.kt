@@ -11,6 +11,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import org.json.JSONArray
 import org.json.JSONObject
 
 class SpotygramApp(val platform: Platform) {
@@ -65,6 +66,7 @@ class SpotygramApp(val platform: Platform) {
     val cloudSync by lazy { CloudSync(this) }
     val profiles by lazy { Profiles(this) }
     val sharing by lazy { Sharing(this) }
+    val acquisition by lazy { MusicAcquisition(this) }
     var suppressCloudWrites = false
     val playbackMode =
         MutableStateFlow(
@@ -521,7 +523,7 @@ class SpotygramApp(val platform: Platform) {
         }
     }
 
-    private fun parseTrack(message: JSONObject, title: String): Track? {
+    internal fun parseTrack(message: JSONObject, title: String): Track? {
         val content = message.optJSONObject("content") ?: return null
         val document = content.kind() == "messageDocument"
         val audio = content.optJSONObject(if (document) "document" else "audio") ?: return null
@@ -643,19 +645,28 @@ class SpotygramApp(val platform: Platform) {
                             }
                         if (tracks.isNotEmpty()) {
                             val metadata = platform.metadata(path)
-                            library.upsert(
-                                tracks.map {
-                                    it.copy(
-                                        duration = (metadata.duration / 1000).toInt(),
-                                        title =
-                                            metadata.title.takeIf { s -> s.isNotBlank() }
-                                                ?: it.title,
-                                        artist =
-                                            metadata.artist.takeIf { s -> s.isNotBlank() }
-                                                ?: it.artist,
+                            val updatedTracks = tracks.map {
+                                it.copy(
+                                    duration = (metadata.duration / 1000).toInt(),
+                                    title = metadata.title.takeIf { s -> s.isNotBlank() } ?: it.title,
+                                    artist = metadata.artist.takeIf { s -> s.isNotBlank() } ?: it.artist,
+                                )
+                            }
+                            library.upsert(updatedTracks)
+                            if (metadata.album.isNotBlank()) {
+                                val albumArtist = metadata.artist.ifBlank { updatedTracks.first().artist }
+                                if (albumArtist.isNotBlank()) {
+                                    library.createOrUpdateAlbum(
+                                        title = metadata.album,
+                                        artist = albumArtist,
+                                        tracks = updatedTracks.map { it.id },
+                                        year = metadata.year,
+                                        coverUrl = updatedTracks.firstOrNull { it.art.isNotBlank() }?.art.orEmpty(),
+                                        genre = metadata.genre,
+                                        isAutoDetected = true,
                                     )
                                 }
-                            )
+                            }
                             library.reload()
                         }
                     }
@@ -787,6 +798,75 @@ class SpotygramApp(val platform: Platform) {
             .getString("link")
     }
 
+    suspend fun suggestAlbumCovers(title: String, artist: String): List<String> = withContext(Dispatchers.IO) {
+        val term = listOf(artist, title).filter(String::isNotBlank).joinToString(" ")
+        require(term.isNotBlank()) { "Indica o título ou artista do álbum." }
+        val suggestions = linkedSetOf<String>()
+        fun fetch(url: String, parse: (JSONObject) -> Unit) {
+            val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            try {
+                connection.connectTimeout = 8_000
+                connection.readTimeout = 8_000
+                connection.setRequestProperty("User-Agent", "MLib/1.0")
+                if (connection.responseCode in 200..299) parse(JSONObject(connection.inputStream.bufferedReader().use { it.readText() }))
+            } finally { connection.disconnect() }
+        }
+        val encoded = java.net.URLEncoder.encode(term, Charsets.UTF_8.name())
+        runCatching {
+            fetch("https://itunes.apple.com/search?term=$encoded&entity=album&limit=15") { json ->
+                val results = json.optJSONArray("results") ?: JSONArray()
+                for (i in 0 until results.length()) {
+                    val artwork = results.optJSONObject(i)?.optString("artworkUrl100").orEmpty()
+                    if (artwork.startsWith("https://")) suggestions += artwork.replace("100x100bb", "600x600bb")
+                }
+            }
+        }
+        runCatching {
+            fetch("https://api.deezer.com/search/album?q=$encoded&limit=15") { json ->
+                val results = json.optJSONArray("data") ?: JSONArray()
+                for (i in 0 until results.length()) {
+                    val cover = results.optJSONObject(i)?.optString("cover_xl").orEmpty()
+                    if (cover.startsWith("https://")) suggestions += cover
+                }
+            }
+        }
+        suggestions.take(20)
+    }
+
+    suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
+        awaitLibrary()
+        val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }
+        val groups = linkedMapOf<Triple<String, String, String>, MutableList<Pair<Track, AudioMetadata>>>()
+        for (track in candidates) {
+            currentCoroutineContext().ensureActive()
+            val metadata = runCatching { platform.metadata(track.path, track.title) }.getOrNull() ?: continue
+            val album = metadata.album.trim()
+            val artist = metadata.artist.ifBlank { track.artist }.trim()
+            if (album.isBlank() || artist.isBlank()) continue
+            groups.getOrPut(
+                Triple(normalizeAlbumText(album), normalizeAlbumText(artist), metadata.year.trim()),
+            ) { mutableListOf() }
+                .add(track to metadata)
+        }
+        var detected = 0
+        for ((_, entries) in groups) {
+            val first = entries.first()
+            library.createOrUpdateAlbum(
+                title = first.second.album.trim(),
+                artist = first.second.artist.ifBlank { first.first.artist }.trim(),
+                tracks = entries.map { it.first.id },
+                year = entries.firstNotNullOfOrNull { it.second.year.takeIf(String::isNotBlank) }.orEmpty(),
+                coverUrl = entries.firstNotNullOfOrNull { it.first.art.takeIf(String::isNotBlank) }.orEmpty(),
+                genre = entries.firstNotNullOfOrNull { it.second.genre.takeIf(String::isNotBlank) }.orEmpty(),
+                isAutoDetected = true,
+            )
+            detected++
+        }
+        library.deduplicateAlbums()
+        library.reload()
+        detected
+    }
+
     suspend fun importAudio(name: String, open: () -> InputStream) =
         withContext(Dispatchers.IO) {
             awaitLibrary()
@@ -838,6 +918,17 @@ class SpotygramApp(val platform: Platform) {
                             )
                         )
                     )
+                    if (metadata.album.isNotBlank() && metadata.artist.isNotBlank()) {
+                        library.createOrUpdateAlbum(
+                            title = metadata.album,
+                            artist = metadata.artist,
+                            tracks = listOf("local:$id"),
+                            year = metadata.year,
+                            coverUrl = art,
+                            genre = metadata.genre,
+                            isAutoDetected = true,
+                        )
+                    }
                     stored = true
                 }
                 library.reload()

@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 1,
+  "fixtureNature": "synthetic-anonymized-protocol-shapes; not captured from a live Telegram account",
+  "source": {
+    "repository": "ginjeira/MCat-Player",
+    "branch": "main",
+    "commit": "a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132",
+    "files": [
+      "server.ts",
+      "src/utils/trackSanitizer.ts"
+    ]
+  },
+  "providers": [
+    "deezer",
+    "soundcloud"
+  ],
+  "contentTypes": [
+    "track",
+    "album",
+    "playlist",
+    "artist"
+  ],
+  "callbackPayloadPolicy": "opaque fixture token only; never sent to Telegram",
+  "searchCases": [
+    {
+      "id": "SEARCH-TRACK-DEEZER",
+      "contentType": "track",
+      "provider": "deezer",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "Deezer",
+        "callbackData": "fixture:deezer:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:track:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:track:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-TRACK-SOUNDCLOUD",
+      "contentType": "track",
+      "provider": "soundcloud",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "SoundCloud",
+        "callbackData": "fixture:soundcloud:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:track:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:track:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-ALBUM-DEEZER",
+      "contentType": "album",
+      "provider": "deezer",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "Deezer",
+        "callbackData": "fixture:deezer:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:album:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:album:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-ALBUM-SOUNDCLOUD",
+      "contentType": "album",
+      "provider": "soundcloud",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "SoundCloud",
+        "callbackData": "fixture:soundcloud:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:album:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:album:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-PLAYLIST-DEEZER",
+      "contentType": "playlist",
+      "provider": "deezer",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "Deezer",
+        "callbackData": "fixture:deezer:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:playlist:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:playlist:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-PLAYLIST-SOUNDCLOUD",
+      "contentType": "playlist",
+      "provider": "soundcloud",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "SoundCloud",
+        "callbackData": "fixture:soundcloud:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:playlist:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:playlist:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-ARTIST-DEEZER",
+      "contentType": "artist",
+      "provider": "deezer",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "Deezer",
+        "callbackData": "fixture:deezer:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:artist:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:artist:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    },
+    {
+      "id": "SEARCH-ARTIST-SOUNDCLOUD",
+      "contentType": "artist",
+      "provider": "soundcloud",
+      "query": "Daft Punk",
+      "searchMessage": {
+        "id": 1001,
+        "chatId": 9001,
+        "text": "Resultados de pesquisa (fixture)\n1. One More Time\n2. Discovery (Deluxe Edition) (14 tracks)"
+      },
+      "filterButton": {
+        "text": "SoundCloud",
+        "callbackData": "fixture:soundcloud:filter:v1"
+      },
+      "resultButtons": [
+        {
+          "text": "1",
+          "callbackData": "fixture:artist:option:1:v1"
+        },
+        {
+          "text": "2",
+          "callbackData": "fixture:artist:option:2:v1"
+        }
+      ],
+      "expected": {
+        "numberedOptions": [
+          1,
+          2
+        ],
+        "callbackPayloadMustBeReused": true,
+        "staleMessageMustNotSatisfyWait": true
+      }
+    }
+  ],
+  "audioMessages": [
+    {
+      "id": 1002,
+      "kind": "messageAudio",
+      "mimeType": "audio/mpeg",
+      "title": "One More Time",
+      "performer": "Daft Punk",
+      "duration": 320,
+      "expectedCollected": true
+    },
+    {
+      "id": 1003,
+      "kind": "messageDocument",
+      "mimeType": "application/octet-stream",
+      "attributes": [
+        {
+          "kind": "documentAttributeAudio",
+          "title": "Around the World",
+          "performer": "Daft Punk",
+          "duration": 430
+        }
+      ],
+      "expectedCollected": true
+    },
+    {
+      "id": 1004,
+      "kind": "messageText",
+      "text": "not an audio message",
+      "expectedCollected": false
+    },
+    {
+      "id": 1005,
+      "kind": "messageAudio",
+      "mimeType": "audio/mpeg",
+      "title": "duplicate message id fixture",
+      "performer": "Daft Punk",
+      "duration": 320,
+      "duplicateOfMessageId": 1002,
+      "expectedCollected": false
+    }
+  ],
+  "completionCases": [
+    {
+      "id": "COMP-COUNT-WAIT",
+      "contentType": "playlist",
+      "expectedCount": 3,
+      "receivedAudioCount": 3,
+      "signal": null,
+      "silenceSeconds": 0,
+      "expected": "wait_for_signal"
+    },
+    {
+      "id": "COMP-SIGNAL-FINISHED",
+      "expectedCount": null,
+      "receivedAudioCount": 2,
+      "signal": "Finished.",
+      "silenceSeconds": 0,
+      "expected": "complete_signal"
+    },
+    {
+      "id": "COMP-SIGNAL-FINISH-20-18",
+      "contentType": "playlist",
+      "expectedCount": 20,
+      "receivedAudioCount": 18,
+      "signal": "finish",
+      "silenceSeconds": 2,
+      "deadlineSeconds": 60,
+      "expected": "complete_signal"
+    },
+    {
+      "id": "COMP-SIGNAL-DONE",
+      "expectedCount": null,
+      "receivedAudioCount": 2,
+      "signal": "Done!",
+      "silenceSeconds": 0,
+      "expected": "complete_signal"
+    },
+    {
+      "id": "COMP-SIGNAL-PORTUGUESE",
+      "expectedCount": null,
+      "receivedAudioCount": 2,
+      "signal": "Todas as faixas concluído",
+      "silenceSeconds": 0,
+      "expected": "complete_signal"
+    },
+    {
+      "id": "COMP-SINGLE-WAIT",
+      "contentType": "track",
+      "expectedCount": 1,
+      "receivedAudioCount": 1,
+      "signal": null,
+      "silenceSeconds": 0,
+      "expected": "complete_single"
+    },
+    {
+      "id": "COMP-QUIET-WAIT",
+      "contentType": "playlist",
+      "expectedCount": null,
+      "receivedAudioCount": 4,
+      "signal": null,
+      "silenceSeconds": 9,
+      "expected": "complete_quiet"
+    },
+    {
+      "id": "COMP-NO-AUDIO",
+      "contentType": "track",
+      "expectedCount": 1,
+      "receivedAudioCount": 0,
+      "signal": null,
+      "silenceSeconds": 45,
+      "deadlineSeconds": 45,
+      "expected": "fail_no_audio"
+    },
+    {
+      "id": "COMP-PARTIAL",
+      "contentType": "album",
+      "expectedCount": 20,
+      "receivedAudioCount": 18,
+      "signal": null,
+      "silenceSeconds": 30,
+      "deadlineSeconds": 240,
+      "expected": "partial_timeout"
+    }
+  ],
+  "cardinalityCases": [
+    {
+      "id": "ARTIST-ONE",
+      "contentType": "artist",
+      "expectedTrackCount": 1,
+      "expectedMultiTrack": false
+    },
+    {
+      "id": "ARTIST-MANY",
+      "contentType": "artist",
+      "expectedTrackCount": 7,
+      "expectedMultiTrack": true
+    },
+    {
+      "id": "PLAYLIST-UNKNOWN",
+      "contentType": "playlist",
+      "expectedTrackCount": null,
+      "expectedMultiTrack": true
+    },
+    {
+      "id": "ALBUM-UNKNOWN",
+      "contentType": "album",
+      "expectedTrackCount": null,
+      "expectedMultiTrack": true
+    },
+    {
+      "id": "TRACK-ONE",
+      "contentType": "track",
+      "expectedTrackCount": 1,
+      "expectedMultiTrack": false
+    }
+  ]
+}

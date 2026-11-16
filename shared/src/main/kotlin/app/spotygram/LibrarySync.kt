@@ -37,7 +37,7 @@ class LibrarySync(
     }
 
     companion object {
-        const val FORMAT = 3
+        const val FORMAT = 5
         private val localPlaybackSettings =
             setOf("setting/speed", "setting/order", "setting/repeat")
         val settings =
@@ -161,6 +161,11 @@ class LibrarySync(
                                     value.isNotBlank() &&
                                     value.length <= 80
                             )
+                        "metadata" -> {
+                            require(parts.size == 3 && value is JSONObject)
+                            require(value.optString("description").length <= 512)
+                            require(value.optString("cover").length <= 4096)
+                        }
                         "deleted" -> require(parts.size == 3 && value is Boolean)
                         "member" ->
                             require(
@@ -173,11 +178,30 @@ class LibrarySync(
                         else -> error("Unsupported sync field")
                     }
                 }
+                "album" -> {
+                    require(parts.size >= 3 && uuid.matches(parts[1]))
+                    when (parts[2]) {
+                        "metadata" -> {
+                            require(parts.size == 3 && value is JSONObject)
+                            require(value.getString("title").isNotBlank() && value.getString("title").length <= 256)
+                            require(value.getString("artist").length <= 256)
+                            require(value.optString("year").length <= 16)
+                            require(value.optString("cover").length <= 4096)
+                            require(value.optString("genre").length <= 128)
+                            require(value.get("auto") is Boolean)
+                            require(value.getLong("created") > 0 && value.getLong("updated") > 0)
+                        }
+                        "deleted" -> require(parts.size == 3 && value is Boolean)
+                        "member" -> require(parts.size == 4 && trackId.matches(parts[3]) && value is Boolean)
+                        "order" -> { require(parts.size == 3 && value is JSONArray); validateIds(value) }
+                        else -> error("Unsupported sync field")
+                    }
+                }
                 "setting" -> {
                     require(parts.size == 2 && parts[1] in settings)
                     when (parts[1]) {
                         "theme" -> require(value in listOf("system", "light", "dark"))
-                        "language" -> require(value in listOf("system", "en", "ru"))
+                        "language" -> require(value in listOf("system", "en", "pt"))
                         "resume_minutes" -> require(value is Number && value.toInt() > 0)
                         else -> require(value is Boolean)
                     }
@@ -190,6 +214,19 @@ class LibrarySync(
             require(ids.length() <= 100_000)
             for (i in 0 until ids.length()) require(trackId.matches(ids.getString(i)))
         }
+    }
+
+    fun migratePlaylistMetadata(db: SqlDatabase) {
+        val values = linkedMapOf<String, Any?>()
+        db.rawQuery("SELECT id,description,cover_url FROM playlists WHERE sync_id IS NOT NULL", null).use { c ->
+            while (c.moveToNext()) {
+                val uid = playlistId(db, c.getLong(0))
+                values["playlist/$uid/metadata"] = JSONObject()
+                    .put("description", c.getString(1))
+                    .put("cover", c.getString(2))
+            }
+        }
+        if (values.isNotEmpty()) edit(db, values)
     }
 
     fun install(db: SqlDatabase) {
@@ -221,12 +258,13 @@ class LibrarySync(
                     if (c.getInt(1) == 1) seed["favorite/$id"] = true
                 }
             }
-        db.rawQuery("SELECT id,name FROM playlists", null).use { c ->
+        db.rawQuery("SELECT id,name,description,cover_url FROM playlists", null).use { c ->
             while (c.moveToNext()) {
                 val id = c.getLong(0)
                 val uid = UUID.randomUUID().toString()
                 db.execSQL("UPDATE playlists SET sync_id=? WHERE id=?", arrayOf<Any>(uid, id))
                 seed["playlist/$uid/name"] = c.getString(1)
+                seed["playlist/$uid/metadata"] = JSONObject().put("description", c.getString(2)).put("cover", c.getString(3))
                 val ids = playlistTracks(db, id)
                 seed["playlist/$uid/order"] = JSONArray(ids)
                 for (track in ids) seed["playlist/$uid/member/$track"] = true
@@ -291,6 +329,11 @@ class LibrarySync(
         }
     }
 
+    private fun valueIsNotDeletedAlbum(all: List<Record>, id: String): Boolean {
+        val deleted = all.firstOrNull { it.key == "album/$id/deleted" }
+        return deleted == null || JSONObject(deleted.value).optBoolean("v").not()
+    }
+
     private fun portable(db: SqlDatabase, all: List<Record>, user: Long): List<Record> {
         val deleted =
             all.filter { it.key.startsWith("playlist/") && it.removesIdentity() }
@@ -304,6 +347,12 @@ class LibrarySync(
                         r.key.startsWith("playlist/") &&
                             r.key.split('/').let {
                                 it.size == 4 && it[2] == "member" && it[1] !in deleted
+                            } &&
+                            JSONObject(r.value).get("v") == true -> r.key.split('/')[3]
+                        r.key.startsWith("album/") &&
+                            r.key.split('/').let {
+                                it.size == 4 && it[2] == "member" &&
+                                    valueIsNotDeletedAlbum(all, it[1])
                             } &&
                             JSONObject(r.value).get("v") == true -> r.key.split('/')[3]
                         else -> null
@@ -446,6 +495,7 @@ class LibrarySync(
                             }
                         execSQL("DELETE FROM sync_values WHERE account=0")
                         execSQL("UPDATE playlists SET account=? WHERE account=0", arrayOf(user))
+                        execSQL("UPDATE albums SET account=? WHERE account=0", arrayOf(user))
                         putMeta(this, "account", user.toString())
                         account = user
                         execSQL("UPDATE tracks SET liked=0")
@@ -466,6 +516,7 @@ class LibrarySync(
                 database().transaction {
                     putMeta(this, "account", "0")
                     account = 0L
+                    execSQL("UPDATE albums SET account=0 WHERE account=?", arrayOf(previousAccount))
                     execSQL("UPDATE tracks SET liked=0")
                     materialize(this, records(this, false).map { it.key }.toSet())
                 }
@@ -642,6 +693,44 @@ class LibrarySync(
                 ),
             )
         }
+        val albums = changed.filter { it.startsWith("album/") }.map { it.split('/')[1] }.toSet()
+        val albumRows = rows.values.filter { it.key.startsWith("album/") }.groupBy { it.key.split('/')[1] }
+        for (uid in albums) {
+            val id = db.rawQuery("SELECT id FROM albums WHERE id=? AND account=?", arrayOf(uid, account.toString())).use {
+                if (it.moveToFirst()) it.getString(0) else ""
+            }
+            if (value("album/$uid/deleted") == true) {
+                if (id.isNotEmpty()) {
+                    db.execSQL("DELETE FROM album_tracks WHERE album_id=?", arrayOf(id))
+                    db.execSQL("DELETE FROM albums WHERE id=? AND account=?", arrayOf<Any>(id, account))
+                }
+                continue
+            }
+            val metadata = value("album/$uid/metadata") as? JSONObject ?: continue
+            db.execSQL(
+                "INSERT OR IGNORE INTO albums(id,title,artist,year,cover_url,genre,auto_detected,created_at,updated_at,account) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                arrayOf<Any>(uid, metadata.getString("title"), metadata.getString("artist"), metadata.optString("year"), metadata.optString("cover"), metadata.optString("genre"), if (metadata.optBoolean("auto")) 1 else 0, metadata.getLong("created"), metadata.getLong("updated"), account),
+            )
+            db.execSQL(
+                "UPDATE albums SET title=?,artist=?,year=?,cover_url=?,genre=?,auto_detected=?,updated_at=? WHERE id=? AND account=?",
+                arrayOf<Any>(metadata.getString("title"), metadata.getString("artist"), metadata.optString("year"), metadata.optString("cover"), metadata.optString("genre"), if (metadata.optBoolean("auto")) 1 else 0, metadata.getLong("updated"), uid, account),
+            )
+            val prefix = "album/$uid/member/"
+            val members = albumRows[uid].orEmpty().filter {
+                it.key.startsWith(prefix) && it.key.removePrefix(prefix) !in deletedTracks && JSONObject(it.value).get("v") == true
+            }.sortedWith(compareBy<Record> { it.clock }.thenBy { it.writer }.thenBy { it.key })
+                .map { it.key.removePrefix(prefix) }
+            val order = value("album/$uid/order") as? JSONArray
+            val desired = if (order == null) emptyList() else List(order.length()) { order.getString(it) }.distinct().filter { it in members }
+            val desiredSet = desired.toSet()
+            val ordered = desired + members.filter { it !in desiredSet }
+            db.execSQL("DELETE FROM album_tracks WHERE album_id=?", arrayOf(uid))
+            db.compileStatement("INSERT INTO album_tracks(album_id,track,position) VALUES(?,?,?)").use { statement ->
+                ordered.forEachIndexed { index, track ->
+                    statement.bindString(1, uid); statement.bindString(2, track); statement.bindLong(3, index.toLong()); statement.executeInsert()
+                }
+            }
+        }
         val playlists =
             changed.filter { it.startsWith("playlist/") }.map { it.split('/')[1] }.toSet()
         val playlistRows =
@@ -672,6 +761,11 @@ class LibrarySync(
                         },
                     )
             db.execSQL("UPDATE playlists SET name=? WHERE id=?", arrayOf<Any>(name, local))
+            val metadata = value("playlist/$uid/metadata") as? JSONObject
+            if (metadata != null) db.execSQL(
+                "UPDATE playlists SET description=?,cover_url=? WHERE id=?",
+                arrayOf<Any>(metadata.optString("description"), metadata.optString("cover"), local),
+            )
             val prefix = "playlist/$uid/member/"
             val members =
                 playlistRows[uid]

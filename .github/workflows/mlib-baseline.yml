@@ -1,4 +1,6 @@
 name: MLib baseline validation
+# Keep the baseline workflow path-filtered but self-triggering when validation logic changes.
+# Telegram acquisition polling and active-job UI are covered by the current branch head.
 
 on:
   push:

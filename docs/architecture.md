@@ -1,6 +1,6 @@
 # Architecture
 
-[Documentation](README.md) · **English** · [Русский](architecture.ru.md)
+[Documentation](README.md) · **English**
 
 Spotygram runs Telegram access, the music library and playback on the device.
 Android, Windows, Linux and macOS compile the same Kotlin/Compose application
@@ -353,7 +353,7 @@ facilities are not advertised.
 
 ## Visual system and idle work
 
-English/Russian strings are shared XML resources. The library header pairs the
+English and Portuguese strings are shared XML resources. The library header pairs the
 lowercase `spotygram` name with one of 40 bundled Fluent Emoji stickers: 18 yellow
 hand gestures and 22 faces. Every transparent PNG shares a 112-pixel canvas and
 balanced insets inside the existing 28 dp slot. The sticker is decorative, with

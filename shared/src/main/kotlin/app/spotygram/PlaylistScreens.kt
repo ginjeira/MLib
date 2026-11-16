@@ -17,6 +17,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,7 +47,14 @@ private fun PlaylistCover(playlist: Playlist, library: LibraryState) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        if (tracks.none { it.art.isNotBlank() })
+        if (playlist.coverUrl.isNotBlank()) {
+            AsyncImage(
+                model = playlist.coverUrl,
+                contentDescription = playlist.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else if (tracks.none { it.art.isNotBlank() })
             Icon(Icons.Rounded.PlaylistPlay, null, tint = MaterialTheme.colorScheme.primary)
         else if (tracks.size == 1) Artwork(tracks.first(), 56.dp)
         else
@@ -142,6 +151,15 @@ fun PlaylistsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall,
                         )
+                        if (playlist.description.isNotBlank()) {
+                            Text(
+                                playlist.description,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                     IconButton(onClick = { onMore(playlist) }) {
                         Icon(
@@ -169,6 +187,8 @@ fun PlaylistEditor(
     onSaved: (Long) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var coverUrl by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }
     var selected by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     var saving by remember { mutableStateOf(false) }
@@ -245,6 +265,23 @@ fun PlaylistEditor(
                             Modifier.fillMaxWidth(),
                         )
                     }
+                    OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it.take(512) },
+                            label = { Text("Descrição da playlist") },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            minLines = 2,
+                            maxLines = 3,
+                            enabled = !saving,
+                        )
+                    OutlinedTextField(
+                        value = coverUrl,
+                        onValueChange = { coverUrl = it.take(4096) },
+                        label = { Text("URL da capa (opcional)") },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        singleLine = true,
+                        enabled = !saving,
+                    )
                 }
             }
         else
@@ -321,7 +358,7 @@ fun PlaylistEditor(
                 app.action {
                     try {
                         val id =
-                            if (addingTo == null) app.library.createPlaylist(title, ids)
+                            if (addingTo == null) app.library.createPlaylist(title, ids, description, coverUrl)
                             else {
                                 app.library.addToPlaylist(addingTo, ids)
                                 addingTo

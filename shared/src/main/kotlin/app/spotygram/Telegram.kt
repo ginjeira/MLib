@@ -404,16 +404,27 @@ class Telegram(
             if (type == "authorizationStateWaitPhoneNumber") {
                 val compact = value.trim().filterNot { it.isWhitespace() || it in "()-." }
                 val international = if (compact.startsWith("00")) "+" + compact.drop(2) else compact
+                val digits = international.removePrefix("+")
                 if (
-                    !international.startsWith('+') ||
-                        international.length !in 6..16 ||
-                        international.drop(1).any { it !in '0'..'9' } ||
-                        international.getOrNull(1) == '0'
+                    digits.isEmpty() ||
+                        international.count { it == '+' } > 1 ||
+                        digits.any { it !in '0'..'9' } ||
+                        (international.startsWith("+") && digits.length < 5)
                 ) {
                     auth.value = state.copy(error = tr(R.string.phone_invalid))
                     return
                 }
-                internationalPhoneNumber(international)
+                val normalized = internationalPhoneNumber(international, java.util.Locale.getDefault().country)
+                if (
+                    !normalized.startsWith('+') ||
+                        normalized.length !in 6..16 ||
+                        normalized.drop(1).any { it !in '0'..'9' } ||
+                        normalized.getOrNull(1) == '0'
+                ) {
+                    auth.value = state.copy(error = tr(R.string.phone_invalid))
+                    return
+                }
+                normalized
             } else ""
         val request =
             when (type) {
@@ -573,10 +584,11 @@ class Telegram(
  * Keep exceptional Telegram numbers, while normalizing known countries without dropping significant
  * zeros.
  */
-internal fun internationalPhoneNumber(value: String): String =
+internal fun internationalPhoneNumber(value: String, defaultRegion: String = "ZZ"): String =
     try {
         val phones = PhoneNumberUtil.getInstance()
-        val parsed = phones.parse(value, "ZZ")
+        val region = defaultRegion.uppercase().takeIf { it.matches(Regex("[A-Z]{2}")) } ?: "ZZ"
+        val parsed = phones.parse(value, region)
         if (phones.isPossibleNumber(parsed))
             phones.format(parsed, PhoneNumberUtil.PhoneNumberFormat.E164)
         else value
