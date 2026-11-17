@@ -16,6 +16,9 @@ import org.json.JSONObject
 
 data class SyncState(val phase: String = "offline", val lastSync: Long = 0, val error: String = "")
 
+/** Encryption was introduced in protocol v4 and remains mandatory in every later format. */
+internal fun syncFormatUsesEncryption(format: Int): Boolean = format >= 4
+
 /**
  * One event-driven worker uses the existing TDLib connection; Telegram owns transport and storage.
  */
@@ -569,7 +572,7 @@ class CloudSync(private val app: SpotygramApp) {
                 tr(R.string.sync_invalid_data)
             }
             val compressed =
-                if (format == 4) {
+                if (syncFormatUsesEncryption(format)) {
                     val through = parts[5].toLong()
                     SyncCrypto.decrypt(bytes, requireSyncKey(), associatedData(parts[2], through))
                 } else bytes
