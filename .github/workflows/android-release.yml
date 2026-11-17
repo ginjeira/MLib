@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      MLIB_STATE: ${{ github.workspace }}/../../_temp/mlib-release-state
+      MLIB_STATE: ${{ runner.temp }}/mlib-release-state
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
       MLIB_JOBS: '2'
       TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mlib-android-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-          path: ${{ github.workspace }}/../../_temp/mlib-release-state/releases/${{ env.MLIB_VERSION }}/*
+          path: ${{ runner.temp }}/mlib-release-state/releases/${{ env.MLIB_VERSION }}/*
           if-no-files-found: error
           retention-days: 30
       - name: Publish GitHub release
