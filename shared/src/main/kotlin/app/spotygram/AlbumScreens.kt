@@ -35,6 +35,7 @@ fun AlbumsScreen(
     onDeduplicate: () -> Unit,
     onAutoDetect: () -> Unit,
     onDownload: (Album) -> Unit,
+    onDownloadToDevice: (List<String>) -> Unit,
     onRemoveTrack: (String, String) -> Unit,
     onReorder: (String, List<String>) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
@@ -76,7 +77,8 @@ fun AlbumsScreen(
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = { onDownload(current) }) { Text("Descarregar") }
+                TextButton(onClick = { onDownloadToDevice(tracks.map { it.id }) }, enabled = tracks.any { it.available && !it.local }) { Text("Transferir") }
+                TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
                 TextButton(onClick = {
                     editTitle = current.title; editArtist = current.artist; editYear = current.year
                     editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
