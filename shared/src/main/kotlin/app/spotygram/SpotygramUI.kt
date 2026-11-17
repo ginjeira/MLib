@@ -225,6 +225,17 @@ fun SpotygramUI(
         playlistTracks = ids
         sheet = "addPlaylist"
     }
+    fun downloadToDevice(ids: List<String>) {
+        app.action {
+            val downloadable = ids.distinct().filter { id ->
+                library.byId[id]?.let { it.available && !it.local } == true
+            }
+            if (downloadable.isNotEmpty()) {
+                app.library.enqueue(downloadable)
+                onDownload(downloadable)
+            }
+        }
+    }
     fun editPlaylist(id: Long? = null) {
         focus.clearFocus()
         addingTo = id
@@ -829,6 +840,7 @@ fun SpotygramUI(
                                                     onAutoDetect = { app.action { app.autoDetectAlbums() } },
                                                     onRemoveTrack = { id, track -> app.action { app.library.removeFromAlbum(id, listOf(track)) } },
                                                     onReorder = { id, order -> app.action { app.library.reorderAlbum(id, order) } },
+                                                    onDownloadToDevice = ::downloadToDevice,
                                                     onDownload = { album ->
                                                         app.action {
                                                             app.acquisition.search(
@@ -1129,6 +1141,13 @@ fun SpotygramUI(
                                                     tr(R.string.add_tracks),
                                                 ) {
                                                     editPlaylist(p.id)
+                                                }
+                                                ActionRow(
+                                                    Icons.Rounded.Download,
+                                                    "Transferir para o dispositivo",
+                                                ) {
+                                                    downloadToDevice(p.tracks)
+                                                    closeSheet()
                                                 }
                                                 ActionRow(
                                                     Icons.Rounded.SwapVert,
