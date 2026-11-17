@@ -1,14 +1,17 @@
 name: MLib Android release candidate
 
 'on':
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       release_tag:
         description: Existing MLib tag to build (must match build.gradle.kts version)
         required: true
         type: string
-      publish_draft:
-        description: Create a GitHub draft release after signing and verifying both APKs
+      publish_release:
+        description: Publish a public GitHub release after signing and verifying both APKs
         required: true
         default: false
         type: boolean
@@ -116,8 +119,8 @@ jobs:
           path: ${{ runner.temp }}/mlib-release-state/releases/${{ env.MLIB_VERSION }}/*
           if-no-files-found: error
           retention-days: 30
-      - name: Create GitHub draft release
-        if: ${{ github.event_name == 'push' || inputs.publish_draft }}
+      - name: Publish GitHub release
+        if: ${{ github.event_name == 'push' || inputs.publish_release }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -125,5 +128,5 @@ jobs:
             "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-arm64.apk" \
             "$MLIB_STATE/releases/$MLIB_VERSION/mlib-$MLIB_VERSION-x86_64.apk" \
             "$MLIB_STATE/releases/$MLIB_VERSION/SHA256SUMS.txt" \
-            --draft --title "MLib $MLIB_VERSION" \
+            --title "MLib $MLIB_VERSION" \
             --notes "MLib Android release candidate. Both APKs were checked for package identity, version, ABI, APK signature and SHA-256. Desktop release is not included."
