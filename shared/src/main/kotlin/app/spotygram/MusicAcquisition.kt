@@ -834,8 +834,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
         }
 
-        val tracks = importedTracks + reusedTracks
-            .distinctBy { it.id }
+        val tracks = (importedTracks + reusedTracks).distinctBy { it.id }
         if (tracks.isEmpty()) {
             error("O Telegram não confirmou a entrega de áudio novo ou reutilizável para esta opção.")
         }
