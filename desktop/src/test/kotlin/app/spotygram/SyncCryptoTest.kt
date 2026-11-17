@@ -11,6 +11,15 @@ class SyncCryptoTest {
     private val aad = "mlib-sync/4|123456|snapshot|42".toByteArray()
 
     @Test
+    fun encryptionRemainsRequiredForAllProtocolVersionsAfterV4() {
+        assertTrue(!syncFormatUsesEncryption(1))
+        assertTrue(!syncFormatUsesEncryption(2))
+        assertTrue(!syncFormatUsesEncryption(3))
+        assertTrue(syncFormatUsesEncryption(4))
+        assertTrue(syncFormatUsesEncryption(5))
+    }
+
+    @Test
     fun encryptsAndDecryptsWithAuthenticatedMetadata() {
         val encrypted = SyncCrypto.encrypt(plain, key, aad)
         assertNotEquals(String(plain), String(encrypted))
