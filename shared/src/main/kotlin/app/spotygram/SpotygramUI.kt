@@ -230,10 +230,7 @@ fun SpotygramUI(
             val downloadable = ids.distinct().filter { id ->
                 library.byId[id]?.let { it.available && !it.local } == true
             }
-            if (downloadable.isNotEmpty()) {
-                app.library.enqueue(downloadable)
-                onDownload(downloadable)
-            }
+            if (downloadable.isNotEmpty()) onDownload(downloadable)
         }
     }
     fun editPlaylist(id: Long? = null) {
