@@ -1,6 +1,7 @@
 package app.spotygram
 
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -142,6 +143,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private val resumeLane = Mutex()
     private val searches = linkedMapOf<String, SearchSession>()
     private var activeSearchId: String? = null
+    private val searchCancellationRequested = AtomicBoolean(false)
     private val pendingJobKey = "mlib_pending_music_acquisition"
 
     init {
@@ -165,10 +167,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val query = sanitizeSearchQuery(rawQuery)
         require(query.length >= 2) { "Introduz pelo menos dois caracteres para pesquisar." }
 
+        searchCancellationRequested.set(false)
         state.value = state.value.copy(searching = true, acquiring = false, progress = "", error = "", search = null, outcome = null)
         try {
+            checkSearchNotCancelled()
             val bot = resolveBot()
+            checkSearchNotCancelled()
             val sent = sendText(bot.getLong("id"), query)
+            checkSearchNotCancelled()
             state.value = state.value.copy(progress = "A aguardar resposta do bot…")
 
             val botChatId = bot.getLong("id")
@@ -181,6 +187,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             } ?: error("O bot do Telegram não respondeu a tempo à pesquisa.")
 
             val typeMarker = "in '${contentType.wireValue}'"
+            checkSearchNotCancelled()
             if (!messageText(resultMessage).contains(typeMarker)) {
                 state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
                 if (clickButton(resultMessage, contentType.wireValue)) {
@@ -191,6 +198,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
 
             val providerMarker = "from '${provider.wireValue}'"
+            checkSearchNotCancelled()
             if (!messageText(resultMessage).contains(providerMarker)) {
                 state.value = state.value.copy(progress = "A seleccionar o fornecedor…")
                 if (clickButton(resultMessage, provider.wireValue)) {
@@ -200,6 +208,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
             }
 
+            checkSearchNotCancelled()
             var effectiveProvider = provider
             var options = parseResults(messageText(resultMessage))
             // The dedicated MCat album-download flow falls back to SoundCloud;
@@ -219,6 +228,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     }
                 }
             }
+            checkSearchNotCancelled()
             val search = AcquisitionSearch(
                 id = UUID.randomUUID().toString(),
                 query = query,
@@ -245,9 +255,32 @@ class MusicAcquisition(private val app: SpotygramApp) {
             search
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
-            state.value = state.value.copy(searching = false, progress = "", error = friendly(error))
+            state.value = state.value.copy(
+                searching = false,
+                progress = "",
+                error = if (error is SearchCancelledException) "" else friendly(error),
+                search = if (error is SearchCancelledException) null else state.value.search,
+            )
             throw error
+        } finally {
+            searchCancellationRequested.set(false)
         }
+    }
+
+    fun cancelSearch() {
+        if (state.value.searching) searchCancellationRequested.set(true)
+    }
+
+    fun clearSearchResults() {
+        if (state.value.searching || state.value.acquiring || state.value.pendingJob != null) return
+        activeSearchId = null
+        state.value = state.value.copy(search = null, progress = "", error = "", outcome = null)
+    }
+
+    private class SearchCancelledException : RuntimeException("Pesquisa cancelada.")
+
+    private fun checkSearchNotCancelled() {
+        if (searchCancellationRequested.get()) throw SearchCancelledException()
     }
 
     suspend fun acquire(
@@ -325,6 +358,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val destinationChoice = app.telegram.rememberChat(destination)
 
             val completed = mutableListOf<AcquiredItem>()
+            val batchTracks = mutableListOf<Track>()
             val retryTitles = mutableListOf<String>()
             var botTurnFinished = true
             var resumeBotChatId = 0L
@@ -335,7 +369,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 )
                 updateJobItem(jobId, index) { it.copy(status = AcquisitionJobStatus.FORWARDING) }
                 val item = try {
-                    acquireOption(session, option, destinationChatId, destinationTitle)
+                    acquireOption(session, option, destinationChatId, destinationTitle, batchTracks)
                 } catch (error: Throwable) {
                     if (error is CancellationException) throw error
                     val cursor = state.value.pendingJob?.botMessageCursor
@@ -347,6 +381,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     )
                 }
                 completed += item
+                batchTracks += item.tracks
                 updateJobItem(jobId, index) {
                     it.copy(
                         status = when {
@@ -368,8 +403,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     retryTitles += selected.drop(index).map { it.title }
                     break
                 }
-                delay(1_000)
             }
+
+            // Persist every newly received track in one transaction. Enabling the
+            // destination source performs the single library reload.
+            val newlyImportedTracks = completed.flatMap { item ->
+                item.tracks.filter { it.id in item.importedIds }
+            }.distinctBy { it.id }
+            if (newlyImportedTracks.isNotEmpty()) app.library.upsert(newlyImportedTracks)
 
             // MCat adds the destination to the active sources and refreshes
             // its messages after processing the job, not before selecting bot results.
@@ -676,6 +717,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         option: AcquisitionOption,
         destinationChatId: Long,
         destinationTitle: String,
+        batchTracks: List<Track>,
     ): AcquiredItem {
         val botChatId = session.botChatId
         // Do not skip an entire collection because its first track already exists.
@@ -754,7 +796,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                             candidate.title, candidate.artist, track.title, track.artist,
                         )
                 }
-                val batchDuplicate = (importedTracks + reusedTracks).firstOrNull { track ->
+                val batchDuplicate = (batchTracks + importedTracks + reusedTracks).firstOrNull { track ->
                     MusicAcquisitionRules.areTracksDuplicate(
                         candidate.title, candidate.artist, track.title, track.artist,
                     )
@@ -792,12 +834,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
         }
 
-        if (importedTracks.isNotEmpty()) {
-            app.library.upsert(importedTracks)
-            app.library.reload()
-        }
-        val byId = app.library.state.value.byId
-        val tracks = (importedTracks.mapNotNull { byId[it.id] } + reusedTracks)
+        val tracks = importedTracks + reusedTracks
             .distinctBy { it.id }
         if (tracks.isEmpty()) {
             error("O Telegram não confirmou a entrega de áudio novo ou reutilizável para esta opção.")
@@ -1000,12 +1037,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
         predicate: (JSONObject) -> Boolean,
     ): JSONObject? {
         repeat((timeoutMs / 1_000L).toInt().coerceAtLeast(1)) {
+            checkSearchNotCancelled()
             val match = history(chatId, 5)
                 .firstOrNull {
                     AcquisitionCompletionRules.isAfterMessageCursor(it.optLong("id"), afterMessageId) &&
                         predicate(it)
                 }
             if (match != null) return match
+            checkSearchNotCancelled()
             delay(1_000)
         }
         return null
@@ -1040,6 +1079,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         predicate: (JSONObject) -> Boolean,
     ): JSONObject? {
         repeat((timeoutMs / 600L).toInt().coerceAtLeast(1)) {
+            checkSearchNotCancelled()
             val edited = runCatching {
                 request(json("getMessage", "chat_id" to chatId, "message_id" to previousMessageId))
             }.getOrNull()
@@ -1049,6 +1089,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 predicate(message)
             }
             if (replacement != null) return replacement
+            checkSearchNotCancelled()
             delay(600)
         }
         return null

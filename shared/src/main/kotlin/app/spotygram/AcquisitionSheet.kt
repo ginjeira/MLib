@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -116,6 +117,16 @@ internal fun AcquisitionSheet(
             modifier = Modifier.fillMaxWidth(),
             label = { Text(tr(R.string.acquisition_query)) },
             singleLine = true,
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = { query = "" },
+                        enabled = !state.searching && !state.acquiring && !hasPendingJob,
+                    ) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Limpar pesquisa")
+                    }
+                }
+            },
             enabled = !state.searching && !state.acquiring && !hasPendingJob,
         )
 
@@ -189,6 +200,10 @@ internal fun AcquisitionSheet(
             }
         }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
         Button(
             onClick = {
                 selected.clear()
@@ -198,9 +213,18 @@ internal fun AcquisitionSheet(
             },
             enabled = auth.type == "authorizationStateReady" &&
                 query.trim().length >= 2 && !state.searching && !state.acquiring && !hasPendingJob,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
         ) {
             Text(tr(if (state.searching) R.string.acquisition_searching else R.string.acquisition_search))
+        }
+        if (state.searching) {
+            OutlinedButton(
+                onClick = { acquisition.cancelSearch() },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Cancelar")
+            }
+        }
         }
 
         if (state.searching || state.acquiring) {
@@ -212,11 +236,24 @@ internal fun AcquisitionSheet(
 
         state.search?.let { search ->
             HorizontalDivider()
-            Text(
-                "${search.provider.wireValue.uppercase()} · ${search.contentType.wireValue.uppercase()}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${search.provider.wireValue.uppercase()} · ${search.contentType.wireValue.uppercase()}",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                TextButton(
+                    onClick = {
+                        selected.clear()
+                        query = ""
+                        acquisition.clearSearchResults()
+                    },
+                    enabled = !state.acquiring && !hasPendingJob,
+                ) {
+                    Text("Limpar")
+                }
+            }
             Text(search.query, style = MaterialTheme.typography.titleMedium)
             if (search.results.isEmpty()) {
                 Text(tr(R.string.acquisition_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
