@@ -78,7 +78,7 @@ fun AlbumsScreen(
                     Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 val pendingDownloads = tracks.count { it.available && !it.local }
-                val fullyOffline = tracks.isNotEmpty() && pendingDownloads == 0
+                val fullyOffline = tracks.isNotEmpty() && tracks.all { it.local }
                 TextButton(
                     onClick = { onDownloadToDevice(tracks.map { it.id }) },
                     enabled = pendingDownloads > 0,
