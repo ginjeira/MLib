@@ -1,0 +1,115 @@
+name: MLib automatic version and release tag
+
+on:
+  workflow_run:
+    workflows:
+      - MLib baseline validation
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlib-auto-version-main
+  cancel-in-progress: false
+
+jobs:
+  bump-version-and-tag:
+    name: Bump patch version and create release tag
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          !startsWith(github.event.workflow_run.head_commit.message, 'chore(release): bump version to ') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout validated main commit
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Calculate next patch version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT_VERSION=$(sed -nE 's/^version = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' build.gradle.kts)
+          test -n "$CURRENT_VERSION"
+
+          git fetch --force --tags origin
+          LATEST_TAG=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n 1)
+          if [[ -z "$LATEST_TAG" ]]; then
+            echo "::error::No existing vX.Y.Z release tag found; refusing to guess the starting version."
+            exit 1
+          fi
+          TAG_VERSION="${LATEST_TAG#v}"
+          if [[ "$CURRENT_VERSION" != "$TAG_VERSION" ]]; then
+            echo "::error::build.gradle.kts version ($CURRENT_VERSION) does not match latest release tag ($LATEST_TAG)."
+            exit 1
+          fi
+
+          IFS=. read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          NEXT_TAG="v$NEXT_VERSION"
+          if git rev-parse -q --verify "refs/tags/$NEXT_TAG" >/dev/null; then
+            echo "::error::Tag $NEXT_TAG already exists; refusing to overwrite it."
+            exit 1
+          fi
+
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Update project version, commit and tag
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.next }}
+          NEXT_TAG: ${{ steps.version.outputs.tag }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Do not release a newer main commit that was not the one validated.
+          git pull --ff-only origin main
+          CURRENT_SHA=$(git rev-parse HEAD)
+          if [[ "$CURRENT_SHA" != "$VALIDATED_SHA" ]]; then
+            echo "::error::main advanced after validation (validated $VALIDATED_SHA, current $CURRENT_SHA). A fresh validation is required."
+            exit 1
+          fi
+
+          python3 - "$NEXT_VERSION" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          version = sys.argv[1]
+          path = Path("build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r'(?m)^version = "[0-9]+\.[0-9]+\.[0-9]+"$',
+              f'version = "{version}"',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Expected exactly one root version declaration")
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build.gradle.kts
+          git commit -m "chore(release): bump version to $NEXT_VERSION"
+          git tag -a "$NEXT_TAG" -m "MLib $NEXT_VERSION"
+          git push origin HEAD:main
+          git push origin "$NEXT_TAG"
+
+      - name: Report release trigger
+        run: |
+          echo "Version incremented to ${{ steps.version.outputs.next }}."
+          echo "Tag ${{ steps.version.outputs.tag }} pushed. The Android release workflow will now build and publish the APKs."
