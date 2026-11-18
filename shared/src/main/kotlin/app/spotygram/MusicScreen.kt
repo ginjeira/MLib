@@ -891,10 +891,17 @@ fun TrackRow(
                 if (track.local)
                     Icon(
                         if (track.temporary) Icons.Rounded.Schedule
-                        else Icons.Rounded.DownloadForOffline,
+                        else Icons.Rounded.OfflinePin,
                         tr(if (track.temporary) R.string.temporary_audio else R.string.on_device),
-                        Modifier.padding(end = 3.dp).size(13.dp),
-                        tint = MaterialTheme.colorScheme.secondary,
+                        Modifier.padding(end = 3.dp).size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                if (track.local && !track.temporary)
+                    Text(
+                        tr(R.string.offline_short),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 5.dp),
                     )
                 Text(
                     if (!track.available && !track.local)
