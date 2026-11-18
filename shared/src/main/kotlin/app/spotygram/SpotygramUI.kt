@@ -823,6 +823,8 @@ fun SpotygramUI(
                                                         managedPlaylist = it
                                                         sheet = "playlist"
                                                     },
+                                                    onDownloadToDevice = ::downloadToDevice,
+                                                    download = download,
                                                 )
                                             tab == 3 ->
                                                 AlbumsScreen(
@@ -838,6 +840,7 @@ fun SpotygramUI(
                                                     onRemoveTrack = { id, track -> app.action { app.library.removeFromAlbum(id, listOf(track)) } },
                                                     onReorder = { id, order -> app.action { app.library.reorderAlbum(id, order) } },
                                                     onDownloadToDevice = ::downloadToDevice,
+                                                    download = download,
                                                     onDownload = { album ->
                                                         app.action {
                                                             app.acquisition.search(

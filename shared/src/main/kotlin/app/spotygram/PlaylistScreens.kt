@@ -75,6 +75,8 @@ fun PlaylistsScreen(
     onCreate: () -> Unit,
     onOpen: (Long) -> Unit,
     onMore: (Playlist) -> Unit,
+    onDownloadToDevice: (List<String>) -> Unit,
+    download: DownloadState,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val playlists =
@@ -161,6 +163,14 @@ fun PlaylistsScreen(
                             )
                         }
                     }
+                    val playlistTracks = playlist.tracks.mapNotNull { library.byId[it] }
+                    OfflineDownloadButton(
+                        downloaded = playlistTracks.isNotEmpty() && playlistTracks.all { it.local && !it.temporary },
+                        downloading = download.trackId in playlist.tracks,
+                        enabled = playlistTracks.any { it.available && !it.local },
+                        contentDescription = "Transferir playlist para offline",
+                        onClick = { onDownloadToDevice(playlist.tracks) },
+                    )
                     IconButton(onClick = { onMore(playlist) }) {
                         Icon(
                             Icons.Rounded.MoreVert,
