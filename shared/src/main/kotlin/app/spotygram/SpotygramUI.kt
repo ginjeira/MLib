@@ -1139,12 +1139,34 @@ fun SpotygramUI(
                                                 ) {
                                                     editPlaylist(p.id)
                                                 }
-                                                ActionRow(
-                                                    Icons.Rounded.Download,
-                                                    "Transferir para o dispositivo",
-                                                ) {
-                                                    downloadToDevice(p.tracks)
-                                                    closeSheet()
+                                                val playlistTracks = p.tracks.mapNotNull { library.byId[it] }
+                                                val pendingDownloads = playlistTracks.count { it.available && !it.local }
+                                                val fullyOffline = playlistTracks.isNotEmpty() && pendingDownloads == 0
+                                                if (fullyOffline) {
+                                                    Row(
+                                                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Rounded.OfflinePin,
+                                                            contentDescription = tr(R.string.available_offline),
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                        )
+                                                        Text(
+                                                            tr(R.string.available_offline),
+                                                            modifier = Modifier.padding(start = 16.dp),
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            style = MaterialTheme.typography.bodyLarge,
+                                                        )
+                                                    }
+                                                } else {
+                                                    ActionRow(
+                                                        Icons.Rounded.Download,
+                                                        tr(R.string.download_remaining),
+                                                    ) {
+                                                        downloadToDevice(p.tracks)
+                                                        closeSheet()
+                                                    }
                                                 }
                                                 ActionRow(
                                                     Icons.Rounded.SwapVert,
