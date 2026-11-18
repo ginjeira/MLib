@@ -105,6 +105,24 @@ fun TrackActions(
                 onClose()
             }
         if (track.local)
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Rounded.OfflinePin,
+                    contentDescription = tr(R.string.available_offline),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text(
+                    tr(R.string.available_offline),
+                    modifier = Modifier.padding(start = 16.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        if (track.local)
             ActionRow(
                 Icons.Rounded.DeleteOutline,
                 tr(
