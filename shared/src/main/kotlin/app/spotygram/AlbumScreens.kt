@@ -77,7 +77,20 @@ fun AlbumsScreen(
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = { onDownloadToDevice(tracks.map { it.id }) }, enabled = tracks.any { it.available && !it.local }) { Text("Transferir") }
+                val pendingDownloads = tracks.count { it.available && !it.local }
+                val fullyOffline = tracks.isNotEmpty() && pendingDownloads == 0
+                TextButton(
+                    onClick = { onDownloadToDevice(tracks.map { it.id }) },
+                    enabled = pendingDownloads > 0,
+                ) {
+                    Icon(
+                        if (fullyOffline) Icons.Rounded.OfflinePin else Icons.Rounded.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (fullyOffline) tr(R.string.available_offline) else tr(R.string.download_remaining))
+                }
                 TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
                 TextButton(onClick = {
                     editTitle = current.title; editArtist = current.artist; editYear = current.year
