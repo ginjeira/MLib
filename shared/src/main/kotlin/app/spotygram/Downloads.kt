@@ -45,7 +45,18 @@ class Downloads(
                     }
                     if (app.prefs.getBoolean("wifi_only", false) && !app.platform.wifi)
                         error(tr(R.string.wifi_downloads_paused))
-                    val fid = app.resolve(track)
+                    val fid = try {
+                        app.resolve(track)
+                    } catch (e: TelegramException) {
+                        if (e.code != 404) throw e
+                        // A playlist may still reference a track whose Telegram message was
+                        // deleted. Mark it unavailable and continue with the remaining tracks.
+                        app.library.upsert(listOf(track.copy(available = false)))
+                        app.library.reload()
+                        app.library.dequeue(id)
+                        app.notices.emit("A faixa ${track.title} foi ignorada: a mensagem de origem já não existe no Telegram.")
+                        continue
+                    }
                     activeFile = fid
                     if (app.telegram.files[fid]?.active != true)
                         app.telegram.download(fid, priority = 4)
