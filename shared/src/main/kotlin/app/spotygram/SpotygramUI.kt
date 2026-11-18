@@ -1141,7 +1141,7 @@ fun SpotygramUI(
                                                 }
                                                 val playlistTracks = p.tracks.mapNotNull { library.byId[it] }
                                                 val pendingDownloads = playlistTracks.count { it.available && !it.local }
-                                                val fullyOffline = playlistTracks.isNotEmpty() && pendingDownloads == 0
+                                                val fullyOffline = playlistTracks.isNotEmpty() && playlistTracks.all { it.local }
                                                 if (fullyOffline) {
                                                     Row(
                                                         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
