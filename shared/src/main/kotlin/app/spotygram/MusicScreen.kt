@@ -838,6 +838,7 @@ fun TrackRow(
     onLongClick: (() -> Unit)? = null,
     onLike: (() -> Unit)? = null,
     onMore: ((IntRect) -> Unit)? = null,
+    onDownloadOffline: (() -> Unit)? = null,
 ) {
     val narrow = LocalConfiguration.current.screenWidthDp < 360
     var menuCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -888,14 +889,6 @@ fun TrackRow(
                     else MaterialTheme.colorScheme.onSurface,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (track.local)
-                    Icon(
-                        if (track.temporary) Icons.Rounded.Schedule
-                        else Icons.Rounded.DownloadForOffline,
-                        tr(if (track.temporary) R.string.temporary_audio else R.string.on_device),
-                        Modifier.padding(end = 3.dp).size(13.dp),
-                        tint = MaterialTheme.colorScheme.secondary,
-                    )
                 Text(
                     if (!track.available && !track.local)
                         tr(
@@ -919,13 +912,15 @@ fun TrackRow(
                     )
             }
         }
-        if (download != null)
-            CircularProgressIndicator(
-                progress = { download.progress },
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
+        if (selected == null && onDownloadOffline != null && (track.available || track.local))
+            OfflineDownloadButton(
+                downloaded = track.local && !track.temporary,
+                downloading = download?.trackId == track.id,
+                enabled = track.available || track.temporary,
+                contentDescription = if (track.local && !track.temporary) "Disponível offline" else "Transferir para offline",
+                onClick = onDownloadOffline,
             )
-        else if (!narrow)
+        if (!narrow)
             Text(
                 if (track.duration > 0) seconds(track.duration.toLong()) else "—",
                 style = MaterialTheme.typography.bodySmall,
