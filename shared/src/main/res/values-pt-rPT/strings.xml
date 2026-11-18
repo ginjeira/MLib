@@ -78,7 +78,7 @@
     <string name="on_device">No dispositivo</string>
     <string name="available_offline">Disponível offline</string>
     <string name="offline_short">Offline</string>
-    <string name="download_remaining">Transferir restantes</string>
+    <string name="download_remaining">Transferir o que falta</string>
     <string name="open_in_telegram">Abrir no Telegram</string>
     <string name="pause">Pausa</string>
     <string name="play">Reproduzir</string>
