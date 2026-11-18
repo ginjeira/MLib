@@ -552,6 +552,7 @@ fun MusicScreen(
                         },
                         onLike = { onLike(track) },
                         onMore = { anchor -> onMore(track, anchor) },
+                        onDownloadOffline = { onDownload(listOf(track.id)) },
                     )
                 }
                 if (library.sources.any { !it.fullyIndexed } && !favorites && playlist == null)
