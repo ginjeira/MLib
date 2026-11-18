@@ -36,6 +36,7 @@ fun AlbumsScreen(
     onAutoDetect: () -> Unit,
     onDownload: (Album) -> Unit,
     onDownloadToDevice: (List<String>) -> Unit,
+    download: DownloadState,
     onRemoveTrack: (String, String) -> Unit,
     onReorder: (String, List<String>) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
@@ -77,7 +78,13 @@ fun AlbumsScreen(
                     Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = { onDownloadToDevice(tracks.map { it.id }) }, enabled = tracks.any { it.available && !it.local }) { Text("Transferir") }
+                OfflineDownloadButton(
+                    downloaded = tracks.isNotEmpty() && tracks.all { it.local && !it.temporary },
+                    downloading = download.trackId in tracks.map { it.id },
+                    enabled = tracks.any { it.available && !it.local },
+                    contentDescription = "Transferir álbum para offline",
+                    onClick = { onDownloadToDevice(tracks.map { it.id }) },
+                )
                 TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
                 TextButton(onClick = {
                     editTitle = current.title; editArtist = current.artist; editYear = current.year
@@ -248,11 +255,19 @@ fun AlbumsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             AlbumArtwork(album, library.byId[album.tracks.firstOrNull()], 52.dp)
+                            val albumTracks = album.tracks.mapNotNull { library.byId[it] }
                             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                                 Text(album.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                                 Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(tr(R.string.album_tracks, library.albumCounts[album.id] ?: album.tracks.size), style = MaterialTheme.typography.labelSmall)
                             }
+                            OfflineDownloadButton(
+                                downloaded = albumTracks.isNotEmpty() && albumTracks.all { it.local && !it.temporary },
+                                downloading = download.trackId in album.tracks,
+                                enabled = albumTracks.any { it.available && !it.local },
+                                contentDescription = "Transferir álbum para offline",
+                                onClick = { onDownloadToDevice(album.tracks) },
+                            )
                         }
                     }
                 }
