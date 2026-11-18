@@ -226,6 +226,8 @@
     <string name="no_results">"No results"</string>
     <string name="not_selected">"Not selected"</string>
     <string name="on_device">"On device"</string>
+    <string name="available_offline">Available offline</string>
+    <string name="download_remaining">Download remaining</string>
     <string name="open_in_telegram">"Open in Telegram"</string>
     <string name="open_local_music">"Open local music"</string>
     <string name="password">"Password"</string>
