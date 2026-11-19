@@ -29,6 +29,9 @@ data class Track(
     val local
         get() = path.isNotEmpty()
 
+    val offlineCopyValid
+        get() = !temporary && validAudioCopy(path, size)
+
     val subtitle
         get() = artist.ifBlank {
             if (imported) tr(R.string.from_device) else sourceTitle
