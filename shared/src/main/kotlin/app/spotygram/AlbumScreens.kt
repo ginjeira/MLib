@@ -79,9 +79,9 @@ fun AlbumsScreen(
                     Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 OfflineDownloadButton(
-                    downloaded = tracks.isNotEmpty() && tracks.all { it.local && !it.temporary },
+                    downloaded = tracks.isNotEmpty() && tracks.size == current.tracks.size && tracks.all { it.offlineCopyValid },
                     downloading = download.trackId in tracks.map { it.id },
-                    enabled = tracks.any { it.available && !it.local },
+                    enabled = tracks.any { it.available && !it.offlineCopyValid },
                     contentDescription = "Transferir álbum para offline",
                     onClick = { onDownloadToDevice(tracks.map { it.id }) },
                 )
@@ -188,15 +188,32 @@ fun AlbumsScreen(
             }
         }
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onAutoDetect) { Text("Detectar álbuns") }
-                TextButton(onClick = onDeduplicate) { Text("Unificar duplicados") }
-                TextButton(onClick = { creating = true }) { Text("Novo álbum") }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                    Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onAutoDetect, modifier = Modifier.weight(1f)) {
+                        Text("Detectar álbuns", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    TextButton(onClick = onDeduplicate, modifier = Modifier.weight(1f)) {
+                        Text("Unificar duplicados", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    TextButton(onClick = { creating = true }, modifier = Modifier.weight(1f)) {
+                        Text("Novo álbum", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
             if (library.albums.isNotEmpty()) {
                 OutlinedTextField(
@@ -262,9 +279,9 @@ fun AlbumsScreen(
                                 Text(tr(R.string.album_tracks, library.albumCounts[album.id] ?: album.tracks.size), style = MaterialTheme.typography.labelSmall)
                             }
                             OfflineDownloadButton(
-                                downloaded = albumTracks.isNotEmpty() && albumTracks.all { it.local && !it.temporary },
+                                downloaded = albumTracks.isNotEmpty() && albumTracks.size == album.tracks.size && albumTracks.all { it.offlineCopyValid },
                                 downloading = download.trackId in album.tracks,
-                                enabled = albumTracks.any { it.available && !it.local },
+                                enabled = albumTracks.any { it.available && !it.offlineCopyValid },
                                 contentDescription = "Transferir álbum para offline",
                                 onClick = { onDownloadToDevice(album.tracks) },
                             )
