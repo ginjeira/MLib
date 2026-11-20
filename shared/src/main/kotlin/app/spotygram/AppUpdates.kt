@@ -83,7 +83,7 @@ class AppUpdates(private val app: SpotygramApp) {
                     is UpdateCheckException -> e.messageId
                     else -> R.string.update_invalid_response
                 }
-                state.value = state.value.copy(result = if (manual) message else 0)
+                state.value = state.value.copy(result = message)
             } finally {
                 state.value = state.value.copy(checking = false)
             }
