@@ -1,4 +1,6 @@
-# MLib — implementation roadmap
+# MLib — implementation roadmap (histórico)
+
+> **Plano de execução corrente:** [`roadmap.md`](../../roadmap.md), dividido em waves. Este documento mantém o histórico detalhado e a rastreabilidade das fases anteriores.
 
 **Status:** planned sequence. A phase is complete only when its acceptance criteria have evidence.
 

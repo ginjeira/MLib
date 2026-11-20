@@ -1,6 +1,6 @@
 # Wave 1 — protocolo de pesquisa e recepção
 
-**Estado:** implementação submetida a CI; não declarar concluída até os testes e a validação aplicável passarem.
+**Estado (20-11-2026):** golden/unit tests de conclusão e cardinalidade passam no HEAD actual; validação Telegram/dispositivo continua pendente. Ver [MCAT-PLAYER-PORT-STATUS.md](MCAT-PLAYER-PORT-STATUS.md).
 **Base:** contrato funcional v1.0 e MCat Player `server.ts` no commit `a41cf5ceeea023d7b86484cf5c7bf5a7ae7b2132`.
 
 ## ACQ-01 — conclusão da recepção

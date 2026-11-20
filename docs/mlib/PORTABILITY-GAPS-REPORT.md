@@ -9,6 +9,8 @@
 **Schema SQLite no HEAD de baseline:** 11  
 **Estado:** portabilidade parcial; não aprovada como concluída.
 
+> **Actualização de 20-11-2026:** o estado corrente, incluindo o fecho de ACQ-01/ACQ-02 e o trabalho que resta, está em [MCAT-PLAYER-PORT-STATUS.md](MCAT-PLAYER-PORT-STATUS.md). Este relatório mantém-se como registo histórico e matriz de aceitação T01–T20.
+
 Este documento é a versão Markdown de referência do relatório de auditoria disponibilizado no Project MLib. A auditoria e o plano abaixo preservam o seu âmbito, decisões, prioridades e critérios. O relatório DOCX original permanece como artefacto de origem do Project; este ficheiro torna o conteúdo de orientação pesquisável e versionável no repositório.
 
 ## 1. Conclusão executiva

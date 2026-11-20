@@ -13,6 +13,9 @@ This directory contains the product specification, architecture, source-project 
 | [Implementation audit](IMPLEMENTATION-AUDIT.md) | Current source state, identity changes and validation evidence |
 | [Independent identity](INDEPENDENT-IDENTITY.md) | Separate installation, storage, signing and release identity |
 | [Persistence and sync](PERSISTENCE-AND-SYNC.md) | Local schema, CloudSync protocol and recovery-key model |
+| [MCat Player port status](MCAT-PLAYER-PORT-STATUS.md) | Current parity matrix, remaining port work and release impact |
+| [Product and UX proposal](PRODUCT-UX-PROPOSAL.md) | What to keep/change/reject, new features and Spotify-inspired UI direction |
+| [Execution roadmap by waves](../../roadmap.md) | Ordered implementation plan for Android |
 | [Independent audit remediation](INDEPENDENT-AUDIT-REMEDIATION.md) | Audit findings, source fixes and remaining validation |
 | [Telegram and MCat onboarding](TELEGRAM-ONBOARDING.md) | Proposed guided setup reusing the local TDLib session |
 

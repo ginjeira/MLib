@@ -165,4 +165,4 @@ A auditoria detalhada e o contrato funcional versionado estão em `PORTABILITY-G
 - SQLite schema: **11**, confirmado directamente em `Library.kt`; qualquer referência anterior a schema 8 está obsoleta.
 - Código presente, paridade de fonte e teste live aprovado são estados distintos.
 
-Diferenças P0 ACQ-01/ACQ-02 continuam abertas e pertencem à Wave 1. Em particular, o worker MLib só reconhece actualmente a mensagem exacta `Finished.`, enquanto o MCat usa contagem, múltiplos sinais textuais, primeira faixa em pedido simples e silêncio de 9 segundos em colecções. O MLib também classifica `artist` sempre como multi, ao contrário da regra MCat dependente da cardinalidade esperada. Não corrigir estas diferenças dentro da Wave 0.
+**Actualização de 20-11-2026:** ACQ-01/ACQ-02 estão fechados ao nível de código e testes no HEAD actual. O worker usa contagem esperada, sinais textuais, primeira faixa em pedido simples, silêncio de 9 segundos e deadlines de 45/240 segundos; `artist` só é multi quando a contagem esperada é superior a um. Falta validação live. Ver [MCAT-PLAYER-PORT-STATUS.md](MCAT-PLAYER-PORT-STATUS.md).

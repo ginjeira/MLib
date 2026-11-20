@@ -100,3 +100,5 @@ Estados usados daqui em diante:
 - **Teste live aprovado** — prova real com Telegram/dispositivo; CI/build não substitui este teste.
 
 Wave 0 produz fixtures e golden tests. ACQ-01 e ACQ-02 permanecem diferenças P0 e passam para Wave 1; SRC-01/DED-02 para Wave 2; ALB-01/02/03 para Wave 4; PL-03 para Wave 3/5; COV-01 para Wave 5. Não declarar a portabilidade concluída.
+
+> **Actualização de 20-11-2026:** ACQ-01/ACQ-02 estão implementados e cobertos por golden/unit tests no HEAD actual; falta validação live. O estado corrente e o restante backlog estão em [MCAT-PLAYER-PORT-STATUS.md](MCAT-PLAYER-PORT-STATUS.md).
