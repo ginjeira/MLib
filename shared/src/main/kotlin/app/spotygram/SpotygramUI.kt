@@ -227,6 +227,14 @@ fun SpotygramUI(
     }
     fun downloadToDevice(ids: List<String>) {
         app.action {
+            // Tracks marked unavailable after a Telegram delete update may be stale.
+            // Re-fetch their message before deciding whether they can be downloaded.
+            ids.distinct().forEach { id ->
+                library.byId[id]?.takeIf { !it.available }?.let { track ->
+                    runCatching { app.resolve(track) }
+                }
+            }
+            app.library.reload()
             val downloadable = ids.distinct().filter { id ->
                 library.byId[id]?.let { it.available && !it.offlineCopyValid } == true
             }
