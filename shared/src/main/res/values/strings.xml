@@ -331,7 +331,7 @@
     </plurals>
     <string name="updates">Updates</string>
     <string name="update_automatic">Check automatically</string>
-    <string name="update_automatic_help">At most once a day when you open the app. No background checks or automatic downloads.</string>
+    <string name="update_automatic_help">Once per day after a successful check when the app opens. Failed checks retry after 10 minutes. No background checks or automatic downloads.</string>
     <string name="update_check">Check for updates</string>
     <string name="update_checking">Checking…</string>
     <string name="update_current">You have the latest version.</string>
