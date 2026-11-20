@@ -579,4 +579,5 @@
     <string name="album_search_covers">Search covers</string>
     <string name="sync_key_unavailable">The MLib sync key is unavailable. Use Repair sync storage to reset this device\'s sync key.</string>
     <string name="sync_payload_too_large">The library is too large for one sync snapshot. The operation was stopped; reduce the library or wait for a chunked-snapshot protocol update.</string>
+    <string name="playlist_repaired">Replaced %1$d unavailable track(s) with an existing copy.</string>
 </resources>

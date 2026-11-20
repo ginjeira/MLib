@@ -1004,6 +1004,66 @@ class Library(private val platform: Platform) : AutoCloseable {
             reload()
         }
 
+    /**
+     * Re-point unavailable playlist entries to an existing, playable copy of the same
+     * recording. Used after revalidating deleted messages: if Telegram really removed a
+     * message but the library still has the recording elsewhere, the playlist keeps working
+     * instead of showing "message deleted".
+     */
+    suspend fun repairPlaylistTracks(playlistId: Long): Int = withContext(Dispatchers.IO) {
+        var repaired = 0
+        writableDatabase.transaction {
+            val uid = sync.playlistId(this, playlistId)
+            val members =
+                rawQuery(
+                    "SELECT track FROM playlist_tracks WHERE playlist=? ORDER BY position",
+                    arrayOf(playlistId.toString()),
+                ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+            val present = members.toMutableSet()
+            val replacements = mutableListOf<Pair<String, String>>()
+            for (id in members) {
+                val track = state.value.byId[id] ?: continue
+                if (track.available || track.local) continue
+                val alias =
+                    state.value.duplicates.aliases(id).firstOrNull { candidate ->
+                        candidate.id != id && (candidate.available || candidate.local)
+                    } ?: continue
+                if (alias.id in present) {
+                    delete(
+                        "playlist_tracks",
+                        "playlist=? AND track=?",
+                        arrayOf(playlistId.toString(), id),
+                    )
+                } else {
+                    execSQL(
+                        "UPDATE playlist_tracks SET track=? WHERE playlist=? AND track=?",
+                        arrayOf<Any>(alias.id, playlistId, id),
+                    )
+                    present.add(alias.id)
+                }
+                present.remove(id)
+                replacements += id to alias.id
+                repaired++
+            }
+            if (repaired > 0) {
+                val ids =
+                    rawQuery(
+                        "SELECT track FROM playlist_tracks WHERE playlist=? ORDER BY position",
+                        arrayOf(playlistId.toString()),
+                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                val values = linkedMapOf<String, Any?>("playlist/$uid/order" to JSONArray(ids))
+                for ((old, new) in replacements) {
+                    values["playlist/$uid/member/$old"] = false
+                    values["playlist/$uid/member/$new"] = true
+                }
+                sync.references(this, replacements.map { it.second }, values)
+                sync.edit(this, values)
+            }
+        }
+        if (repaired > 0) reload()
+        repaired
+    }
+
     suspend fun removeFromPlaylist(playlist: Long, track: String) =
         removeFromPlaylist(playlist, listOf(track))
 

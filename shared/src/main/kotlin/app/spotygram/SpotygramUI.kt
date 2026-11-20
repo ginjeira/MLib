@@ -729,10 +729,27 @@ fun SpotygramUI(
                                                 tab == 2 && playlist != null ||
                                                 tab == 4 && (source != null || profileId != null) -> {
                                                 LaunchedEffect(playlist?.id, playlist?.tracks?.size) {
-                                                    playlist?.let { current ->
-                                                        app.revalidateUnavailable(
-                                                            current.tracks.mapNotNull { library.byId[it] }
-                                                        )
+                                                    val current = playlist ?: return@LaunchedEffect
+                                                    app.revalidateUnavailable(
+                                                        current.tracks.mapNotNull { library.byId[it] }
+                                                    )
+                                                    val state = app.library.state.value
+                                                    val after =
+                                                        state.playlists.firstOrNull { it.id == current.id }
+                                                            ?: return@LaunchedEffect
+                                                    val unavailable =
+                                                        after.tracks.mapNotNull { state.byId[it] }.filter {
+                                                            !it.available && !it.local &&
+                                                                !it.imported && it.profileUserId == 0L
+                                                        }
+                                                    if (unavailable.isNotEmpty()) {
+                                                        val repaired =
+                                                            app.library.repairPlaylistTracks(current.id)
+                                                        if (repaired > 0) {
+                                                            app.notices.emit(
+                                                                tr(R.string.playlist_repaired, repaired)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                                 MusicScreen(

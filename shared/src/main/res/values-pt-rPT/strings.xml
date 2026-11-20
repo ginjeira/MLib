@@ -584,4 +584,5 @@
     <string name="album_search_covers">Procurar capas</string>
     <string name="sync_key_unavailable">A chave de sincronização MLib não está disponível. Usa Reparar armazenamento de sincronização para reiniciar a chave deste dispositivo.</string>
     <string name="sync_payload_too_large">A biblioteca é demasiado grande para um único snapshot de sincronização. A operação foi parada; reduz a biblioteca ou aguarda uma atualização do protocolo com snapshots em partes.</string>
+    <string name="playlist_repaired">Substituí %1$d faixa(s) indisponível(is) por uma cópia existente.</string>
 </resources>
