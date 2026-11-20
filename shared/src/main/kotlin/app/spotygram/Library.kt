@@ -1064,6 +1064,59 @@ class Library(private val platform: Platform) : AutoCloseable {
         repaired
     }
 
+    suspend fun repairAlbumTracks(albumId: String): Int = withContext(Dispatchers.IO) {
+        var repaired = 0
+        writableDatabase.transaction {
+            val members =
+                rawQuery(
+                    "SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",
+                    arrayOf(albumId),
+                ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+            val present = members.toMutableSet()
+            val replacements = mutableListOf<Pair<String, String>>()
+            for (id in members) {
+                val track = state.value.byId[id] ?: continue
+                if (track.available || track.local) continue
+                val alias =
+                    state.value.duplicates.aliases(id).firstOrNull { candidate ->
+                        candidate.id != id && (candidate.available || candidate.local)
+                    } ?: continue
+                if (alias.id in present) {
+                    delete(
+                        "album_tracks",
+                        "album_id=? AND track=?",
+                        arrayOf(albumId, id),
+                    )
+                } else {
+                    execSQL(
+                        "UPDATE album_tracks SET track=? WHERE album_id=? AND track=?",
+                        arrayOf<Any>(alias.id, albumId, id),
+                    )
+                    present.add(alias.id)
+                }
+                present.remove(id)
+                replacements += id to alias.id
+                repaired++
+            }
+            if (repaired > 0) {
+                val ids =
+                    rawQuery(
+                        "SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",
+                        arrayOf(albumId),
+                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                val values = linkedMapOf<String, Any?>("album/$albumId/order" to JSONArray(ids))
+                for ((old, new) in replacements) {
+                    values["album/$albumId/member/$old"] = false
+                    values["album/$albumId/member/$new"] = true
+                }
+                sync.references(this, replacements.map { it.second }, values)
+                sync.edit(this, values)
+            }
+        }
+        if (repaired > 0) reload()
+        repaired
+    }
+
     suspend fun removeFromPlaylist(playlist: Long, track: String) =
         removeFromPlaylist(playlist, listOf(track))
 

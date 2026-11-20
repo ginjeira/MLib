@@ -591,4 +591,5 @@
     <string name="acquisition_status_partial">Partial</string>
     <string name="acquisition_status_failed">Failed</string>
     <string name="acquisition_status_skipped_duplicate">Already exists</string>
+    <string name="album_repaired">Replaced %1$d unavailable album track(s) with an existing copy.</string>
 </resources>

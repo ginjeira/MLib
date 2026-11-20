@@ -881,7 +881,33 @@ fun SpotygramUI(
                                                         app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
                                                     },
                                                     onSuggestCovers = { title, artist -> app.suggestAlbumCovers(title, artist) },
-                                                    onRevalidate = app::revalidateUnavailable,
+                                                    onRepairUnavailable = { album ->
+                                                        val tracks =
+                                                            album.tracks.mapNotNull {
+                                                                app.library.state.value.byId[it]
+                                                            }
+                                                        app.revalidateUnavailable(tracks)
+                                                        val after =
+                                                            app.library.state.value.albums
+                                                                .firstOrNull { it.id == album.id }
+                                                                ?: album
+                                                        val unavailable =
+                                                            after.tracks.mapNotNull {
+                                                                app.library.state.value.byId[it]
+                                                            }.filter {
+                                                                !it.available && !it.local &&
+                                                                    !it.imported && it.profileUserId == 0L
+                                                            }
+                                                        if (unavailable.isNotEmpty()) {
+                                                            val repaired =
+                                                                app.library.repairAlbumTracks(album.id)
+                                                            if (repaired > 0) {
+                                                                app.notices.emit(
+                                                                    tr(R.string.album_repaired, repaired)
+                                                                )
+                                                            }
+                                                        }
+                                                    },
                                                 )
                                             else ->
                                                 SourcesScreen(
