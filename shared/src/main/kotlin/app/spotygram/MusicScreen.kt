@@ -918,7 +918,7 @@ fun TrackRow(
                 downloaded = track.local && !track.temporary,
                 downloading = download?.trackId == track.id,
                 enabled = track.available || track.temporary,
-                contentDescription = if (track.local && !track.temporary) "Disponível offline" else "Transferir para offline",
+                contentDescription = tr(if (track.local && !track.temporary) R.string.available_offline else R.string.download_for_offline),
                 onClick = onDownloadOffline,
             )
         if (!narrow)

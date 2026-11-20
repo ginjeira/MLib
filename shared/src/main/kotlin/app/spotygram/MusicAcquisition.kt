@@ -159,13 +159,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
         check(activeSearchId == null) {
-            "O bot ainda está a aguardar a conclusão da aquisição anterior. Termina-a antes de iniciar outra pesquisa."
+            tr(R.string.acq_previous_pending)
         }
         check(state.value.pendingJob == null || allowPendingJob) {
-            "Existe uma aquisição interrompida. Retoma-a ou descarta-a antes de iniciar outra."
+            tr(R.string.acq_interrupted)
         }
         val query = sanitizeSearchQuery(rawQuery)
-        require(query.length >= 2) { "Introduz pelo menos dois caracteres para pesquisar." }
+        require(query.length >= 2) { tr(R.string.acq_query_short) }
 
         searchCancellationRequested.set(false)
         state.value = state.value.copy(searching = true, acquiring = false, progress = "", error = "", search = null, outcome = null)
@@ -175,7 +175,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             checkSearchNotCancelled()
             val sent = sendText(bot.getLong("id"), query)
             checkSearchNotCancelled()
-            state.value = state.value.copy(progress = "A aguardar resposta do bot…")
+            state.value = state.value.copy(progress = tr(R.string.acq_awaiting_bot))
 
             val botChatId = bot.getLong("id")
             // Match the MCat Player protocol: the bot first acknowledges the
@@ -184,12 +184,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
             // Track -> Playlist -> resend-query sequence.
             var resultMessage = waitForBotMessage(botChatId, sent.getLong("id"), 8_000) {
                 messageText(it).contains("Searching for")
-            } ?: error("O bot do Telegram não respondeu a tempo à pesquisa.")
+            } ?: error(tr(R.string.acq_bot_timeout))
 
             val typeMarker = "in '${contentType.wireValue}'"
             checkSearchNotCancelled()
             if (!messageText(resultMessage).contains(typeMarker)) {
-                state.value = state.value.copy(progress = "A seleccionar o tipo de conteúdo…")
+                state.value = state.value.copy(progress = tr(R.string.acq_select_kind))
                 if (clickButton(resultMessage, contentType.wireValue)) {
                     resultMessage = waitForBotUpdate(
                         botChatId, resultMessage.getLong("id"), 4_800,
@@ -200,7 +200,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val providerMarker = "from '${provider.wireValue}'"
             checkSearchNotCancelled()
             if (!messageText(resultMessage).contains(providerMarker)) {
-                state.value = state.value.copy(progress = "A seleccionar o fornecedor…")
+                state.value = state.value.copy(progress = tr(R.string.acq_select_provider))
                 if (clickButton(resultMessage, provider.wireValue)) {
                     resultMessage = waitForBotUpdate(
                         botChatId, resultMessage.getLong("id"), 4_800,
@@ -217,7 +217,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 contentType == AcquisitionContentType.ALBUM &&
                 provider == AcquisitionProvider.DEEZER
             ) {
-                state.value = state.value.copy(progress = "Sem álbuns no Deezer; a tentar SoundCloud…")
+                state.value = state.value.copy(progress = tr(R.string.acq_deezer_fallback))
                 if (clickButton(resultMessage, AcquisitionProvider.SOUNDCLOUD.wireValue)) {
                     resultMessage = waitForBotUpdate(
                         botChatId, resultMessage.getLong("id"), 3_600,
@@ -250,7 +250,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 searching = false,
                 progress = "",
                 search = search,
-                error = if (options.isEmpty()) "O bot não devolveu resultados para esta pesquisa." else "",
+                error = if (options.isEmpty()) tr(R.string.acq_no_results) else "",
             )
             search
         } catch (error: Throwable) {
@@ -290,21 +290,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AcquisitionOutcome = botLane.withLock {
         checkTelegramReady()
         check(activeSearchId == null || activeSearchId == searchId) {
-            "O bot ainda está ocupado com outra pesquisa/aquisição."
+            tr(R.string.acq_bot_busy)
         }
-        require(destinationChatId != 0L) { "Selecciona um destino Telegram válido." }
-        val session = searches[searchId] ?: error("A pesquisa expirou. Faz uma nova pesquisa.")
+        require(destinationChatId != 0L) { tr(R.string.acq_destination_invalid) }
+        val session = searches[searchId] ?: error(tr(R.string.acq_search_expired))
         require(System.currentTimeMillis() < session.search.expiresAt) {
             searches.remove(searchId)
-            "A pesquisa expirou. Faz uma nova pesquisa."
+            tr(R.string.acq_search_expired)
         }
         val selected = selectedNumbers.distinct().map { number ->
             session.search.results.firstOrNull { it.number == number }
-                ?: error("A opção $number já não pertence a esta pesquisa.")
+                ?: error(tr(R.string.acq_option_missing, number))
         }
-        require(selected.isNotEmpty()) { "Selecciona pelo menos um resultado." }
+        require(selected.isNotEmpty()) { tr(R.string.acq_select_one) }
         require(session.targetAlbumId == null || selected.size == 1) {
-            "Para completar um álbum existente, selecciona apenas uma edição do bot de cada vez."
+            tr(R.string.acq_one_edition)
         }
         val telegramUserId = request(json("getMe")).getLong("id")
         val currentPending = state.value.pendingJob
@@ -323,7 +323,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 currentPending.telegramUserId == telegramUserId &&
                 currentPending.targetAlbumId == session.targetAlbumId)
         ) {
-            "Existe outra aquisição interrompida. Retoma-a ou descarta-a antes de iniciar esta."
+            tr(R.string.acq_other_interrupted)
         }
         val pending = PendingAcquisitionJob(
             query = session.search.query,
@@ -365,7 +365,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             var resumeBotCursor = 0L
             for ((index, option) in selected.withIndex()) {
                 state.value = state.value.copy(
-                    progress = "A obter opção ${index + 1}/${selected.size}: ${option.title}",
+                    progress = tr(R.string.acq_option_progress, index + 1, selected.size, option.title),
                 )
                 updateJobItem(jobId, index) { it.copy(status = AcquisitionJobStatus.FORWARDING) }
                 val item = try {
@@ -469,7 +469,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val existing = app.library.state.value.playlists.firstOrNull {
                         it.name.equals(playlistName, ignoreCase = true)
                     }
-                    val description = "Playlist obtida via MCat (${session.search.provider.wireValue.uppercase()}) para $destinationTitle"
+                    val description = tr(R.string.acq_playlist_description, session.search.provider.wireValue.uppercase(), destinationTitle)
                     val firstTrackCover = item.tracks.firstOrNull()?.art.orEmpty()
                     val cover = firstTrackCover.takeIf {
                         it.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(it)
@@ -512,8 +512,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         else -> AcquisitionJobStatus.COMPLETED
                     },
                     error = when {
-                        !jobSucceeded -> "Nenhuma opção foi adquirida com sucesso."
-                        jobPartial -> "Aquisição parcial. Consulta o detalhe de cada opção."
+                        !jobSucceeded -> tr(R.string.acq_none_acquired)
+                        jobPartial -> tr(R.string.acq_partial)
                         else -> ""
                     },
                 )
@@ -535,10 +535,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     .joinToString(", ") { it.option.title },
                 note = when (session.search.contentType) {
                     AcquisitionContentType.ALBUM ->
-                        if (acquiredAlbums.isEmpty()) "Não foi possível criar um álbum com as faixas recebidas."
-                        else "Faixas adicionadas a ${acquiredAlbums.size} álbum(ns) na biblioteca; gravações já existentes foram reutilizadas."
+                        if (acquiredAlbums.isEmpty()) tr(R.string.acq_album_not_created)
+                        else tr(R.string.acq_tracks_added, acquiredAlbums.size)
                     AcquisitionContentType.ARTIST ->
-                        "A pesquisa por artista devolve opções do bot; cada opção pode produzir uma ou várias faixas, conforme a contagem indicada. As faixas são importadas individualmente, sem criar um álbum ou playlist fictícios."
+                        tr(R.string.acq_search_help)
                     AcquisitionContentType.PLAYLIST ->
                         ""
                     else -> ""
@@ -579,8 +579,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
      */
     suspend fun resumePending(): AcquisitionOutcome = resumeLane.withLock {
         var pending = state.value.pendingJob ?: readPendingJob()
-            ?: error("Não existe nenhuma aquisição interrompida para retomar.")
-        state.value = state.value.copy(error = "", progress = "A recuperar a aquisição interrompida…")
+            ?: error(tr(R.string.acq_no_pending))
+        state.value = state.value.copy(error = "", progress = tr(R.string.acq_recovering))
         // Block all other entry points while the persisted bot turn is being reconciled.
         activeSearchId = "pending-resume"
         try {
@@ -598,7 +598,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             }
             val currentUserId = request(json("getMe")).getLong("id")
             check(currentUserId == pending.telegramUserId) {
-                "Esta aquisição pertence a outra conta Telegram. Liga a conta original ou descarta o trabalho pendente."
+                tr(R.string.acq_other_account)
             }
             val destination = request(json("getChat", "chat_id" to pending.destinationChatId))
             app.library.source(app.telegram.rememberChat(destination), true)
@@ -618,7 +618,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     )
                 }
                 check(matches.size == 1) {
-                    "Não foi possível identificar sem ambiguidades o resultado '${title}' após recuperar a pesquisa."
+                    tr(R.string.acq_result_ambiguous, title)
                 }
                 matches.single().number
             }
@@ -693,7 +693,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             .put("bot_message_cursor", job.botMessageCursor)
             .put("updated_at", System.currentTimeMillis())
         check(app.prefs.edit().putString(pendingJobKey, json.toString()).commit()) {
-            "Não foi possível guardar o estado da aquisição interrompida."
+            tr(R.string.acq_pending_save_failed)
         }
         state.value = state.value.copy(pendingJob = job)
     }
@@ -707,7 +707,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
     private fun clearPendingJob() {
         check(app.prefs.edit().remove(pendingJobKey).commit()) {
-            "Não foi possível limpar o registo da aquisição."
+            tr(R.string.acq_pending_clear_failed)
         }
         state.value = state.value.copy(pendingJob = null)
     }
@@ -753,9 +753,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 option = option,
                 tracks = emptyList(),
                 error = if (collection.botFinished) {
-                    "O bot terminou sem devolver áudio para esta opção."
+                    tr(R.string.acq_bot_no_audio)
                 } else {
-                    "O bot ainda não confirmou o fim do pedido; a conversa permanece bloqueada."
+                    tr(R.string.acq_bot_unfinished)
                 },
                 partial = !collection.botFinished,
                 botFinished = collection.botFinished,
@@ -766,12 +766,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val partialWarning = if (collection.partial || !collection.botFinished) {
             if (expectedCount > 0) {
                 if (collection.botFinished) {
-                    "Resultado parcial (${audioMessages.size}/$expectedCount faixas recebidas)."
+                    tr(R.string.acq_partial_result, audioMessages.size, expectedCount)
                 } else {
-                    "O bot ainda não confirmou o fim do pedido (${audioMessages.size}/$expectedCount faixas recebidas)."
+                    tr(R.string.acq_bot_unfinished_count, audioMessages.size, expectedCount)
                 }
             } else {
-                "O bot ainda não confirmou o fim do pedido (${audioMessages.size} faixa(s) recebidas)."
+                tr(R.string.acq_bot_unfinished_some, audioMessages.size)
             }
         } else ""
         val deliveryErrors = mutableListOf<String>()
@@ -787,7 +787,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
             try {
                 val candidate = parseAcquiredTrack(sourceMessage, destinationTitle)
                 if (candidate == null) {
-                    deliveryErrors += "Não foi possível interpretar uma mensagem de áudio do bot."
+                    deliveryErrors += tr(R.string.acq_message_parse)
                     continue
                 }
                 val existingTrack = app.library.state.value.tracks.firstOrNull { track ->
@@ -823,7 +823,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 val destinationMessage = messages.optJSONObject(0)
                 val track = destinationMessage?.let { parseAcquiredTrack(it, destinationTitle) }
                 if (track == null) {
-                    deliveryErrors += "O Telegram não confirmou a entrega de uma mensagem de áudio."
+                    deliveryErrors += tr(R.string.acq_delivery_unconfirmed)
                     continue
                 }
                 importedTracks += track
@@ -836,7 +836,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
         val tracks = (importedTracks + reusedTracks).distinctBy { it.id }
         if (tracks.isEmpty()) {
-            error("O Telegram não confirmou a entrega de áudio novo ou reutilizável para esta opção.")
+            error(tr(R.string.acq_new_delivery_unconfirmed))
         }
         val resultWarnings = (listOf(partialWarning) + deliveryErrors)
             .filter { it.isNotBlank() }
@@ -908,8 +908,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (isAudioMessage(message) && collected.putIfAbsent(id, message) == null) {
                     lastAudioReceivedAt = System.currentTimeMillis()
                     state.value = state.value.copy(
-                        progress = "A receber áudio: ${collected.size}" +
-                            if (expectedCount > 0) "/$expectedCount" else " faixa(s)",
+                        progress =
+                            if (expectedCount > 0) {
+                                tr(R.string.acq_receiving_count, collected.size, expectedCount)
+                            } else {
+                                tr(R.string.acq_receiving_some, collected.size)
+                            },
                     )
                 }
                 if (isCompletionMessage(message)) hasCompletionSignal = true
@@ -1114,7 +1118,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     ?: 5L
                 if (retries >= 3 || waitSeconds > 900L) throw error
                 state.value = state.value.copy(
-                    progress = "O Telegram limitou temporariamente os pedidos. A aguardar ${waitSeconds}s…",
+                    progress = tr(R.string.acq_flood_wait, waitSeconds),
                 )
                 delay(waitSeconds.coerceAtLeast(1L) * 1_000L)
                 retries++
@@ -1214,10 +1218,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
 
     private fun checkTelegramReady() {
         check(app.telegram.auth.value.type == "authorizationStateReady") {
-            "Liga a tua conta Telegram antes de pesquisar música."
+            tr(R.string.acq_auth_required)
         }
     }
 
     private fun friendly(error: Throwable): String =
-        error.message?.takeIf { it.isNotBlank() }?.take(240) ?: "Falha na aquisição musical."
+        error.message?.takeIf { it.isNotBlank() }?.take(240) ?: tr(R.string.acq_failed)
 }

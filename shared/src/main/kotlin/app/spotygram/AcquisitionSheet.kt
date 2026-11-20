@@ -123,7 +123,7 @@ internal fun AcquisitionSheet(
                         onClick = { query = "" },
                         enabled = !state.searching && !state.acquiring && !hasPendingJob,
                     ) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Limpar pesquisa")
+                        Icon(Icons.Rounded.Close, contentDescription = tr(R.string.clear_search))
                     }
                 }
             },
@@ -222,7 +222,7 @@ internal fun AcquisitionSheet(
                 onClick = { acquisition.cancelSearch() },
                 modifier = Modifier.weight(1f),
             ) {
-                Text("Cancelar")
+                Text(tr(R.string.cancel))
             }
         }
         }
@@ -251,7 +251,7 @@ internal fun AcquisitionSheet(
                     },
                     enabled = !state.acquiring && !hasPendingJob,
                 ) {
-                    Text("Limpar")
+                    Text(tr(R.string.clear))
                 }
             }
             Text(search.query, style = MaterialTheme.typography.titleMedium)
@@ -333,7 +333,7 @@ internal fun AcquisitionSheet(
 
         if (state.jobs.isNotEmpty()) {
             HorizontalDivider()
-            Text("Pedidos recentes", style = MaterialTheme.typography.titleSmall)
+            Text(tr(R.string.recent_requests), style = MaterialTheme.typography.titleSmall)
             state.jobs.take(5).forEach { job ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),

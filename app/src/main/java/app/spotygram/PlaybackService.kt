@@ -40,6 +40,24 @@ class PlaybackService : MediaLibraryService() {
         private const val TRACK_PREFIX = "track:"
         private const val PLAYLIST_PREFIX = "playlist:"
         private const val ALBUM_PREFIX = "album:"
+
+        /**
+         * The service must be exported for Android Auto and Automotive OS. These are the
+         * system and projection controllers that are allowed to browse the private library.
+         * Third-party apps can bind to an exported MediaLibraryService, so the default
+         * accept-all Media3 connection behaviour is not sufficient.
+         */
+        private val TRUSTED_CONTROLLER_PACKAGES =
+            setOf(
+                "com.google.android.projection.gearhead",
+                "com.google.android.gms.car",
+                "com.google.android.apps.automotive",
+                "com.android.car",
+                "com.android.systemui",
+                "com.google.android.systemui",
+                "com.android.bluetooth",
+                "com.google.android.bluetooth",
+            )
     }
 
     override fun onCreate() {
@@ -64,6 +82,21 @@ class PlaybackService : MediaLibraryService() {
             .build()
 
         val callback = object : MediaLibrarySession.Callback {
+            override fun onConnect(
+                session: MediaSession,
+                controller: MediaSession.ControllerInfo,
+            ): MediaSession.ConnectionResult {
+                val allowed =
+                    controller.isTrusted ||
+                        controller.packageName == packageName ||
+                        controller.packageName in TRUSTED_CONTROLLER_PACKAGES
+                return if (allowed) {
+                    MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
+                } else {
+                    MediaSession.ConnectionResult.reject()
+                }
+            }
+
             override fun onGetLibraryRoot(
                 session: MediaLibrarySession,
                 browser: MediaSession.ControllerInfo,
@@ -84,10 +117,10 @@ class PlaybackService : MediaLibraryService() {
                 val library = app.library.state.value
                 val children = when (parentId) {
                     ROOT -> listOf(
-                        folder(ALL_TRACKS, "Todas as músicas"),
-                        folder(PLAYLISTS, "Playlists"),
-                        folder(ALBUMS, "Álbuns"),
-                        folder(FAVORITES, "Favoritos"),
+                        folder(ALL_TRACKS, tr(R.string.all_tracks)),
+                        folder(PLAYLISTS, tr(R.string.playlists)),
+                        folder(ALBUMS, tr(R.string.albums)),
+                        folder(FAVORITES, tr(R.string.favorites)),
                     )
                     ALL_TRACKS -> library.tracks
                         .asSequence()

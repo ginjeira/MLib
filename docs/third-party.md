@@ -31,8 +31,8 @@
 Android native libraries are compiled from upstream sources. `JsonClient.java`
 is a reduced JNI declaration compatible with the upstream interface. Native
 license texts and notices are included in APK assets. Desktop uses pinned,
-checksum-verified prebuilts without a local native toolchain. Their license texts,
-Spotygram's license and additional notices are in application resources under
+checksum-verified prebuilts without a local native toolchain. Upstream and MLib
+license texts and additional notices are in application resources under
 `licenses/`; JVM dependencies retain their notices inside their JARs and Java's
 notices are under the bundled runtime's `legal/` directory.
 
@@ -46,9 +46,10 @@ no Spotify logos, Telegram logos, bundled music files or AI-generated album cove
 The Fluent Emoji notice is retained in `shared/licenses/Fluent-Emoji-MIT.txt`
 and included in Android APK assets and desktop `resources/licenses/`.
 
-The Takopi plush identity uses a photograph supplied by the project owner, with
-its background removed and separate icon surfaces prepared for Spotygram. The
-software's MIT license does not grant rights to the character or source photo.
-`shared/licenses/Takopi-artwork-NOTICE.txt` is included in both platform packages.
+The inherited Takopi plush artwork is not used by the MLib visual identity. The
+historical notice remains at `shared/licenses/Takopi-artwork-NOTICE.txt` for legal
+traceability but is no longer copied into Android or desktop packages. MLib artwork
+is original project material.
 
 The manually imported development recording is [The Entertainer by Scott Joplin](https://commons.wikimedia.org/wiki/File:%22The_Entertainer%22,_by_Scott_Joplin_(1902,_Ragtime_piano).opus), marked public domain on Wikimedia Commons. The audio is not part of the repository or APK.
+e repository or APK.

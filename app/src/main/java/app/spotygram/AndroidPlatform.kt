@@ -197,8 +197,10 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
             if (account > 0) "&account_user_id=$account" else ""
 
     override fun openUrl(url: String) {
+        val uri = Uri.parse(url)
+        if (uri.scheme?.lowercase() !in setOf("http", "https", "tg")) return
         context.startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
 
@@ -236,7 +238,7 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
         val encoded = preferences("settings").getString("sync_encryption_key", null) ?: return null
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         val key = store.getKey("mlib.sync.encryption", null) as? SecretKey
-            ?: error("MLib sync encryption key is unavailable in Android Keystore")
+            ?: error(tr(R.string.sync_key_unavailable))
         val data = Base64.decode(encoded, Base64.NO_WRAP)
         require(data.size > 12)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -270,6 +272,14 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
         val saved = Base64.encodeToString(cipher.iv + cipher.doFinal(key), Base64.NO_WRAP)
         check(preferences("settings").edit().putString("sync_encryption_key", saved).commit()) {
             "MLib sync encryption key could not be stored"
+        }
+    }
+
+    override fun clearSyncEncryptionKey() {
+        preferences("settings").edit().remove("sync_encryption_key").apply()
+        runCatching {
+            KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+                .deleteEntry("mlib.sync.encryption")
         }
     }
 

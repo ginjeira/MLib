@@ -113,6 +113,11 @@ class DesktopPlatform : Platform, AutoCloseable {
             "MLib sync encryption key could not be stored in desktop keyring"
         }
     }
+    override fun clearSyncEncryptionKey() {
+        val account = MessageDigest.getInstance("SHA-256").digest(filesDir.canonicalPath.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        runCatching { keyring.deletePassword("pt.ginjeira.mlib.sync", account) }
+    }
     override fun observeNetwork(onType: (String) -> Unit): AutoCloseable {
         // TDLib owns desktop reconnection; never park it in networkTypeNone without an OS observer.
         onType("networkTypeOther")

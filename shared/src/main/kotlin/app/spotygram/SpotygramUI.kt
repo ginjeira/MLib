@@ -1157,7 +1157,7 @@ fun SpotygramUI(
                                                 }
                                                 ActionRow(
                                                     Icons.Rounded.Image,
-                                                    "Descrição e capa",
+                                                    tr(R.string.playlist_description_cover),
                                                 ) {
                                                     playlistDescription = p.description
                                                     playlistCoverUrl = p.coverUrl
@@ -1243,20 +1243,20 @@ fun SpotygramUI(
                 if (editPlaylistDetails)
                     GlassDialog(
                         onDismissRequest = { editPlaylistDetails = false },
-                        title = { Text("Descrição e capa da playlist") },
+                        title = { Text(tr(R.string.playlist_description_cover_title)) },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 OutlinedTextField(
                                     value = playlistDescription,
                                     onValueChange = { playlistDescription = it.take(512) },
-                                    label = { Text("Descrição") },
+                                    label = { Text(tr(R.string.description)) },
                                     minLines = 2,
                                     maxLines = 4,
                                 )
                                 OutlinedTextField(
                                     value = playlistCoverUrl,
                                     onValueChange = { playlistCoverUrl = it.take(4096) },
-                                    label = { Text("URL da capa") },
+                                    label = { Text(tr(R.string.cover_url)) },
                                     singleLine = true,
                                 )
                             }

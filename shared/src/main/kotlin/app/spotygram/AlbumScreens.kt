@@ -45,6 +45,7 @@ fun AlbumsScreen(
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmDeduplicate by remember { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var newArtist by remember { mutableStateOf("") }
@@ -92,14 +93,14 @@ fun AlbumsScreen(
                         downloaded = tracks.isNotEmpty() && tracks.size == current.tracks.size && tracks.all { it.offlineCopyValid },
                         downloading = download.trackId in tracks.map { it.id },
                         enabled = tracks.any { it.available && !it.offlineCopyValid },
-                        contentDescription = "Transferir álbum para offline",
+                        contentDescription = tr(R.string.album_download_offline),
                         onClick = { onDownloadToDevice(tracks.map { it.id }) },
                     )
-                    TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
+                    TextButton(onClick = { onDownload(current) }) { Text(tr(R.string.album_find_tracks)) }
                     TextButton(onClick = {
                         editTitle = current.title; editArtist = current.artist; editYear = current.year
                         editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
-                    }) { Text("Editar") }
+                    }) { Text(tr(R.string.edit)) }
                     IconButton(onClick = { confirmDelete = true }) {
                         Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
                     }
@@ -113,12 +114,12 @@ fun AlbumsScreen(
                         IconButton(onClick = {
                             if (index > 0) onReorder(current.id, tracks.map { it.id }.toMutableList().apply { add(index - 1, removeAt(index)) })
                         }, enabled = index > 0) {
-                            Icon(Icons.Rounded.ArrowUpward, contentDescription = "Mover para cima")
+                            Icon(Icons.Rounded.ArrowUpward, contentDescription = tr(R.string.move_up))
                         }
                         IconButton(onClick = {
                             if (index < tracks.lastIndex) onReorder(current.id, tracks.map { it.id }.toMutableList().apply { add(index + 1, removeAt(index)) })
                         }, enabled = index < tracks.lastIndex) {
-                            Icon(Icons.Rounded.ArrowDownward, contentDescription = "Mover para baixo")
+                            Icon(Icons.Rounded.ArrowDownward, contentDescription = tr(R.string.move_down))
                         }
                         Column(Modifier.weight(1f).clickable { onPlay(track, tracks) }.padding(vertical = 8.dp)) {
                             Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -126,7 +127,7 @@ fun AlbumsScreen(
                         }
                         Text(seconds(track.duration.toLong()), style = MaterialTheme.typography.labelSmall)
                         IconButton(onClick = { onRemoveTrack(current.id, track.id) }) {
-                            Icon(Icons.Rounded.RemoveCircleOutline, contentDescription = "Remover do álbum")
+                            Icon(Icons.Rounded.RemoveCircleOutline, contentDescription = tr(R.string.album_remove_track))
                         }
                     }
                 }
@@ -135,26 +136,26 @@ fun AlbumsScreen(
         if (editing) {
             AlertDialog(
                 onDismissRequest = { editing = false },
-                title = { Text("Editar álbum") },
+                title = { Text(tr(R.string.album_edit_title)) },
                 text = {
                     Column {
-                        OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text("Título") }, singleLine = true)
-                        OutlinedTextField(value = editArtist, onValueChange = { editArtist = it }, label = { Text("Artista") }, singleLine = true)
-                        OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text("Ano") }, singleLine = true)
-                        OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text("Género") }, singleLine = true)
-                        OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text("URL da capa") }, singleLine = true)
+                        OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text(tr(R.string.title)) }, singleLine = true)
+                        OutlinedTextField(value = editArtist, onValueChange = { editArtist = it }, label = { Text(tr(R.string.artist)) }, singleLine = true)
+                        OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text(tr(R.string.year)) }, singleLine = true)
+                        OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text(tr(R.string.genre)) }, singleLine = true)
+                        OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text(tr(R.string.cover_url)) }, singleLine = true)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TextButton(enabled = !coverSearchBusy && editTitle.isNotBlank(), onClick = {
                                 scope.launch {
                                     coverSearchBusy = true
                                     coverSearchError = ""
                                     coverSuggestions = runCatching { onSuggestCovers(editTitle, editArtist) }
-                                        .getOrElse { coverSearchError = it.message ?: "Falha na pesquisa de capas"; emptyList() }
+                                        .getOrElse { coverSearchError = it.message ?: tr(R.string.album_cover_search_failed); emptyList() }
                                     coverSearchBusy = false
-                                    if (coverSuggestions.isEmpty() && coverSearchError.isBlank()) coverSearchError = "Não foram encontradas capas."
+                                    if (coverSuggestions.isEmpty() && coverSearchError.isBlank()) coverSearchError = tr(R.string.album_no_covers)
                                 }
-                            }) { Text(if (coverSearchBusy) "A pesquisar…" else "Procurar capas") }
-                            if (coverSuggestions.isNotEmpty()) Text("${coverSuggestions.size} sugestões", style = MaterialTheme.typography.labelSmall)
+                            }) { Text(tr(if (coverSearchBusy) R.string.album_searching_covers else R.string.album_search_covers)) }
+                            if (coverSuggestions.isNotEmpty()) Text(tr(R.string.album_cover_suggestions, coverSuggestions.size), style = MaterialTheme.typography.labelSmall)
                         }
                         if (coverSearchError.isNotBlank()) Text(coverSearchError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         coverSuggestions.take(8).forEach { cover ->
@@ -163,7 +164,7 @@ fun AlbumsScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 AsyncImage(model = cover, contentDescription = null, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
-                                Text("Usar esta capa", Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyMedium)
+                                Text(tr(R.string.album_use_cover), Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     }
@@ -172,7 +173,7 @@ fun AlbumsScreen(
                     TextButton(enabled = editTitle.isNotBlank() && editArtist.isNotBlank(), onClick = {
                         onUpdate(current.id,editTitle.trim(),editArtist.trim(),editYear.trim(),editCover.trim(),editGenre.trim())
                         editing = false
-                    }) { Text("Guardar") }
+                    }) { Text(tr(R.string.save)) }
                 },
                 dismissButton = { TextButton(onClick = { editing = false }) { Text(tr(R.string.cancel)) } },
             )
@@ -216,15 +217,33 @@ fun AlbumsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onAutoDetect, modifier = Modifier.weight(1f)) {
-                        Text("Detectar álbuns", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(tr(R.string.album_detect), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
-                    TextButton(onClick = onDeduplicate, modifier = Modifier.weight(1f)) {
-                        Text("Unificar duplicados", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    TextButton(onClick = { confirmDeduplicate = true }, modifier = Modifier.weight(1f)) {
+                        Text(tr(R.string.album_deduplicate), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     TextButton(onClick = { creating = true }, modifier = Modifier.weight(1f)) {
-                        Text("Novo álbum", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(tr(R.string.album_new), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
+            }
+            if (confirmDeduplicate) {
+                AlertDialog(
+                    onDismissRequest = { confirmDeduplicate = false },
+                    title = { Text(tr(R.string.album_deduplicate_title)) },
+                    text = { Text(tr(R.string.album_deduplicate_help)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            confirmDeduplicate = false
+                            onDeduplicate()
+                        }) { Text(tr(R.string.album_deduplicate_action)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmDeduplicate = false }) {
+                            Text(tr(R.string.cancel))
+                        }
+                    },
+                )
             }
             if (library.albums.isNotEmpty()) {
                 OutlinedTextField(
@@ -238,12 +257,12 @@ fun AlbumsScreen(
             if (creating) {
                 AlertDialog(
                     onDismissRequest = { creating = false },
-                    title = { Text("Criar álbum") },
+                    title = { Text(tr(R.string.album_create)) },
                     text = {
                         Column(Modifier.heightIn(max = 520.dp)) {
-                            OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text("Título") }, singleLine = true)
-                            OutlinedTextField(value = newArtist, onValueChange = { newArtist = it }, label = { Text("Artista") }, singleLine = true)
-                            Text("Selecciona as faixas", Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+                            OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text(tr(R.string.title)) }, singleLine = true)
+                            OutlinedTextField(value = newArtist, onValueChange = { newArtist = it }, label = { Text(tr(R.string.artist)) }, singleLine = true)
+                            Text(tr(R.string.album_select_tracks), Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
                             LazyColumn(Modifier.weight(1f)) {
                                 items(library.tracks.filter { it.inLibrary }, key = { it.id }) { track ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,7 +283,7 @@ fun AlbumsScreen(
                             onCreate(newTitle.trim(), newArtist.trim(), library.tracks.map { it.id }.filter { it in selectedTracks })
                             creating = false
                             newTitle = ""; newArtist = ""; selectedTracks = emptySet()
-                        }) { Text("Criar") }
+                        }) { Text(tr(R.string.create)) }
                     },
                     dismissButton = { TextButton(onClick = { creating = false }) { Text(tr(R.string.cancel)) } },
                 )
@@ -293,7 +312,7 @@ fun AlbumsScreen(
                                 downloaded = albumTracks.isNotEmpty() && albumTracks.size == album.tracks.size && albumTracks.all { it.offlineCopyValid },
                                 downloading = download.trackId in album.tracks,
                                 enabled = albumTracks.any { it.available && !it.offlineCopyValid },
-                                contentDescription = "Transferir álbum para offline",
+                                contentDescription = tr(R.string.album_download_offline),
                                 onClick = { onDownloadToDevice(album.tracks) },
                             )
                         }

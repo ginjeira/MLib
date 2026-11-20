@@ -237,11 +237,14 @@ Library settings apply through the same shared app controls. Speed, order, repea
 volume and mute stay local, together with the queue, last track and listening
 positions. Startup removes old speed/order/repeat records from local sync storage;
 incoming legacy settings are ignored without rejecting other library records.
-The profile extension uses format 3; existing library records remain readable.
+The profile extension was introduced in format 3; the current MLib protocol is
+format 5 and existing records remain readable.
 Five-second checkpoints, pause, seek, track change and orderly exit write only local
 playback storage. Audio copies, downloads, indexing
 checkpoints, native sessions and installation state belong to each device.
-The channel uses Telegram cloud protection; there is no separate encryption key.
+New MLib sync payloads are encrypted with AES-256-GCM using a device-held recovery
+key; legacy plaintext formats remain readable only for migration. Telegram can still
+observe channel membership and message metadata such as timing, size and cursors.
 
 ## Playback and persistence
 

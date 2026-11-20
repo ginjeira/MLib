@@ -77,8 +77,9 @@ fun SettingsSheet(
     val resumeMinutes by app.resumeMinutes.collectAsStateWithLifecycle()
     var editingResume by rememberSaveable { mutableStateOf(false) }
     var editingSyncKey by rememberSaveable { mutableStateOf(false) }
-    var recoveryCode by rememberSaveable { mutableStateOf("") }
-    var syncKeyInput by rememberSaveable { mutableStateOf("") }
+    var repairSync by rememberSaveable { mutableStateOf(false) }
+    var recoveryCode by remember { mutableStateOf("") }
+    var syncKeyInput by remember { mutableStateOf("") }
     var syncKeyError by rememberSaveable { mutableStateOf("") }
     val clipboard = LocalClipboardManager.current
     Column(Modifier.fillMaxWidth()) {
@@ -354,7 +355,7 @@ fun SettingsSheet(
                                 )
                             Text(
                                 when {
-                                    syncState.phase == "key_required" -> "A sincronização está suspensa até criares ou importares a chave de recuperação."
+                                    syncState.phase == "key_required" -> tr(R.string.sync_suspended_key_required)
                                     syncState.phase == "error" && syncState.error.isNotBlank() -> "$status\n${syncState.error}"
                                     else -> status
                                 }
@@ -377,9 +378,16 @@ fun SettingsSheet(
                             } else null,
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     )
+                    if (syncState.phase == "error") {
+                        ActionRow(
+                            Icons.Rounded.Build,
+                            tr(R.string.sync_repair),
+                            onClick = { repairSync = true },
+                        )
+                    }
                     ActionRow(
                         Icons.Rounded.Key,
-                        "Chave de cifragem e recuperação",
+                        tr(R.string.sync_key_settings),
                         onClick = {
                             recoveryCode = app.cloudSync.recoveryCode().orEmpty()
                             syncKeyInput = ""
@@ -408,39 +416,63 @@ fun SettingsSheet(
             }
         }
     }
+    if (repairSync) {
+        AlertDialog(
+            onDismissRequest = { repairSync = false },
+            title = { Text(tr(R.string.sync_repair_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(tr(R.string.sync_repair_help))
+                    TextButton(onClick = {
+                        repairSync = false
+                        app.action { app.cloudSync.repairStorage(clearKey = true) }
+                    }) { Text(tr(R.string.sync_repair_forget_key)) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    repairSync = false
+                    app.action { app.cloudSync.repairStorage() }
+                }) { Text(tr(R.string.sync_repair_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { repairSync = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
+    }
     if (editingSyncKey) {
         AlertDialog(
             onDismissRequest = { editingSyncKey = false },
-            title = { Text("Cifragem da sincronização MLib") },
+            title = { Text(tr(R.string.sync_key_settings)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("A mesma chave de 256 bits tem de ser instalada em todos os dispositivos. O código de recuperação não é enviado para o Telegram. Guarda-o num local seguro.")
+                    Text(tr(R.string.sync_key_help))
                     if (recoveryCode.isNotBlank()) {
                         OutlinedTextField(
                             value = recoveryCode,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Código de recuperação deste dispositivo") },
+                            label = { Text(tr(R.string.sync_recovery_device)) },
                             minLines = 2,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         TextButton(onClick = { clipboard.setText(AnnotatedString(recoveryCode)) }) {
-                            Text("Copiar código")
+                            Text(tr(R.string.copy_code))
                         }
                     } else {
-                        Text("Ainda não existe uma chave neste dispositivo. Cria a primeira chave aqui ou importa a chave de outro dispositivo.")
+                        Text(tr(R.string.sync_no_key_yet))
                         TextButton(
                             onClick = {
                                 runCatching { app.cloudSync.createRecoveryCode() }
                                     .onSuccess { recoveryCode = it; syncKeyError = "" }
                                     .onFailure { syncKeyError = it.message.orEmpty() }
                             },
-                        ) { Text("Criar primeira chave neste dispositivo") }
+                        ) { Text(tr(R.string.sync_create_first_key)) }
                     }
                     OutlinedTextField(
                         value = syncKeyInput,
                         onValueChange = { syncKeyInput = it; syncKeyError = "" },
-                        label = { Text("Importar código de outro dispositivo") },
+                        label = { Text(tr(R.string.sync_import_device)) },
                         minLines = 2,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -460,7 +492,7 @@ fun SettingsSheet(
                             }
                             .onFailure { syncKeyError = it.message.orEmpty() }
                     },
-                ) { Text("Importar chave") }
+                ) { Text(tr(R.string.sync_import_key)) }
             },
             dismissButton = {
                 TextButton(onClick = { editingSyncKey = false }) { Text(tr(R.string.close)) }

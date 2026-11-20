@@ -27,7 +27,6 @@ val licenseAssets =
     tasks.register<Copy>("prepareLicenseAssets") {
         from(rootProject.file("LICENSE")) { rename { "MLib-MIT.txt" } }
         from(rootProject.file("shared/licenses/Fluent-Emoji-MIT.txt"))
-        from(rootProject.file("shared/licenses/Takopi-artwork-NOTICE.txt"))
         from(file("$buildState/tdlib-src/LICENSE_1_0.txt")) { rename { "Boost-1.0.txt" } }
         from(file("$buildState/native/openssl/LICENSE.txt")) { rename { "Apache-2.0.txt" } }
         into(layout.buildDirectory.dir("generated/licenseAssets"))
@@ -62,15 +61,8 @@ android {
     }
     buildTypes {
         debug {
-            // CI debug APKs must retain a stable signer across runs so Android
-            // can update an installed MLib test build without uninstalling it.
-            // Local builds without the MLib keystore keep the normal local
-            // Android debug signing configuration.
-            if (file("$buildState/mlib-release.jks").isFile &&
-                file("$buildState/signing.properties").isFile
-            ) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Debug builds always use Android's debug signer. The production release key
+            // must never be usable for an installable debug variant.
             applicationIdSuffix = ".dev"
             buildConfigField(
                 "boolean",

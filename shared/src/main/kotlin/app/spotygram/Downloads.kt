@@ -54,7 +54,7 @@ class Downloads(
                         app.library.upsert(listOf(track.copy(available = false)))
                         app.library.reload()
                         app.library.dequeue(id)
-                        app.notices.emit("A faixa ${track.title} foi ignorada: a mensagem de origem já não existe no Telegram.")
+                        app.notices.emit(tr(R.string.download_source_missing, track.title))
                         continue
                     }
                     activeFile = fid

@@ -185,8 +185,15 @@ object SignedBundle {
     }
     fun verifySignature(bytes: ByteArray, signature: ByteArray) {
         require(signature.size == 64)
-        val publicText = checkNotNull(javaClass.classLoader.getResourceAsStream("update-key.pub"))
-            .bufferedReader().use { it.readText() }.lineSequence().filterNot { it.startsWith("-----") }.joinToString("")
+        // Desktop packaging is disabled. The inherited Spotygram key was removed so a stale
+        // build cannot accept a bundle signed by the old identity. Provision a new MLib key
+        // together with the migrated updater/manifest before re-enabling desktop releases.
+        val publicText =
+            checkNotNull(javaClass.classLoader.getResourceAsStream("update-key.pub")) {
+                "Desktop updates are disabled: no MLib update signing key is provisioned."
+            }
+                .bufferedReader().use { it.readText() }.lineSequence()
+                .filterNot { it.startsWith("-----") }.joinToString("")
         val key = KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(publicText)))
         require(Signature.getInstance("Ed25519").run { initVerify(key); update(bytes); verify(signature) })
     }

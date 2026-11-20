@@ -1,6 +1,6 @@
 # MLib — persistence and multi-device synchronisation
 
-**Status:** persistence and sync source audit completed. Encrypted protocol v4 and recovery-key pairing are implemented in source. Automated CI and real two-device acceptance remain pending.
+**Status:** persistence and sync source audit completed. Encrypted protocol v5 and recovery-key pairing are implemented in source. Automated CI and real two-device acceptance remain pending.
 
 ## Decision
 
@@ -10,7 +10,7 @@ The synchronisation channel is not a music source, an MCat destination, or the S
 
 ## Local persistence
 
-- The library is stored in the local SQLite database named `library.db`, currently schema version 8.
+- The library is stored in the local SQLite database named `library.db`, currently schema version 11.
 - Tracks, sources, profiles, playlists and playlist membership are represented in the catalogue.
 - Playback progress has a local `playback_progress` table.
 - Android and desktop maintain independent databases.
@@ -22,10 +22,12 @@ The synchronisation channel is not a music source, an MCat destination, or the S
 - Local changes are journalled transactionally. Pending records remain pending until Telegram confirms the send and the matching local revision is acknowledged.
 - A stable per-installation writer UUID and logical clock support deterministic conflict resolution.
 - `CloudSync` uses the already authenticated TDLib client. It does not create a second Telegram client or copy a TDLib session to another device.
-- The remote store is an MLib-owned private broadcast supergroup, identified by `mlib-storage/1` and the `mlib-sync/4` protocol. It is muted, archived and configured without message auto-deletion.
+- The remote store is an MLib-owned private broadcast supergroup, identified by `mlib-storage/1` and the `mlib-sync/5` protocol. It is muted, archived and configured without message auto-deletion.
 - New snapshots and deltas are gzip-compressed and then encrypted with AES-256-GCM. A fresh 96-bit nonce is generated for each payload and protocol metadata (account, payload kind and snapshot cursor) is authenticated as additional data.
 - The encrypted envelope is size-bounded and checked with SHA-256 before decryption. GCM authentication is mandatory; failed decryption is an error and is never treated as an empty library.
-- Protocol versions 1–3 remain readable for migration. All new writes use encrypted version 4. Once an encrypted snapshot is confirmed, normal snapshot compaction can remove covered legacy messages.
+- Protocol versions 1–3 remain readable for migration. All new writes use encrypted version 5. Once an encrypted snapshot is confirmed, normal snapshot compaction can remove covered legacy messages.
+- Payloads are bounded to 32 MiB compressed and 128 MiB after expansion. A library whose complete snapshot exceeds that ceiling needs a future chunked-snapshot protocol revision; MLib reports the failure instead of retrying unbounded data.
+- The catalogue (`library.db`) is protected by the application sandbox and is not separately encrypted. The TDLib database key protects the Telegram session; CloudSync encryption protects remote payloads.
 - The receiver merges records into its own SQLite database and materialises the resulting library state. It does not copy or replace the sender's database.
 
 ## Encryption key and device pairing
@@ -36,7 +38,8 @@ The synchronisation channel is not a music source, an MCat destination, or the S
 - A device without a key is held in `key_required` state and does not discover/create a storage channel or upload plaintext/new-format data.
 - Importing a recovery code validates its length and refuses to silently replace a different key already installed on that device.
 - Losing the recovery code and all devices holding the key means the encrypted remote data cannot be recovered. Export and store the code safely before adding devices or replacing hardware.
-- Every device must run a build that understands protocol v4 and import the same recovery code before encrypted sync is enabled. Older MLib builds cannot consume v4 messages.
+- If the private channel is deleted or the device key becomes unavailable, Settings exposes an explicit repair action. It can forget the channel metadata and, optionally, the device key. The local library is preserved, but a new channel/new key does not migrate old remote data and other devices must be re-paired.
+- Every device must run a build that understands protocol v5 and import the same recovery code before encrypted sync is enabled. Older MLib builds cannot consume v5 messages.
 - The shared key provides confidentiality and integrity against parties that do not possess it. All paired devices share the same key; this is not per-device sender attribution or protection against a compromised paired device.
 - Telegram can still observe channel membership and message metadata such as timing, size, account identifier, payload kind and cursor. The payload contents are encrypted.
 

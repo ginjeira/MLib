@@ -1,9 +1,11 @@
-Spotygram — Copyright (c) 2026 Krablante. MIT License.
+MLib — Copyright (c) 2026 MLib contributors. MIT License.
+Derived from Spotygram — Copyright (c) 2026 Krablante. MIT License.
+The MLib source distribution includes the full MIT text in LICENSE (MLib-MIT.txt in assets).
 
 TDLib — Copyright Aliaksei Levin (levlam@telegram.org),
 Arseny Smirnov (arseny30@gmail.com), 2014–2026.
 https://github.com/tdlib/td — Boost Software License 1.0.
-The JsonClient.java JNI interface has been reduced to the entry points used by Spotygram.
+The JsonClient.java JNI interface has been reduced to the entry points used by MLib.
 See Boost-1.0.txt bundled in these assets.
 
 OpenSSL 3.5.6 — Copyright 1998–2026 The OpenSSL Project Authors.
@@ -17,7 +19,10 @@ Coil — Coil Contributors. https://github.com/coil-kt/coil — Apache License 2
 Haze / Haze Glass 2.0.1 — Christopher Banes and the Haze project contributors.
 https://github.com/chrisbanes/haze — Apache License 2.0.
 Guava / ListenableFuture — Google LLC. https://github.com/google/guava — Apache License 2.0.
-See Apache-2.0.txt bundled in these assets.
+libphonenumber — Google LLC. https://github.com/google/libphonenumber — Apache License 2.0.
+ZXing Core — ZXing Authors. https://github.com/zxing/zxing — Apache License 2.0.
+Fluent Emoji — Microsoft Corporation. https://github.com/microsoft/fluentui-emoji — MIT License.
+See Apache-2.0.txt and Fluent-Emoji-MIT.txt bundled in these assets.
 
 SQLite within TDLib is in the public domain: https://www.sqlite.org/copyright.html.
 No sample music or generated artwork is bundled with the application.

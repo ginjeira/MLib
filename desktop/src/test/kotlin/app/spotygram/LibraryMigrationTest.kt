@@ -12,7 +12,7 @@ class LibraryMigrationTest {
     @Test
     fun upgradingSchemaNineAddsMissingAlbumTables() = runBlocking {
         val root = Files.createTempDirectory("mlib-schema-nine").toFile()
-        val initial = Library(MigrationPlatform(root))
+        val initial = library(root)
         try {
             initial.reload()
         } finally {
@@ -24,7 +24,7 @@ class LibraryMigrationTest {
             db.execSQL("PRAGMA user_version=9")
         }
 
-        val upgraded = Library(MigrationPlatform(root))
+        val upgraded = library(root)
         try {
             upgraded.reload()
             val id = upgraded.createOrUpdateAlbum("Album", "Artist", emptyList(), year = "2025")
@@ -38,7 +38,7 @@ class LibraryMigrationTest {
     @Test
     fun playlistDescriptionAndCoverPersistAndSynchronize() = runBlocking {
         val root = Files.createTempDirectory("mlib-playlist-metadata").toFile()
-        val library = Library(MigrationPlatform(root))
+        val library = library(root)
         try {
             library.reload()
             val id = library.createPlaylist(
@@ -55,7 +55,7 @@ class LibraryMigrationTest {
             library.close()
         }
         try {
-            val reopened = Library(MigrationPlatform(root))
+            val reopened = library(root)
             try {
                 reopened.reload()
                 val playlist = reopened.state.value.playlists.single()
@@ -72,7 +72,7 @@ class LibraryMigrationTest {
     @Test
     fun completingDeletedTargetAlbumDoesNotCreateReplacement() = runBlocking {
         val root = Files.createTempDirectory("mlib-deleted-album").toFile()
-        val library = Library(MigrationPlatform(root))
+        val library = library(root)
         try {
             library.reload()
             var rejected = false
@@ -97,7 +97,7 @@ class LibraryMigrationTest {
     @Test
     fun albumMatchingKeepsDifferentKnownReleaseYearsSeparate() = runBlocking {
         val root = Files.createTempDirectory("mlib-album-editions").toFile()
-        val library = Library(MigrationPlatform(root))
+        val library = library(root)
         try {
             library.reload()
             val first = library.createOrUpdateAlbum("Greatest Hits", "Example Artist", emptyList(), year = "1998")
@@ -108,6 +108,27 @@ class LibraryMigrationTest {
 
             library.deduplicateAlbums()
             assertEquals(2, library.state.value.albums.size)
+        } finally {
+            library.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun albumDeduplicationDoesNotMergeSimilarTitles() = runBlocking {
+        val root = Files.createTempDirectory("mlib-album-dedup").toFile()
+        val library = library(root)
+        try {
+            library.reload()
+            library.createOrUpdateAlbum("Greatest Hits", "Example Artist", emptyList())
+            library.createOrUpdateAlbum("Greatest Hits 2", "Example Artist", emptyList())
+
+            library.deduplicateAlbums()
+
+            assertEquals(
+                setOf("Greatest Hits", "Greatest Hits 2"),
+                library.state.value.albums.map { it.title }.toSet(),
+            )
         } finally {
             library.close()
             root.deleteRecursively()
@@ -137,7 +158,7 @@ class LibraryMigrationTest {
             db.execSQL("PRAGMA user_version=7")
         }
 
-        val library = Library(MigrationPlatform(root))
+        val library = library(root)
         try {
             library.reload()
 
@@ -153,7 +174,7 @@ class LibraryMigrationTest {
         }
 
         try {
-            val reopened = Library(MigrationPlatform(root))
+            val reopened = library(root)
             try {
                 reopened.reload()
                 assertEquals("Test Track", reopened.state.value.tracks.single().title)
@@ -247,4 +268,10 @@ private class MemoryPreferences : Preferences {
         override fun commit() = true
         override fun apply() = Unit
     }
+}
+
+private fun library(root: File): Library {
+    val platform = MigrationPlatform(root)
+    AppText.initialize(platform)
+    return Library(platform)
 }

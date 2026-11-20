@@ -303,6 +303,9 @@ class LibrarySync(
     suspend fun meta(key: String, value: String) =
         withContext(Dispatchers.IO) { putMeta(database(), key, value) }
 
+    suspend fun removeMeta(key: String) =
+        withContext(Dispatchers.IO) { database().delete("sync_meta", "key=?", arrayOf(key)) }
+
     suspend fun meta(values: Map<String, String>) =
         withContext(Dispatchers.IO) {
             database().transaction { for ((key, value) in values) putMeta(this, key, value) }

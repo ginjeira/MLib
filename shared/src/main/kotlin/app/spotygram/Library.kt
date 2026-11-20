@@ -741,7 +741,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         isAutoDetected: Boolean = false,
         targetAlbumId: String? = null,
     ): String = withContext(Dispatchers.IO) {
-        require(title.isNotBlank()) { "O álbum tem de ter um título." }
+        require(title.isNotBlank()) { tr(R.string.album_title_required) }
         val now = System.currentTimeMillis()
         val normalizedTitle = normalizeAlbumText(title)
         val normalizedArtist = normalizeAlbumText(artist)
@@ -753,7 +753,7 @@ class Library(private val platform: Platform) : AutoCloseable {
                 ).use { it.moveToFirst() }
             } == true
             check(targetAlbumId == null || targetExists) {
-                "O álbum seleccionado para completar já não existe na biblioteca."
+                tr(R.string.album_target_missing)
             }
             val existing = if (targetAlbumId != null) targetAlbumId else
                 rawQuery("SELECT id,title,artist,year FROM albums WHERE account=?", arrayOf(sync.account.toString())).use { c ->
@@ -870,42 +870,22 @@ class Library(private val platform: Platform) : AutoCloseable {
             fun albumTracks(id: String): List<String> =
                 rawQuery("SELECT track FROM album_tracks WHERE album_id=? ORDER BY position", arrayOf(id))
                     .use { cursor -> buildList { while (cursor.moveToNext()) add(cursor.getString(0)) } }
-            fun similar(a: String, b: String): Boolean {
-                val x = normalizeAlbumText(a)
-                val y = normalizeAlbumText(b)
-                if (x.isBlank() || y.isBlank()) return false
-                if (x == y) return true
-                if (x.contains(y) || y.contains(x)) return minOf(x.length,y.length).toDouble()/maxOf(x.length,y.length) >= .72
-                val previous = IntArray(y.length + 1) { it }
-                for (i in x.indices) {
-                    var diagonal = previous[0]
-                    previous[0] = i + 1
-                    for (j in y.indices) {
-                        val above = previous[j + 1]
-                        previous[j + 1] = minOf(previous[j + 1] + 1, previous[j] + 1, diagonal + if (x[i] == y[j]) 0 else 1)
-                        diagonal = above
-                    }
-                }
-                return 1.0 - previous[y.length].toDouble()/maxOf(x.length,y.length) >= .84
-            }
+            // Only merge records that describe the same album under the same matching rules used
+            // when albums are created. Fuzzy title matching and track-overlap heuristics can
+            // silently merge distinct editions ("Greatest Hits" and "Greatest Hits 2"), so they
+            // are deliberately not used for destructive cleanup.
             val clusters = mutableListOf<MutableList<Album>>()
             val trackCache = rows.associate { it.id to albumTracks(it.id) }
             for (album in rows) {
+                val normalizedTitle = normalizeAlbumText(album.title)
+                val normalizedArtist = normalizeAlbumText(album.artist)
                 val candidate = clusters.firstOrNull { cluster ->
                     cluster.any { existing ->
-                        val artistA = normalizeAlbumText(album.artist)
-                        val artistB = normalizeAlbumText(existing.artist)
-                        val artistCompatible = artistA.isBlank() || artistB.isBlank() ||
-                            artistA == artistB || artistA.contains(artistB) || artistB.contains(artistA)
-                        val yearCompatible = album.year.isBlank() || existing.year.isBlank() ||
-                            album.year == existing.year
-                        val aTracks = trackCache[album.id].orEmpty().toSet()
-                        val bTracks = trackCache[existing.id].orEmpty().toSet()
-                        val overlap = aTracks.intersect(bTracks).size.toDouble() /
-                            maxOf(1, minOf(aTracks.size,bTracks.size))
-                        yearCompatible && (
-                            (artistCompatible && similar(album.title, existing.title)) || overlap >= .65
-                        )
+                        normalizedTitle.isNotBlank() &&
+                            normalizedArtist.isNotBlank() &&
+                            normalizedArtist == normalizeAlbumText(existing.artist) &&
+                            normalizedTitle == normalizeAlbumText(existing.title) &&
+                            (album.year.isBlank() || existing.year.isBlank() || album.year == existing.year)
                     }
                 }
                 if (candidate == null) clusters += mutableListOf(album) else candidate += album
@@ -1064,8 +1044,8 @@ class Library(private val platform: Platform) : AutoCloseable {
         description: String,
         coverUrl: String,
     ) = withContext(Dispatchers.IO) {
-        require(description.length <= 512) { "A descrição da playlist é demasiado longa." }
-        require(coverUrl.length <= 4096) { "O endereço da capa da playlist é demasiado longo." }
+        require(description.length <= 512) { tr(R.string.playlist_description_too_long) }
+        require(coverUrl.length <= 4096) { tr(R.string.playlist_cover_too_long) }
         writableDatabase.transaction {
             val uid = sync.playlistId(this, id)
             update(

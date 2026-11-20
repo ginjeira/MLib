@@ -14,6 +14,8 @@ import kotlinx.coroutines.sync.withPermit
 import org.json.JSONArray
 import org.json.JSONObject
 
+private const val MAX_IMPORT_BYTES = 1L * 1024 * 1024 * 1024
+
 class SpotygramApp(val platform: Platform) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val filesDir
@@ -800,7 +802,7 @@ class SpotygramApp(val platform: Platform) {
 
     suspend fun suggestAlbumCovers(title: String, artist: String): List<String> = withContext(Dispatchers.IO) {
         val term = listOf(artist, title).filter(String::isNotBlank).joinToString(" ")
-        require(term.isNotBlank()) { "Indica o título ou artista do álbum." }
+        require(term.isNotBlank()) { tr(R.string.album_search_required) }
         val suggestions = linkedSetOf<String>()
         fun fetch(url: String, parse: (JSONObject) -> Unit) {
             val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
@@ -862,7 +864,6 @@ class SpotygramApp(val platform: Platform) {
             )
             detected++
         }
-        library.deduplicateAlbums()
         library.reload()
         detected
     }
@@ -879,10 +880,15 @@ class SpotygramApp(val platform: Platform) {
                 open().use { input ->
                     file.outputStream().use { output ->
                         val buffer = ByteArray(64 * 1024)
+                        var total = 0L
                         while (true) {
                             currentCoroutineContext().ensureActive()
                             val count = input.read(buffer)
                             if (count < 0) break
+                            total += count
+                            if (total > MAX_IMPORT_BYTES) {
+                                throw IllegalArgumentException(tr(R.string.import_too_large))
+                            }
                             output.write(buffer, 0, count)
                         }
                     }

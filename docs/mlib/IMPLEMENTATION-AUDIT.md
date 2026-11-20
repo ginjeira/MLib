@@ -281,3 +281,7 @@ The following work was added to `feat/mlib-independent-identity` after the histo
 - No second Telegram client, separate MCat login, Spotygram data access, or MCat production changes were introduced.
 
 **Not yet validated:** Android resource/build checks for these changes, Desktop image build after icon migration, physical installation, real Telegram sign-in, 2FA, force-stop/restart session persistence, or coexistence with Spotygram. These remain explicit acceptance tests; a successful baseline build before this commit is not evidence for this update.
+
+## Independent audit remediation — 20 Nov 2026
+
+The independent audit findings were addressed in [INDEPENDENT-AUDIT-REMEDIATION.md](INDEPENDENT-AUDIT-REMEDIATION.md). Automatic evaluation releases from `main` remain intentional for the single-user workflow; all other audit findings have source fixes or explicit documentation. These changes still require the normal CI and device acceptance runs.

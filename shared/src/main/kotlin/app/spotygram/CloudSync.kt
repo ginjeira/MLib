@@ -22,6 +22,8 @@ internal fun syncFormatUsesEncryption(format: Int): Boolean = format >= 4
 /**
  * One event-driven worker uses the existing TDLib connection; Telegram owns transport and storage.
  */
+private class SyncPayloadTooLargeException(message: String) : Exception(message)
+
 class CloudSync(private val app: SpotygramApp) {
     val state = MutableStateFlow(SyncState())
     private val signals = Channel<Unit>(Channel.CONFLATED)
@@ -49,8 +51,11 @@ class CloudSync(private val app: SpotygramApp) {
     private val settleMillis = 60_000L
     private val maxTail = 16
     private val heads = mutableMapOf<Long, List<JSONObject>>()
-    private val maxCompressed = 8 * 1024 * 1024
-    private val maxExpanded = 32 * 1024 * 1024
+    // A full library snapshot is one message. Keep a generous ceiling for large libraries,
+    // while still bounding memory and decompression. Libraries that exceed it need a future
+    // chunked-snapshot protocol revision rather than an unbounded retry loop.
+    private val maxCompressed = 32 * 1024 * 1024
+    private val maxExpanded = 128 * 1024 * 1024
 
     init {
         scope.launch { for (ignored in store.changes) signal() }
@@ -93,6 +98,15 @@ class CloudSync(private val app: SpotygramApp) {
                                 retry?.cancel()
                                 retry = null
                                 retryAt = 0
+                            } catch (e: SyncPayloadTooLargeException) {
+                                initialized = false
+                                state.value =
+                                    state.value.copy(phase = "error", error = e.message.orEmpty())
+                                retry?.cancel()
+                                retry = null
+                                // Do not spin on a library that cannot fit the protocol bound.
+                                // The explicit repair action resets this gate.
+                                retryAt = Long.MAX_VALUE
                             } catch (e: Exception) {
                                 if (e is CancellationException) throw e
                                 initialized = false
@@ -157,17 +171,17 @@ class CloudSync(private val app: SpotygramApp) {
     fun importRecoveryCode(code: String) {
         val normalized = code.trim().replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
         val key = Base64.getUrlDecoder().decode(normalized)
-        require(key.size == 32) { "O código de recuperação MLib é inválido." }
+        require(key.size == 32) { tr(R.string.sync_recovery_invalid) }
         val existing = app.platform.syncEncryptionKey()
         require(existing == null || existing.contentEquals(key)) {
-            "Este dispositivo já está associado a outra chave MLib. Não vou substituí-la automaticamente."
+            tr(R.string.sync_recovery_already_configured)
         }
         if (existing == null) app.platform.storeSyncEncryptionKey(key)
         signal()
     }
 
     private fun requireSyncKey(): ByteArray =
-        app.platform.syncEncryptionKey() ?: error("A chave de recuperação MLib ainda não foi configurada.")
+        app.platform.syncEncryptionKey() ?: error(tr(R.string.sync_key_not_configured))
 
     private fun associatedData(kind: String, through: Long): ByteArray =
         "mlib-sync/4|${store.account}|$kind|$through".toByteArray(Charsets.UTF_8)
@@ -195,6 +209,26 @@ class CloudSync(private val app: SpotygramApp) {
     suspend fun close() {
         stop()
         scope.coroutineContext[Job]?.cancelAndJoin()
+    }
+
+    /**
+     * Forget the discovered private channel so the next sync creates a fresh one. This is
+     * intentionally explicit: automatically creating a replacement when a channel is
+     * temporarily unavailable would silently split the library across two channels.
+     *
+     * When [clearKey] is true the device also forgets its local sync key. The local library
+     * is not modified, but other devices must import the new recovery code before they can
+     * read the new channel.
+     */
+    suspend fun repairStorage(clearKey: Boolean = false) {
+        val wasConnected = connected
+        stop()
+        val user = store.account
+        if (user != 0L) store.removeMeta("channel/$user")
+        if (clearKey) app.platform.clearSyncEncryptionKey()
+        inspected.clear()
+        if (wasConnected) connection(true)
+        signal()
     }
 
     private suspend fun synchronize() {
@@ -622,13 +656,13 @@ class CloudSync(private val app: SpotygramApp) {
                 .put("through", through)
                 .put("records", JSONArray().apply { for (r in records) put(r.json()) })
         val plain = packet.toString().toByteArray(Charsets.UTF_8)
-        require(plain.size <= maxExpanded) { tr(R.string.sync_invalid_data) }
+        if (plain.size > maxExpanded) throw SyncPayloadTooLargeException(tr(R.string.sync_payload_too_large))
         val compressed =
             ByteArrayOutputStream()
                 .also { output -> GZIPOutputStream(output).use { it.write(plain) } }
                 .toByteArray()
         val bytes = SyncCrypto.encrypt(compressed, requireSyncKey(), associatedData(kind, through))
-        require(bytes.size <= maxCompressed) { tr(R.string.sync_invalid_data) }
+        if (bytes.size > maxCompressed) throw SyncPayloadTooLargeException(tr(R.string.sync_payload_too_large))
         val directory = File(app.cacheDir, "sync").apply { check(isDirectory || mkdirs()) }
         val file = File(directory, "mlib-$token.mlib")
         file.writeBytes(bytes)

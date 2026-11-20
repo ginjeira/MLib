@@ -15,7 +15,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - Android's per-package sandbox, SharedPreferences, databases, files, Android Keystore UID scope and FileProvider authority are now distinct from Spotygram.
 - The database encryption alias is MLib-specific.
 - Android release assets use `mlib-VERSION-arm64.apk` and `mlib-VERSION-x86_64.apk`; the updater and manual release workflow use the same naming contract.
-- A new MLib release keystore is expected at `$MLIB_STATE/mlib-release.jks`, with properties in `$MLIB_STATE/signing.properties`; the alias defaults to `mlib`. No key is generated or checked into this branch. Debug builds use Android's debug signer and can be installed alongside Spotygram.
+- A new MLib release keystore is expected at `$MLIB_STATE/mlib-release.jks`, with properties in `$MLIB_STATE/signing.properties`; the alias defaults to `mlib`. No key is generated or checked into this branch. Debug builds always use Android's debug signer and can be installed alongside Spotygram; the release key is never used for a debug variant.
 
 ## Build and native state (implemented)
 
@@ -33,7 +33,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - Desktop keyring account identity is `pt.ginjeira.mlib`; runtime app/AUMID identity is also MLib-specific.
 - The desktop application image is now named MLib.
 - The desktop image-only build now uses the MLib application image paths; the legacy Spotygram package generator and release workflow are disabled.
-- **Desktop installer/release publication remains disabled.** The inherited packaging scripts, signed bundle manifest and updater still contain Spotygram assumptions. They must be migrated together, including a fresh MLib Ed25519 key pair and trusted public key, before a desktop installer can be distributed. The build script explicitly refuses to package/publish a desktop release until that work is complete.
+- **Desktop installer/release publication remains disabled.** The inherited packaging scripts, signed bundle manifest and updater still contain Spotygram assumptions. The old Spotygram update public key has been removed, so desktop update verification fails closed. They must be migrated together, including a fresh MLib Ed25519 key pair and trusted public key, before a desktop installer can be distributed. The build script explicitly refuses to package/publish a desktop release until that work is complete.
 
 ## Visual identity (implemented 13 Nov 2026)
 
@@ -41,7 +41,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 - The artwork is authored as MLib resources; Android uses vector foreground/background assets, a monochrome adaptive icon and a dedicated notification silhouette.
 - The authentication screen and Desktop window use MLib artwork and wordmark.
 - Desktop package icons are generated as MLib-named PNG, ICO and ICNS assets from the original MLib launcher image.
-- The unused inherited Takopi/Spotygram launcher, mark and silhouette assets have been removed from active resources. The separate Takopi artwork notice remains in the repository for legal traceability.
+- The unused inherited Takopi/Spotygram launcher, mark and silhouette assets have been removed from active resources. The separate Takopi artwork notice remains in the repository for legal traceability but is no longer copied into application packages.
 - Desktop installers and signed release publication remain disabled as described above.
 
 ## Telegram sign-in (implementation; device validation pending)
@@ -56,7 +56,7 @@ The owner does not possess Spotygram's Android or desktop release-signing privat
 
 - Do not import, copy, open or mutate Spotygram's private database, TDLib files, keyring entries, preferences or media directories.
 - MLib may use the same Telegram account, but it must establish its own TDLib session and private data directory.
-- Keep the SQLite record/schema format compatible where practical, but use a distinct MLib CloudSync namespace: `mlib-sync/3`, `mlib-storage/1`, and `mlib-<id>` channel titles. MLib must never discover, parse, adopt, mute or write to Spotygram's `spotygram-sync/*` / `spotygram-storage/*` channel. It must not reuse that channel as an MCat destination.
+- Keep the SQLite record/schema format compatible where practical, but use a distinct MLib CloudSync namespace: `mlib-sync/5`, `mlib-storage/1`, and `mlib-<id>` channel titles. MLib must never discover, parse, adopt, mute or write to Spotygram's `spotygram-sync/*` / `spotygram-storage/*` channel. It must not reuse that channel as an MCat destination.
 - MCat production remains untouched.
 - Release update checks target the MLib repository only. There must be no fallback to Spotygram releases.
 

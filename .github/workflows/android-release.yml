@@ -39,15 +39,15 @@ jobs:
       MLIB_ANDROID_KEY_ALIAS: ${{ secrets.MLIB_ANDROID_KEY_ALIAS }}
       MLIB_ANDROID_KEY_PASSWORD: ${{ secrets.MLIB_ANDROID_KEY_PASSWORD }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
           fetch-depth: 0
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
       - name: Install pinned Android SDK components
@@ -82,7 +82,7 @@ jobs:
           keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
             -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
           echo "MLIB_VERSION=$VERSION" >> "$GITHUB_ENV"
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
       - name: Build signed Android release APKs
         run: bash tools/build.sh release
       - name: Verify package, version, ABI and signing
@@ -97,11 +97,16 @@ jobs:
           test "${#APKS[@]}" -eq 2
           AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
           APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          # Continuity of the MLib release identity. Changing this value requires a key
+          # rotation plan because installed clients reject APKs signed by another key.
+          EXPECTED_SIGNER_SHA256="6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200"
           for APK in "${APKS[@]}"; do
             BADGING=$("$AAPT" dump badging "$APK")
             grep -F "package: name='pt.ginjeira.mlib'" <<< "$BADGING"
             grep -F "versionName='$MLIB_VERSION'" <<< "$BADGING"
-            "$APKSIGNER" verify --verbose --print-certs "$APK"
+            SIGNER=$("$APKSIGNER" verify --verbose --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d '[:space:]')
+            test "$SIGNER" = "$EXPECTED_SIGNER_SHA256"
+            "$APKSIGNER" verify --verbose "$APK"
             if grep -q "native-code:.*arm64-v8a" <<< "$BADGING"; then
               cp "$APK" "$OUTPUT/mlib-$MLIB_VERSION-arm64.apk"
             elif grep -q "native-code:.*x86_64" <<< "$BADGING"; then
@@ -113,12 +118,13 @@ jobs:
           done
           test -s "$OUTPUT/mlib-$MLIB_VERSION-arm64.apk"
           test -s "$OUTPUT/mlib-$MLIB_VERSION-x86_64.apk"
-          sha256sum "$OUTPUT"/*.apk | tee "$OUTPUT/SHA256SUMS.txt"
+          (cd "$OUTPUT" && sha256sum *.apk > SHA256SUMS.txt)
+          cat "$OUTPUT/SHA256SUMS.txt"
       - name: Stage release assets for artifact upload
         run: |
           mkdir -p ".mlib-release-artifacts/$MLIB_VERSION"
           cp "$MLIB_STATE/releases/$MLIB_VERSION/"* ".mlib-release-artifacts/$MLIB_VERSION/"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mlib-android-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           path: .mlib-release-artifacts/${{ env.MLIB_VERSION }}/*

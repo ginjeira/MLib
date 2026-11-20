@@ -12,6 +12,8 @@ This directory contains the product specification, architecture, source-project 
 | [Roadmap](ROADMAP.md) | Phased implementation and acceptance criteria |
 | [Implementation audit](IMPLEMENTATION-AUDIT.md) | Current source state, identity changes and validation evidence |
 | [Independent identity](INDEPENDENT-IDENTITY.md) | Separate installation, storage, signing and release identity |
+| [Persistence and sync](PERSISTENCE-AND-SYNC.md) | Local schema, CloudSync protocol and recovery-key model |
+| [Independent audit remediation](INDEPENDENT-AUDIT-REMEDIATION.md) | Audit findings, source fixes and remaining validation |
 | [Telegram and MCat onboarding](TELEGRAM-ONBOARDING.md) | Proposed guided setup reusing the local TDLib session |
 
 The product specification and feature matrix define the functional target. The implementation audit and CI records define what is actually implemented and validated. A planned feature must not be described as complete until its acceptance criteria have evidence.

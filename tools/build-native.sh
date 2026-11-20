@@ -9,6 +9,7 @@ case "$MLIB_STATE/" in "$ROOT/"*) printf 'MLIB_STATE must be outside source.\n' 
 NDK="$ANDROID_HOME/ndk/28.2.13676358"
 JOBS=${MLIB_JOBS:-2}
 TD_COMMIT=d1085f9cebc5a62379991ae1652673954f229c1f
+OPENSSL_COMMIT=286ddeaac037533bbdce65b3c689e3f7ffebf0f6
 mkdir -p "$MLIB_STATE/native" "$MLIB_STATE/jniLibs"
 if [ ! -d "$MLIB_STATE/tdlib-src/.git" ]; then
   git init "$MLIB_STATE/tdlib-src"
@@ -20,8 +21,14 @@ if ! git -C "$MLIB_STATE/tdlib-src" cat-file -e "$TD_COMMIT^{commit}" 2>/dev/nul
 fi
 git -C "$MLIB_STATE/tdlib-src" checkout "$TD_COMMIT"
 if [ ! -d "$MLIB_STATE/native/openssl/.git" ]; then
-  git clone --depth 1 --branch openssl-3.5.6 https://github.com/openssl/openssl.git "$MLIB_STATE/native/openssl"
+  git init "$MLIB_STATE/native/openssl"
+  git -C "$MLIB_STATE/native/openssl" remote add origin https://github.com/openssl/openssl.git
+  git -C "$MLIB_STATE/native/openssl" fetch --depth 1 origin "$OPENSSL_COMMIT"
 fi
+if ! git -C "$MLIB_STATE/native/openssl" cat-file -e "$OPENSSL_COMMIT^{commit}" 2>/dev/null; then
+  git -C "$MLIB_STATE/native/openssl" fetch --depth 1 origin "$OPENSSL_COMMIT"
+fi
+git -C "$MLIB_STATE/native/openssl" checkout "$OPENSSL_COMMIT"
 export ANDROID_NDK_ROOT="$NDK"
 export PATH="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
 TD="$MLIB_STATE/tdlib-src/example/android"

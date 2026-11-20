@@ -168,7 +168,7 @@ fun PlaylistsScreen(
                         downloaded = playlistTracks.isNotEmpty() && playlistTracks.size == playlist.tracks.size && playlistTracks.all { it.offlineCopyValid },
                         downloading = download.trackId in playlist.tracks,
                         enabled = playlistTracks.any { it.available && !it.offlineCopyValid },
-                        contentDescription = "Transferir playlist para offline",
+                        contentDescription = tr(R.string.playlist_download_offline),
                         onClick = { onDownloadToDevice(playlist.tracks) },
                     )
                     IconButton(onClick = { onMore(playlist) }) {
@@ -278,7 +278,7 @@ fun PlaylistEditor(
                     OutlinedTextField(
                             value = description,
                             onValueChange = { description = it.take(512) },
-                            label = { Text("Descrição da playlist") },
+                            label = { Text(tr(R.string.playlist_description)) },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             minLines = 2,
                             maxLines = 3,
@@ -287,7 +287,7 @@ fun PlaylistEditor(
                     OutlinedTextField(
                         value = coverUrl,
                         onValueChange = { coverUrl = it.take(4096) },
-                        label = { Text("URL da capa (opcional)") },
+                        label = { Text(tr(R.string.playlist_cover_optional)) },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         singleLine = true,
                         enabled = !saving,

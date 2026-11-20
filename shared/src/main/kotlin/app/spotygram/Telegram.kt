@@ -109,7 +109,7 @@ class Telegram(
                                     )
                                 )
                             }
-                            if (chat.optString("title").startsWith("spotygram-"))
+                            if (chat.optString("title").startsWith("mlib-"))
                                 cloudUpdates.trySend(Unit)
                         }
                         "updateChatTitle" -> {
@@ -120,7 +120,7 @@ class Telegram(
                             updates.send(obj)
                             if (
                                 id in storageChats ||
-                                    obj.optString("title").startsWith("spotygram-")
+                                    obj.optString("title").startsWith("mlib-")
                             )
                                 cloudUpdates.trySend(Unit)
                         }
@@ -336,9 +336,18 @@ class Telegram(
                                 "use_message_database" to true,
                                 "use_secret_chats" to false,
                                 "use_test_dc" to platform.testDc,
-                                "api_id" to prefs.getInt("api_id", BuildConfig.TELEGRAM_API_ID),
+                                "api_id" to
+                                    if (BuildConfig.DEBUG) {
+                                        prefs.getInt("api_id", BuildConfig.TELEGRAM_API_ID)
+                                    } else {
+                                        BuildConfig.TELEGRAM_API_ID
+                                    },
                                 "api_hash" to
-                                    prefs.getString("api_hash", BuildConfig.TELEGRAM_API_HASH),
+                                    if (BuildConfig.DEBUG) {
+                                        prefs.getString("api_hash", BuildConfig.TELEGRAM_API_HASH)
+                                    } else {
+                                        BuildConfig.TELEGRAM_API_HASH
+                                    },
                                 "system_language_code" to platform.locale.language,
                                 "device_model" to platform.deviceModel,
                                 "system_version" to platform.systemVersion,

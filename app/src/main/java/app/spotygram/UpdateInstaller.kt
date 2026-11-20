@@ -42,7 +42,7 @@ class UpdateInstaller(private val app: AndroidApplication) : UpdateInstallation 
                         val saved =
                             withContext(Dispatchers.IO) {
                                 val a = UpdateAsset.fromJson(prefs.getString("asset", null))
-                                if (a == null || !a.newerThanInstalled()) {
+                                if (a == null || a.abi != AppText.platform.releaseAbi || !a.newerThanInstalled()) {
                                     clearFiles()
                                     null
                                 } else a
@@ -87,7 +87,7 @@ class UpdateInstaller(private val app: AndroidApplication) : UpdateInstallation 
             installReady()
             return
         }
-        if (asset == null || !asset.valid() || !asset.newerThanInstalled()) {
+        if (asset == null || !asset.valid() || asset.abi != AppText.platform.releaseAbi || !asset.newerThanInstalled()) {
             state.value = state.value.copy(error = R.string.update_check_first)
             return
         }
