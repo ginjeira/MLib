@@ -36,7 +36,9 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a release pública `v0.1.9` foi construída antes destas correcções. A próxima release (`v0.1.10`) é a primeira que as inclui.
+**Importante:** a release pública `v0.1.9` foi construída antes destas correcções. A `v0.1.10` (tag criada, build em curso) é a primeira que as inclui.
+
+**Actualização de 20-11-2026, 23:30:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists, (2) substituição por uma cópia disponível da mesma gravação quando a mensagem original desapareceu mesmo, (3) confirmação explícita de destino/contagem antes de adquirir e (4) localização dos estados de job. `:desktop:test` passou com 59 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 
@@ -71,7 +73,7 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 | ACQ-02 | Artista multi-faixa apenas com contagem >1 | `isMultiTrack()` usa `expectedCount` | `MusicAcquisitionRules.kt`; teste `artistCardinalityUsesExpectedCount…` | **Portado** | — |
 | ACQ-03 | Fixtures de pesquisa/callbacks | 8 pares tipo/provider e parsing numerado | `mcat-protocol-v1.json`; testes golden | **Portado** | — |
 | ACQ-04 | Paginação e colecções grandes | 100/página, 20 páginas, limite 2.000 mensagens | `MusicAcquisition.kt:1155-1168` | **Parcial** | P2 |
-| ACQ-05 | Simulação/arm antes do envio real | Encaminha imediatamente após a selecção | `MusicAcquisition.kt` acquire/forward | **Em falta** | P1 |
+| ACQ-05 | Simulação/arm antes do envio real | Confirmação com destino/contagem implementada; simulação completa ainda não | `AcquisitionSheet.kt` diálogo de confirmação | **Parcial** | P1 |
 | ACQ-06 | Medição/adaptação da latência de selecção | Polling fixo; sem métricas por etapa | `MusicAcquisition.kt` wait/click | **Parcial** | P2 |
 | LIB-02 | Auditoria/exportação operacional | Saúde planeada; sem `/status`, `/duplicates`, `/export` equivalentes | `Library`/UI | **Parcial** | P2 |
 | SRC-01 | Destino escolhido e fontes de dedup | Só procura “GinjMusic”; destino é adicionado às fontes **depois** do job; dedup usa todas as fontes da biblioteca | `AcquisitionSheet.kt:39-53`; `MusicAcquisition.kt:417,793` | **Parcial** | P1 |
@@ -120,17 +122,16 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 
 #### ACQ-05 — Pré-visualização/arm antes do encaminhamento
 
-**Problema actual:** o MLib encaminha assim que a opção é processada. O MCat original separava a simulação (`/arm`) da autorização real (`/live`).
+**Estado:** a confirmação explícita com destino e número de opções já está implementada na branch `fix/playlist-repair` (commit `2adc71d`). O modo de simulação completa ainda não existe.
 
-**Trabalho**
+**Trabalho restante**
 
 - Modo “simular” que corre o fluxo e mostra o que seria encaminhado, sem enviar.
-- Confirmação explícita do destino e da lista final antes do primeiro envio.
 - Mostrar faixas já existentes, faixas a adquirir e duplicados ignorados.
 - Guardar a autorização por job, não globalmente.
 - Testes de que simulação nunca chama `forwardMessages`.
 
-**Critério de aceitação:** nenhuma mensagem é encaminhada sem uma confirmação explícita que mostre destino e contagem.
+**Critério de aceitação:** nenhuma mensagem é encaminhada sem uma confirmação explícita que mostre destino e contagem; em modo simulação, nenhuma mensagem é enviada.
 
 #### DED-02 — Merge de metadata de faixas
 
@@ -243,7 +244,7 @@ Equivalente operacional a `/status`, `/duplicates`, `/hist-music-find` e `/expor
 
 ### P3 — limpeza observada durante esta revisão
 
-- `AcquisitionSheet.kt:355` ainda mostra `"Estado: …"` hardcoded em português; mover para recurso antes de considerar a UI EN/PT fechada.
+- ~~`AcquisitionSheet.kt:355` mostrava `"Estado: …"` hardcoded.~~ Resolvido na branch `fix/playlist-repair`: estado e estados por item passaram a recursos EN/PT.
 - O fallback de capa Unsplash é usado como capa de playlist/álbum em falta; deve ser tratado como placeholder explícito, não como metadata real.
 
 ### P0 live — aceitação real

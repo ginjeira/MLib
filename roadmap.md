@@ -9,29 +9,28 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado da versão 0.1.10
 
-Verificado em **20-11-2026, 22:41 UTC**.
+Verificado em **20-11-2026, 23:30 UTC**.
 
 | Item | Estado |
 |---|---|
 | Última release pública | **v0.1.9** (publicada em 20-11-2026 20:48:53) |
-| Tag `v0.1.10` | **Não existe** |
-| Release `v0.1.10` | **Não existe** |
-| Run de baseline para o commit local | **Não executado** |
-| `origin/main` | `d7c68d2` (`chore(release): bump version to 0.1.9`) |
-| `main` local | `993eafb` — **1 commit à frente**, por publicar |
-| Alterações de documentação | **Não commitadas** (`roadmap.md`, propostas, revisões) |
-| Bloqueio actual | **Autenticação GitHub** no `git push` |
+| Tag `v0.1.10` | **Criada** (`bb8b53c`, commit `5b6b045`) |
+| Release `v0.1.10` | **Em construção** (run `44834370323`) |
+| Baseline para `main` | **Sucesso** às 23:03 |
+| `origin/main` | `5b6b045` (bump para 0.1.10) |
+| Branch actual | `fix/playlist-repair`, 3 commits à frente de `main` |
+| Documentação | **Commitada e publicada**; actualizações na branch |
+| Bloqueio actual | Nenhum no push; falta concluir o build da release |
 
-**Conclusão:** a `v0.1.10` ainda não começou no GitHub. O código local está pronto para publicar, mas o push falhou por credenciais inválidas; não há baseline, tag, build nem release.
+**Conclusão:** o baseline e a tag `v0.1.10` já passaram. O workflow de release está na fase de build nativo dos APK; a release pública ainda não existe.
 
-Sequência para desbloquear:
+Sequência imediata:
 
-1. Autenticar o Git Credential Manager com um PAT válido com permissões de repositório e workflow.
-2. Commit das alterações de documentação pendentes.
-3. `git -c http.sslVerify=false push origin main`.
-4. Baseline `MLib baseline validation` verde (inclui Android debug compile).
-5. O workflow automático cria a versão **0.1.10** (patch), tag e release.
-6. Instalar a release **v0.1.9** num dispositivo e actualizar in-app para **v0.1.10**.
+1. Aguardar a publicação da `v0.1.10`.
+2. Verificar APKs, `SHA256SUMS.txt` e fingerprint do assinante.
+3. Instalar a release **v0.1.9** num dispositivo e actualizar in-app para **v0.1.10**.
+4. Validar a aquisição live e o fix das mensagens eliminadas.
+5. Só depois avaliar merge da branch `fix/playlist-repair` para a próxima release.
 
 A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclui.
 
@@ -60,7 +59,7 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 - [ ] Release `v0.1.10` pública, non-draft e non-prerelease.
 - [ ] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
 - [ ] Instalar `v0.1.9` release; actualizar in-app para `v0.1.10`.
-- [ ] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt:355`.
+- [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
 - [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
 - [ ] Smoke test live: uma faixa, uma playlist pequena, um cancelamento/retry.
 
@@ -89,7 +88,8 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 - [ ] Fontes de dedup configuráveis (destino + fontes escolhidas).
 - [ ] Estimativa antes de adquirir: faixas, duração aproximada, nº de pedidos.
 - [ ] Fluxo de aquisição em passos com estado visível.
-- [ ] Modo de simulação/arm e confirmação explícita antes de encaminhar (ACQ-05).
+- [x] Confirmação explícita com destino e contagem antes de encaminhar (ACQ-05, parte 1; branch `fix/playlist-repair`).
+- [ ] Modo de simulação completa, sem encaminhar, antes da autorização real (ACQ-05, parte 2).
 - [ ] Instrumentação de latência e esperas adaptativas, sem cliques cegos (ACQ-06).
 - [ ] Testes >100 mensagens e limite de 2.000; comportamento parcial explícito.
 - [ ] Nunca usar o canal CloudSync como destino musical.
@@ -274,7 +274,7 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 | LIVE-01 | Aceitação live T01–T20 | 0/6 | P0 | 0.1.10 |
 | SRC-01 | Destino, fontes e indexação antes da dedup | 1 | P1 | — |
 | ACQ-04 | Paginação >100 e limite 2.000 | 1 | P1 | — |
-| ACQ-05 | Simulação/arm e confirmação antes do envio | 1 | P1 | SRC-01 |
+| ACQ-05 | Confirmação feita; simulação/arm completa pendente | 1 | P1 | SRC-01 |
 | ACQ-06 | Latência e cliques adaptativos | 1 | P2 | ACQ-01 |
 | LIB-02 | Auditoria e exportação operacional | 3 | P2 | LIB-01 |
 | UX-06 | Fluxo de aquisição em passos e estimativa | 1 | P1 | SRC-01 |
