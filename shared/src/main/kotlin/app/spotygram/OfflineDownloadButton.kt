@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +49,12 @@ fun OfflineDownloadButton(
                 downloading -> CircularProgressIndicator(
                     modifier = Modifier.size(17.dp),
                     strokeWidth = 2.dp,
+                )
+                downloaded -> Icon(
+                    Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(18.dp),
                 )
                 else -> Icon(
                     Icons.Rounded.ArrowDownward,

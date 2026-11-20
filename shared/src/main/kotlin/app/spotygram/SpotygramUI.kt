@@ -228,7 +228,7 @@ fun SpotygramUI(
     fun downloadToDevice(ids: List<String>) {
         app.action {
             val downloadable = ids.distinct().filter { id ->
-                library.byId[id]?.let { it.available && !it.local } == true
+                library.byId[id]?.let { it.available && !it.offlineCopyValid } == true
             }
             if (downloadable.isNotEmpty()) onDownload(downloadable)
         }

@@ -66,32 +66,43 @@ fun AlbumsScreen(
     if (current != null) {
         val tracks = current.tracks.mapNotNull { library.byId[it] }
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                IconButton(onClick = { selected = null }) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = tr(R.string.back))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { selected = null }) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = tr(R.string.back))
+                    }
+                    AlbumArtwork(current, tracks.firstOrNull(), 56.dp)
+                    Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                        Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-                AlbumArtwork(current, tracks.firstOrNull(), 48.dp)
-                Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                    Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                OfflineDownloadButton(
-                    downloaded = tracks.isNotEmpty() && tracks.size == current.tracks.size && tracks.all { it.offlineCopyValid },
-                    downloading = download.trackId in tracks.map { it.id },
-                    enabled = tracks.any { it.available && !it.offlineCopyValid },
-                    contentDescription = "Transferir álbum para offline",
-                    onClick = { onDownloadToDevice(tracks.map { it.id }) },
-                )
-                TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
-                TextButton(onClick = {
-                    editTitle = current.title; editArtist = current.artist; editYear = current.year
-                    editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
-                }) { Text("Editar") }
-                IconButton(onClick = { confirmDelete = true }) {
-                    Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OfflineDownloadButton(
+                        downloaded = tracks.isNotEmpty() && tracks.size == current.tracks.size && tracks.all { it.offlineCopyValid },
+                        downloading = download.trackId in tracks.map { it.id },
+                        enabled = tracks.any { it.available && !it.offlineCopyValid },
+                        contentDescription = "Transferir álbum para offline",
+                        onClick = { onDownloadToDevice(tracks.map { it.id }) },
+                    )
+                    TextButton(onClick = { onDownload(current) }) { Text("Procurar faixas") }
+                    TextButton(onClick = {
+                        editTitle = current.title; editArtist = current.artist; editYear = current.year
+                        editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
+                    }) { Text("Editar") }
+                    IconButton(onClick = { confirmDelete = true }) {
+                        Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
+                    }
                 }
             }
             Text(tr(R.string.album_tracks, tracks.size), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)

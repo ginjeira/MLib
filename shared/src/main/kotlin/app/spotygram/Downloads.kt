@@ -39,7 +39,7 @@ class Downloads(
                     val queued = pending.size - cursor++
                     app.downloading.value = DownloadState(id, queued = queued)
                     val track = app.track(id)
-                    if (track == null || track.local) {
+                    if (track == null || track.offlineCopyValid) {
                         app.library.dequeue(id)
                         continue
                     }
