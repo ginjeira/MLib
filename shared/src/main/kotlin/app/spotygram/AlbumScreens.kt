@@ -41,6 +41,7 @@ fun AlbumsScreen(
     onReorder: (String, List<String>) -> Unit,
     onUpdate: (String, String, String, String, String, String) -> Unit,
     onSuggestCovers: suspend (String, String) -> List<String>,
+    onRevalidate: suspend (List<Track>) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -66,6 +67,9 @@ fun AlbumsScreen(
     }
     if (current != null) {
         val tracks = current.tracks.mapNotNull { library.byId[it] }
+        LaunchedEffect(current.id, current.tracks.size) {
+            onRevalidate(tracks)
+        }
         Column(Modifier.fillMaxSize()) {
             Column(
                 Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),

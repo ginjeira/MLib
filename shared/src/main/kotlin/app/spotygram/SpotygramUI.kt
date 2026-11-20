@@ -881,6 +881,7 @@ fun SpotygramUI(
                                                         app.action { app.library.updateAlbumMetadata(id, title, artist, year, cover, genre) }
                                                     },
                                                     onSuggestCovers = { title, artist -> app.suggestAlbumCovers(title, artist) },
+                                                    onRevalidate = app::revalidateUnavailable,
                                                 )
                                             else ->
                                                 SourcesScreen(
