@@ -89,6 +89,8 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 - [ ] Fontes de dedup configuráveis (destino + fontes escolhidas).
 - [ ] Estimativa antes de adquirir: faixas, duração aproximada, nº de pedidos.
 - [ ] Fluxo de aquisição em passos com estado visível.
+- [ ] Modo de simulação/arm e confirmação explícita antes de encaminhar (ACQ-05).
+- [ ] Instrumentação de latência e esperas adaptativas, sem cliques cegos (ACQ-06).
 - [ ] Testes >100 mensagens e limite de 2.000; comportamento parcial explícito.
 - [ ] Nunca usar o canal CloudSync como destino musical.
 
@@ -147,7 +149,7 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 - [ ] Preservar favoritos, playlists, álbuns e caminho local válido.
 - [ ] Sugestões de merge de álbuns com pré-visualização; nunca automático.
 - [ ] Golden tests de merge track/album.
-- [ ] Exportar relatório da biblioteca.
+- [ ] Exportar relatório da biblioteca (JSON/CSV/M3U) e auditoria operacional (LIB-02).
 
 **Aceitação**
 
@@ -272,6 +274,9 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 | LIVE-01 | Aceitação live T01–T20 | 0/6 | P0 | 0.1.10 |
 | SRC-01 | Destino, fontes e indexação antes da dedup | 1 | P1 | — |
 | ACQ-04 | Paginação >100 e limite 2.000 | 1 | P1 | — |
+| ACQ-05 | Simulação/arm e confirmação antes do envio | 1 | P1 | SRC-01 |
+| ACQ-06 | Latência e cliques adaptativos | 1 | P2 | ACQ-01 |
+| LIB-02 | Auditoria e exportação operacional | 3 | P2 | LIB-01 |
 | UX-06 | Fluxo de aquisição em passos e estimativa | 1 | P1 | SRC-01 |
 | UX-01 | Navegação 4 destinos | 2 | P1 | — |
 | UX-02 | Design tokens “MLib Signal” | 2 | P1 | — |
