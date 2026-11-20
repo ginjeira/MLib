@@ -38,7 +38,7 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 
 **Importante:** a release pública `v0.1.9` foi construída antes destas correcções. A `v0.1.10` (tag criada, build em curso) é a primeira que as inclui.
 
-**Actualização de 20-11-2026, 23:30:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists, (2) substituição por uma cópia disponível da mesma gravação quando a mensagem original desapareceu mesmo, (3) confirmação explícita de destino/contagem antes de adquirir e (4) localização dos estados de job. `:desktop:test` passou com 59 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
+**Actualização de 20-11-2026, 23:30:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação quando a mensagem original desapareceu mesmo, (3) confirmação explícita de destino/contagem antes de adquirir e (4) localização dos estados de job. `:desktop:test` passou com 59 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 
