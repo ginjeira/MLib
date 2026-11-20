@@ -113,6 +113,13 @@
     <string name="update_checking">A procurar…</string>
     <string name="update_current">Está a utilizar a versão mais recente.</string>
     <string name="update_failed">Não foi possível consultar o GitHub. Tente mais tarde.</string>
+    <string name="update_timeout">A procura de actualizações excedeu o tempo limite. Verifique a ligação e tente novamente.</string>
+    <string name="update_connection_failed">Não foi possível ligar ao GitHub. Verifique a Internet, o proxy ou a VPN.</string>
+    <string name="update_rate_limited">O GitHub limitou temporariamente as consultas. Aguarde antes de tentar novamente.</string>
+    <string name="update_server_error">O GitHub devolveu um erro. Tente novamente mais tarde.</string>
+    <string name="update_invalid_response">O GitHub devolveu informações de versão inválidas. Não foi instalada nenhuma actualização.</string>
+    <string name="update_asset_missing">A versão mais recente não contém um APK compatível com este dispositivo.</string>
+    <string name="update_storage_failed">Não foi possível guardar as informações da actualização neste dispositivo.</string>
     <string name="update_available">MLib %1$s está disponível</string>
     <string name="update_view">Ver versão</string>
     <string name="update_download_install">Transferir e instalar</string>
@@ -357,7 +364,7 @@
         <item quantity="one">%d faixa</item>
         <item quantity="other">%d faixas</item>
     </plurals>
-    <string name="update_automatic_help">No máximo uma vez por dia, quando abre a aplicação. Sem verificações em segundo plano nem transferências automáticas.</string>
+    <string name="update_automatic_help">Uma vez por dia após uma consulta bem-sucedida, quando abre a aplicação. Em caso de falha, tenta novamente após 10 minutos. Sem verificações em segundo plano nem transferências automáticas.</string>
     <string name="update_wait">Verificação recente. Tente novamente mais tarde.</string>
     <string name="update_dismiss">Não voltar a lembrar esta versão</string>
     <string name="update_no_browser">Não existe nenhuma aplicação disponível para abrir a página da versão.</string>

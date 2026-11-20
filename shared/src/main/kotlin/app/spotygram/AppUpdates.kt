@@ -1,6 +1,8 @@
 package app.spotygram
 
+import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,7 @@ data class UpdateState(
     val result: Int = 0,
 )
 
-/** One foreground-triggered request, with a durable attempt budget; no scheduled work. */
+/** Foreground update check with manual retry and explicit error reporting. */
 class AppUpdates(private val app: SpotygramApp) {
     private val prefs = app.getSharedPreferences("updates")
     val installer by lazy { app.platform.installer(app) }
@@ -22,14 +24,13 @@ class AppUpdates(private val app: SpotygramApp) {
     var asset: UpdateAsset? = UpdateAsset.fromJson(prefs.getString("asset", null))
         private set
 
-    val state =
-        MutableStateFlow(
-            UpdateState(
-                automatic = prefs.getBoolean("automatic", true),
-                version = newer(prefs.getString("version", "").orEmpty()),
-                dismissed = prefs.getString("dismissed", "").orEmpty(),
-            )
+    val state = MutableStateFlow(
+        UpdateState(
+            automatic = prefs.getBoolean("automatic", true),
+            version = newer(prefs.getString("version", "").orEmpty()),
+            dismissed = prefs.getString("dismissed", "").orEmpty(),
         )
+    )
 
     fun automatic(enabled: Boolean) {
         prefs.edit().putBoolean("automatic", enabled).apply()
@@ -51,39 +52,38 @@ class AppUpdates(private val app: SpotygramApp) {
         }
     }
 
-    // Called on the main thread, so checking reserves the single request before launching IO.
+    // Manual checks bypass the local daily throttle. GitHub's Retry-After remains respected.
     fun check(manual: Boolean = false) {
         if (state.value.checking || (!manual && !state.value.automatic)) return
         val now = System.currentTimeMillis()
-        val last = prefs.getLong("attempt", 0)
         val retry = prefs.getLong("retry_after", 0)
-        val interval = if (manual) 60_000L else 86_400_000L
-        if (last > now) {
-            prefs.edit().putLong("attempt", now).putLong("retry_after", 0).apply()
-        }
-        if (last > now || now - last < interval || now < retry) {
-            if (manual) state.value = state.value.copy(result = R.string.update_wait)
+        val lastSuccess = prefs.getLong("success", 0)
+        val lastFailure = prefs.getLong("failure", 0)
+        if (now < retry) {
+            if (manual) state.value = state.value.copy(result = R.string.update_rate_limited)
             return
         }
+        if (!manual && (now - lastSuccess < 86_400_000L || now - lastFailure < 600_000L)) return
         state.value = state.value.copy(checking = true, result = 0)
         app.scope.launch {
             try {
-                val version =
-                    withContext(Dispatchers.IO) {
-                        // Persist BEFORE network access, including failed attempts and process
-                        // restarts.
-                        kotlin.check(prefs.edit().putLong("attempt", now).commit())
-                        fetch(now)
-                    }
-                state.value =
-                    state.value.copy(
-                        version = newer(version),
-                        result =
-                            if (manual && newer(version).isEmpty()) R.string.update_current else 0,
-                    )
+                val version = withContext(Dispatchers.IO) { fetch(now) }
+                prefs.edit().putLong("success", now).putLong("failure", 0).putLong("attempt", now).commit()
+                val available = newer(version)
+                state.value = state.value.copy(
+                    version = available,
+                    result = if (manual && available.isEmpty()) R.string.update_current else 0,
+                )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                if (manual) state.value = state.value.copy(result = R.string.update_failed)
+                prefs.edit().putLong("failure", now).commit()
+                val message = when (e) {
+                    is SocketTimeoutException -> R.string.update_timeout
+                    is IOException -> R.string.update_connection_failed
+                    is UpdateCheckException -> e.messageId
+                    else -> R.string.update_invalid_response
+                }
+                state.value = state.value.copy(result = message)
             } finally {
                 state.value = state.value.copy(checking = false)
             }
@@ -91,81 +91,69 @@ class AppUpdates(private val app: SpotygramApp) {
     }
 
     private fun fetch(now: Long): String {
-        val connection =
-            URL("https://api.github.com/repos/ginjeira/MLib/releases/latest").openConnection()
-                as HttpURLConnection
+        val connection = URL("https://api.github.com/repos/ginjeira/MLib/releases/latest")
+            .openConnection() as HttpURLConnection
         try {
-            connection.connectTimeout = 5_000
-            connection.readTimeout = 8_000
+            connection.connectTimeout = 7_000
+            connection.readTimeout = 12_000
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Accept", "application/vnd.github+json")
             connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
             connection.setRequestProperty("User-Agent", "MLib/${BuildConfig.VERSION_NAME}")
-            prefs
-                .getString("etag", null)
-                ?.takeIf { asset != null }
-                ?.let {
-                    connection.setRequestProperty("If-None-Match", it)
-                }
+            prefs.getString("etag", null)?.takeIf { asset != null }?.let {
+                connection.setRequestProperty("If-None-Match", it)
+            }
             val code = connection.responseCode
             if (code == 304) return prefs.getString("version", "").orEmpty()
             if (code == 403 || code == 429) {
                 val seconds = connection.getHeaderField("Retry-After")?.toLongOrNull()
                 val reset = connection.getHeaderField("X-RateLimit-Reset")?.toLongOrNull()
-                val until =
-                    maxOf(
-                        now + 3_600_000L,
-                        now + (seconds ?: 0).coerceIn(0, 86_400) * 1000,
-                        (reset ?: 0).coerceIn(0, (now + 86_400_000L) / 1000) * 1000,
-                    )
-                prefs.edit().putLong("retry_after", until).commit()
-            }
-            kotlin.check(code == 200)
-            val data =
-                connection.inputStream.use { input ->
-                    val buffer = ByteArray(262_144)
-                    var length = 0
-                    while (length < buffer.size) {
-                        val count = input.read(buffer, length, buffer.size - length)
-                        if (count == -1) break
-                        length += count
-                    }
-                    kotlin.check(length < buffer.size)
-                    String(buffer, 0, length, Charsets.UTF_8)
-                }
-            val release = JSONObject(data)
-            kotlin.check(!release.getBoolean("draft") && !release.getBoolean("prerelease"))
-            val tag = release.getString("tag_name")
-            kotlin.check(tag.startsWith("v") && parts(tag.drop(1)) != null)
-            val version = tag.drop(1)
-            val suffix = app.platform.releaseAbi
-            val assets = release.getJSONArray("assets")
-            val selected =
-                (0 until assets.length())
-                    .map { assets.getJSONObject(it) }
-                    .firstOrNull {
-                        it.optString("name") == app.platform.assetName(version) &&
-                            it.optString("state") == "uploaded" &&
-                            it.optLong("size") > 0
-                    }
-            kotlin.check(selected != null)
-            val candidate =
-                UpdateAsset(
-                    version,
-                    selected.getLong("size"),
-                    selected.getString("digest").removePrefix("sha256:"),
-                    suffix,
+                val until = maxOf(
+                    now + 3_600_000L,
+                    now + (seconds ?: 0).coerceIn(0, 86_400) * 1000,
+                    (reset ?: 0).coerceIn(0, (now + 86_400_000L) / 1000) * 1000,
                 )
-            kotlin.check(candidate.valid())
-            kotlin.check(
-                prefs
-                    .edit()
-                    .putString("version", version)
-                    .putString("asset", candidate.toJson())
-                    .putString("etag", connection.getHeaderField("ETag"))
-                    .putLong("retry_after", 0)
-                    .commit()
+                prefs.edit().putLong("retry_after", until).commit()
+                throw UpdateCheckException(R.string.update_rate_limited)
+            }
+            if (code != 200) throw UpdateCheckException(R.string.update_server_error)
+            val data = connection.inputStream.use { input ->
+                val buffer = ByteArray(262_144)
+                var length = 0
+                while (length < buffer.size) {
+                    val count = input.read(buffer, length, buffer.size - length)
+                    if (count == -1) break
+                    length += count
+                }
+                if (length == buffer.size) throw UpdateCheckException(R.string.update_invalid_response)
+                String(buffer, 0, length, Charsets.UTF_8)
+            }
+            val release = try { JSONObject(data) } catch (_: Exception) {
+                throw UpdateCheckException(R.string.update_invalid_response)
+            }
+            if (release.optBoolean("draft") || release.optBoolean("prerelease"))
+                throw UpdateCheckException(R.string.update_invalid_response)
+            val tag = release.optString("tag_name")
+            if (!tag.startsWith("v") || parts(tag.drop(1)) == null)
+                throw UpdateCheckException(R.string.update_invalid_response)
+            val version = tag.drop(1)
+            val assets = release.optJSONArray("assets")
+                ?: throw UpdateCheckException(R.string.update_asset_missing)
+            val selected = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull {
+                it.optString("name") == app.platform.assetName(version) &&
+                    it.optString("state") == "uploaded" && it.optLong("size") > 0
+            } ?: throw UpdateCheckException(R.string.update_asset_missing)
+            val candidate = UpdateAsset(
+                version,
+                selected.getLong("size"),
+                selected.getString("digest").removePrefix("sha256:"),
+                app.platform.releaseAbi,
             )
+            if (!candidate.valid()) throw UpdateCheckException(R.string.update_invalid_response)
+            if (!prefs.edit().putString("version", version).putString("asset", candidate.toJson())
+                    .putString("etag", connection.getHeaderField("ETag"))
+                    .putLong("retry_after", 0).commit())
+                throw UpdateCheckException(R.string.update_storage_failed)
             asset = candidate
             return version
         } finally {
@@ -187,4 +175,6 @@ class AppUpdates(private val app: SpotygramApp) {
         }
         return ""
     }
+
+    private class UpdateCheckException(val messageId: Int) : Exception()
 }
