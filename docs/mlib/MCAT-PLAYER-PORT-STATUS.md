@@ -36,9 +36,9 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a release pública `v0.1.9` foi construída antes destas correcções. A `v0.1.10` (tag criada, build em curso) é a primeira que as inclui.
+**Importante:** a `v0.1.10` foi publicada em 23:43:53 e é a primeira release que inclui as correcções do commit `993eafb`.
 
-**Actualização de 20-11-2026, 23:30:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns quando a mensagem original desapareceu mesmo, (3) confirmação explícita de destino/contagem antes de adquirir e (4) localização dos estados de job. `:desktop:test` passou com 59 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
+**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 
@@ -76,7 +76,7 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 | ACQ-05 | Simulação/arm antes do envio real | Confirmação com destino/contagem implementada; simulação completa ainda não | `AcquisitionSheet.kt` diálogo de confirmação | **Parcial** | P1 |
 | ACQ-06 | Medição/adaptação da latência de selecção | Polling fixo; sem métricas por etapa | `MusicAcquisition.kt` wait/click | **Parcial** | P2 |
 | LIB-02 | Auditoria/exportação operacional | Saúde planeada; sem `/status`, `/duplicates`, `/export` equivalentes | `Library`/UI | **Parcial** | P2 |
-| SRC-01 | Destino escolhido e fontes de dedup | Só procura “GinjMusic”; destino é adicionado às fontes **depois** do job; dedup usa todas as fontes da biblioteca | `AcquisitionSheet.kt:39-53`; `MusicAcquisition.kt:417,793` | **Parcial** | P1 |
+| SRC-01 | Destino escolhido e fontes de dedup | Selector de qualquer chat implementado; indexação antes da dedup e fontes configuráveis ainda pendentes | `AcquisitionSheet.kt` ChatPicker; `MusicAcquisition.kt:417,793` | **Parcial** | P1 |
 | SET-01 | Setup do bot e arquivo pessoal | `/start` é enviado ao pesquisar; não há wizard nem criação do canal-arquivo | `MusicAcquisition.kt` (sendText `/start`); sem ecrã de setup | **Em falta** | P2 |
 | FWD-01 | Encaminhamento e importação | `forwardMessages`, parser, upsert, refresh | `MusicAcquisition.kt:806-850` | **Portado, falta live** | P1 live |
 | DED-01 | Igualdade de gravações | Port directo de `areTracksDuplicate` | `MusicAcquisitionRules.kt:130`; golden tests | **Portado** | — |

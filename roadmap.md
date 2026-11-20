@@ -9,28 +9,38 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado da versão 0.1.10
 
-Verificado em **20-11-2026, 23:34 UTC**.
+Verificado em **20-11-2026, 23:47 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.9** (publicada em 20-11-2026 20:48:53) |
+| Última release pública | **v0.1.10** (publicada em 20-11-2026 23:43:53) |
 | Tag `v0.1.10` | **Criada** (`bb8b53c`, commit `5b6b045`) |
-| Release `v0.1.10` | **Build dos APK em curso** (run `44834370323`) |
+| Release `v0.1.10` | **Publicada**; run `44834370323` concluído com sucesso |
 | Baseline para `main` | **Sucesso** às 23:03 |
 | `origin/main` | `5b6b045` (bump para 0.1.10) |
-| Branch actual | `fix/playlist-repair`, 3 commits à frente de `main` |
+| Branch actual | `fix/playlist-repair`, vários commits à frente de `main` |
 | Documentação | **Commitada e publicada**; actualizações na branch |
-| Bloqueio actual | Nenhum no push; falta concluir o build da release |
+| Bloqueio actual | Nenhum; falta teste de instalação/actualização em dispositivo |
 
-**Conclusão:** o baseline e a tag `v0.1.10` já passaram. O workflow de release continua no step `Build signed Android release APKs`; as fases de verificação de package/ABI/assinatura, upload e publicação ainda estão pendentes. A release pública ainda não existe.
+**Verificação independente da release:**
+
+| Verificação | Resultado |
+|---|---|
+| `mlib-0.1.10-arm64.apk` SHA-256 | `a29421d1a975014edd2a655c6c5211b8c0be364664a9d67e3d75778f9e896aa8` ✅ |
+| `mlib-0.1.10-x86_64.apk` SHA-256 | `1728744eaf3cd0ee66cf24c42b6d9c58fb9ca34f5c96f74ce6b68348f35c8b65` ✅ |
+| `SHA256SUMS.txt` | Contém ambos os hashes, sem caminhos absolutos ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.10` / `1010` ✅ |
+| ABIs | `arm64-v8a` e `x86_64` ✅ |
+| Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
+
+**Conclusão:** a `v0.1.10` está publicada e verificada. Falta apenas o teste real: instalar a `v0.1.9` release e actualizar in-app para `v0.1.10`.
 
 Sequência imediata:
 
-1. Aguardar a publicação da `v0.1.10`.
-2. Verificar APKs, `SHA256SUMS.txt` e fingerprint do assinante.
-3. Instalar a release **v0.1.9** num dispositivo e actualizar in-app para **v0.1.10**.
-4. Validar a aquisição live e o fix das mensagens eliminadas.
-5. Só depois avaliar merge da branch `fix/playlist-repair` para a próxima release.
+1. Instalar a release **v0.1.9** num dispositivo.
+2. Actualizar in-app para **v0.1.10** e confirmar preservação de dados.
+3. Validar a aquisição live e o fix das mensagens eliminadas.
+4. Só depois avaliar merge da branch `fix/playlist-repair` para a próxima release.
 
 A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclui.
 
@@ -54,10 +64,10 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 
 **Tarefas**
 
-- [ ] Commit das docs pendentes.
-- [ ] Push de `main`; baseline verde.
-- [ ] Release `v0.1.10` pública, non-draft e non-prerelease.
-- [ ] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
+- [x] Commit das docs pendentes.
+- [x] Push de `main`; baseline verde.
+- [x] Release `v0.1.10` pública, non-draft e non-prerelease.
+- [x] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
 - [ ] Instalar `v0.1.9` release; actualizar in-app para `v0.1.10`.
 - [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
 - [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
