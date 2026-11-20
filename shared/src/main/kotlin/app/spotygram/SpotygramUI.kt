@@ -234,7 +234,7 @@ fun SpotygramUI(
                     runCatching { app.resolve(track) }
                 }
             }
-            library.reload()
+            app.library.reload()
             val downloadable = ids.distinct().filter { id ->
                 library.byId[id]?.let { it.available && !it.offlineCopyValid } == true
             }
