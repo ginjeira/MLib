@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      MLIB_STATE: ${{ runner.temp }}/mlib-android-state
+      MLIB_STATE: ${{ github.workspace }}/../mlib-android-state
       TELEGRAM_API_ID: '0'
       TELEGRAM_API_HASH: ''
     steps:

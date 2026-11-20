@@ -727,7 +727,14 @@ fun SpotygramUI(
                                             tab == 0 ||
                                                 tab == 1 ||
                                                 tab == 2 && playlist != null ||
-                                                tab == 4 && (source != null || profileId != null) ->
+                                                tab == 4 && (source != null || profileId != null) -> {
+                                                LaunchedEffect(playlist?.id, playlist?.tracks?.size) {
+                                                    playlist?.let { current ->
+                                                        app.revalidateUnavailable(
+                                                            current.tracks.mapNotNull { library.byId[it] }
+                                                        )
+                                                    }
+                                                }
                                                 MusicScreen(
                                                     hideDuplicates = groupedView,
                                                     library,
@@ -814,6 +821,7 @@ fun SpotygramUI(
                                                         }
                                                     },
                                                 )
+                                                }
                                             tab == 2 ->
                                                 PlaylistsScreen(
                                                     library,

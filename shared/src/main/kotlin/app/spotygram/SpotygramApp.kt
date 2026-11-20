@@ -58,6 +58,7 @@ class SpotygramApp(val platform: Platform) {
     private val resolvedFiles = ConcurrentHashMap<String, Int>()
     private val artworkFiles = ConcurrentHashMap<Int, MutableSet<String>>()
     private val artworkChanges = Channel<Unit>(Channel.CONFLATED)
+    private val revalidating = ConcurrentHashMap.newKeySet<String>()
     var player: Player? = null
     var playback: PlaybackQueue? = null
     var downloadService: Downloads? = null
@@ -709,6 +710,56 @@ class SpotygramApp(val platform: Platform) {
                     )
                 }
         }
+    }
+
+    /**
+     * Telegram can deliver a permanent-delete update and later still return the message
+     * (for example after a resync or a chat migration). A stale available=false record then
+     * appears in playlists as "message deleted" even though the message exists.
+     *
+     * Re-check unavailable records when a playlist/album is opened and restore them if the
+     * message can still be fetched. Nothing is marked unavailable by this method.
+     */
+    suspend fun revalidateUnavailable(candidates: List<Track>) {
+        var changed = false
+        for (track in candidates.take(50)) {
+            if (track.available || track.local || track.imported || track.profileUserId != 0L)
+                continue
+            if (!revalidating.add(track.id)) continue
+            try {
+                val message =
+                    try {
+                        telegram.request(
+                            json(
+                                "getMessage",
+                                "chat_id" to track.chatId,
+                                "message_id" to track.messageId,
+                            ),
+                            20_000L,
+                        )
+                    } catch (e: TelegramException) {
+                        continue
+                    }
+                val parsed = parseTrack(message, track.source) ?: continue
+                library.upsert(
+                    listOf(
+                        parsed.copy(
+                            saved = track.saved,
+                            liked = track.liked,
+                            path = track.path,
+                        )
+                    )
+                )
+                changed = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // A transient failure must not turn a stale record into another permanent state.
+            } finally {
+                revalidating.remove(track.id)
+            }
+        }
+        if (changed) library.reload()
     }
 
     suspend fun resolve(track: Track, publish: Boolean = true): Int {
