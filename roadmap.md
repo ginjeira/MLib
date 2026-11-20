@@ -9,20 +9,20 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado da versão 0.1.10
 
-Verificado em **20-11-2026, 23:30 UTC**.
+Verificado em **20-11-2026, 23:34 UTC**.
 
 | Item | Estado |
 |---|---|
 | Última release pública | **v0.1.9** (publicada em 20-11-2026 20:48:53) |
 | Tag `v0.1.10` | **Criada** (`bb8b53c`, commit `5b6b045`) |
-| Release `v0.1.10` | **Em construção** (run `44834370323`) |
+| Release `v0.1.10` | **Build dos APK em curso** (run `44834370323`) |
 | Baseline para `main` | **Sucesso** às 23:03 |
 | `origin/main` | `5b6b045` (bump para 0.1.10) |
 | Branch actual | `fix/playlist-repair`, 3 commits à frente de `main` |
 | Documentação | **Commitada e publicada**; actualizações na branch |
 | Bloqueio actual | Nenhum no push; falta concluir o build da release |
 
-**Conclusão:** o baseline e a tag `v0.1.10` já passaram. O workflow de release está na fase de build nativo dos APK; a release pública ainda não existe.
+**Conclusão:** o baseline e a tag `v0.1.10` já passaram. O workflow de release continua no step `Build signed Android release APKs`; as fases de verificação de package/ABI/assinatura, upload e publicação ainda estão pendentes. A release pública ainda não existe.
 
 Sequência imediata:
 
