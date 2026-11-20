@@ -99,7 +99,7 @@ class AppUpdates(private val app: SpotygramApp) {
             connection.instanceFollowRedirects = false
             connection.setRequestProperty("Accept", "application/vnd.github+json")
             connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
-            connection.setRequestProperty("User-Agent", "MLib/BuildConfig.VERSION_NAME")
+            connection.setRequestProperty("User-Agent", "MLib/${BuildConfig.VERSION_NAME}")
             prefs.getString("etag", null)?.takeIf { asset != null }?.let {
                 connection.setRequestProperty("If-None-Match", it)
             }
