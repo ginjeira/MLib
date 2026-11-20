@@ -164,12 +164,11 @@ fun PlaylistsScreen(
                         }
                     }
                     val playlistTracks = playlist.tracks.mapNotNull { library.byId[it] }
-                    val availableTracks = playlistTracks.filter { it.available }
                     OfflineDownloadButton(
-                        downloaded = availableTracks.isNotEmpty() && availableTracks.all { it.offlineCopyValid },
+                        downloaded = playlistTracks.isNotEmpty() && playlistTracks.size == playlist.tracks.size && playlistTracks.all { it.offlineCopyValid },
                         downloading = download.trackId in playlist.tracks,
-                        enabled = playlistTracks.any { !it.available || !it.offlineCopyValid },
-                        contentDescription = "Transferir playlist para offline ou revalidar mensagens",
+                        enabled = playlistTracks.any { it.available && !it.offlineCopyValid },
+                        contentDescription = "Transferir playlist para offline",
                         onClick = { onDownloadToDevice(playlist.tracks) },
                     )
                     IconButton(onClick = { onMore(playlist) }) {
