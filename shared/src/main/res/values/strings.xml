@@ -580,4 +580,15 @@
     <string name="sync_key_unavailable">The MLib sync key is unavailable. Use Repair sync storage to reset this device\'s sync key.</string>
     <string name="sync_payload_too_large">The library is too large for one sync snapshot. The operation was stopped; reduce the library or wait for a chunked-snapshot protocol update.</string>
     <string name="playlist_repaired">Replaced %1$d unavailable track(s) with an existing copy.</string>
+    <string name="acquisition_confirm_title">Send to Telegram?</string>
+    <string name="acquisition_confirm_message">You are about to forward %1$d selected option(s) to \"%2$s\". Continue?</string>
+    <string name="acquisition_confirm_action">Send</string>
+    <string name="acquisition_job_status">Status: %1$s</string>
+    <string name="acquisition_status_queued">Queued</string>
+    <string name="acquisition_status_running">Running</string>
+    <string name="acquisition_status_forwarding">Forwarding</string>
+    <string name="acquisition_status_completed">Completed</string>
+    <string name="acquisition_status_partial">Partial</string>
+    <string name="acquisition_status_failed">Failed</string>
+    <string name="acquisition_status_skipped_duplicate">Already exists</string>
 </resources>

@@ -34,6 +34,7 @@ internal fun AcquisitionSheet(
     var destinations by remember { mutableStateOf<List<ChatChoice>>(emptyList()) }
     var destinationId by rememberSaveable { mutableLongStateOf(0L) }
     var destinationMenu by remember { mutableStateOf(false) }
+    var confirmAcquire by remember { mutableStateOf(false) }
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
@@ -298,13 +299,7 @@ internal fun AcquisitionSheet(
                     }
                 }
                 Button(
-                    onClick = {
-                        scope.launch {
-                            runCatching {
-                                withContext(Dispatchers.IO) { acquisition.acquire(search.id, selected.toList(), destinationId) }
-                            }
-                        }
-                    },
+                    onClick = { confirmAcquire = true },
                     enabled = selected.isNotEmpty() && destinationId != 0L && !state.acquiring && !hasPendingJob,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -352,14 +347,14 @@ internal fun AcquisitionSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            "Estado: ${job.status.wireValue}",
+                            tr(R.string.acquisition_job_status, tr(acquisitionStatusLabel(job.status))),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (job.status == AcquisitionJobStatus.FAILED)
                                 MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         )
                         job.items.forEach { item ->
                             Text(
-                                "${item.optionNumber}. ${item.title} — ${item.status.wireValue}",
+                                "${item.optionNumber}. ${item.title} — ${tr(acquisitionStatusLabel(item.status))}",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             if (item.error.isNotBlank()) {
@@ -386,7 +381,56 @@ internal fun AcquisitionSheet(
             )
         }
     }
+    if (confirmAcquire) {
+        val destination = destinations.firstOrNull { it.id == destinationId }
+        AlertDialog(
+            onDismissRequest = { confirmAcquire = false },
+            title = { Text(tr(R.string.acquisition_confirm_title)) },
+            text = {
+                Text(
+                    tr(
+                        R.string.acquisition_confirm_message,
+                        selected.size,
+                        destination?.displayTitle ?: "",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmAcquire = false
+                    val chosen = selected.toList()
+                    scope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                acquisition.acquire(
+                                    state.search?.id ?: return@withContext,
+                                    chosen,
+                                    destinationId,
+                                )
+                            }
+                        }
+                    }
+                }) { Text(tr(R.string.acquisition_confirm_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmAcquire = false }) {
+                    Text(tr(R.string.cancel))
+                }
+            },
+        )
+    }
 }
+
+private fun acquisitionStatusLabel(status: AcquisitionJobStatus): Int =
+    when (status) {
+        AcquisitionJobStatus.QUEUED -> R.string.acquisition_status_queued
+        AcquisitionJobStatus.RUNNING -> R.string.acquisition_status_running
+        AcquisitionJobStatus.FORWARDING -> R.string.acquisition_status_forwarding
+        AcquisitionJobStatus.COMPLETED -> R.string.acquisition_status_completed
+        AcquisitionJobStatus.PARTIAL -> R.string.acquisition_status_partial
+        AcquisitionJobStatus.FAILED -> R.string.acquisition_status_failed
+        AcquisitionJobStatus.SKIPPED_DUPLICATE -> R.string.acquisition_status_skipped_duplicate
+    }
 
 private fun acquisitionTypeLabel(type: AcquisitionContentType): Int =
     when (type) {
