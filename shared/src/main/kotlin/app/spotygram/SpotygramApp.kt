@@ -711,13 +711,8 @@ class SpotygramApp(val platform: Platform) {
 
     suspend fun resolve(track: Track, publish: Boolean = true): Int {
         if (track.imported) return 0
-        // A permanent-delete update may have marked this catalog entry unavailable.
-        // Do not trust the in-memory TDLib file binding in that case: re-fetch the
-        // message so a still-existing audio message can restore the track to available.
-        if (track.available) {
-            resolvedFiles[track.id]?.let {
-                return it
-            }
+        resolvedFiles[track.id]?.let {
+            return it
         }
         if (track.profileUserId != 0L) return profiles.resolve(track)
         val response =
