@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +34,7 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -203,6 +205,10 @@ fun PlaylistEditor(
     var selected by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
     var saving by remember { mutableStateOf(false) }
     var discard by remember { mutableStateOf(false) }
+    var coverSuggestions by remember { mutableStateOf(emptyList<String>()) }
+    var coverBusy by remember { mutableStateOf(false) }
+    var coverError by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
     val compact = LocalConfiguration.current.screenHeightDp < 480 || imeVisible()
     val playlist = library.playlists.firstOrNull { it.id == addingTo }
@@ -292,6 +298,62 @@ fun PlaylistEditor(
                         singleLine = true,
                         enabled = !saving,
                     )
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                coverBusy = true
+                                coverError = ""
+                                coverSuggestions =
+                                    runCatching {
+                                            app.suggestAlbumCovers(
+                                                name,
+                                                "",
+                                            )
+                                        }
+                                        .getOrElse {
+                                            coverError =
+                                                it.message ?: tr(R.string.album_cover_search_failed)
+                                            emptyList()
+                                        }
+                                coverBusy = false
+                            }
+                        },
+                        enabled = name.isNotBlank() && !saving && !coverBusy,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    ) {
+                        Text(
+                            tr(
+                                if (coverBusy) R.string.album_searching_covers
+                                else R.string.album_search_covers
+                            )
+                        )
+                    }
+                    if (coverError.isNotBlank()) {
+                        Text(
+                            coverError,
+                            Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    if (coverSuggestions.isNotEmpty()) {
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(coverSuggestions) { url ->
+                                AsyncImage(
+                                    model = url,
+                                    contentDescription = tr(R.string.album_use_cover),
+                                    modifier =
+                                        Modifier.size(84.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable { coverUrl = url },
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         else
