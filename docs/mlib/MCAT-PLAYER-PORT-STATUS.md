@@ -38,7 +38,7 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 
 **Importante:** a `v0.1.11` foi publicada em 01:47:31 e inclui as correcções do commit `993eafb`, a revalidação de mensagens e a branch `fix/playlist-repair`.
 
-**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch foi integrada em `main` e incluída na `v0.1.11`.
+**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job, (6) `/start` apenas na ativação explícita do bot e nunca numa pesquisa, e (7) ação global de reparação da biblioteca. `:desktop:test` passou com 61 testes; Android compile/resources passaram. A branch `fix/playlist-repair` foi integrada em `main` e incluída na `v0.1.11`; a reparação global e o setup do bot continuam na branch `feat/library-repair`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 

@@ -44,6 +44,13 @@ Sequência imediata:
 
 A `v0.1.11` inclui as correcções do commit `993eafb`, o fix de revalidação `cbad0c2` e a branch `fix/playlist-repair`.
 
+## 0.1 Progresso em curso (pós-0.1.11)
+
+- 0.1.12 (em construção): connectionStateUpdating tratado como online, eliminando a alternância offline/synced.
+- Branch eat/library-repair: ação global de reparação de faixas indisponíveis.
+- Branch eat/library-repair: /start só na ativação explícita do bot; pesquisas nunca o enviam e a flag por conta impede repetição.
+
+
 ## 1. Regras do roadmap
 
 - Cada wave termina com **código, testes, documentação e evidência de release**.
