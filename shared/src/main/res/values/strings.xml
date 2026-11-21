@@ -610,4 +610,8 @@
     <string name="create_archive_channel">Create archive channel</string>
     <string name="create_archive_help">Creates a private channel named MLib Archive in your Telegram account and selects it as source and destination. You can delete it later in Telegram.</string>
     <string name="archive_channel_created">Archive channel ready: %1$s</string>
+    <string name="sleep_timer">Sleep timer</string>
+    <string name="sleep_timer_minutes">%1$d minutes</string>
+    <string name="sleep_timer_set">Sleep timer set for %1$d minutes.</string>
+    <string name="sleep_timer_cancel">Cancel timer</string>
 </resources>

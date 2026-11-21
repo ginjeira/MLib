@@ -82,6 +82,7 @@ fun SettingsSheet(
     var editingSyncKey by rememberSaveable { mutableStateOf(false) }
     var repairSync by rememberSaveable { mutableStateOf(false) }
     var confirmArchive by remember { mutableStateOf(false) }
+    var sleepDialog by remember { mutableStateOf(false) }
     var recoveryCode by remember { mutableStateOf("") }
     var syncKeyInput by remember { mutableStateOf("") }
     var syncKeyError by rememberSaveable { mutableStateOf("") }
@@ -106,6 +107,11 @@ fun SettingsSheet(
                     modifier = Modifier.clickable(onClick = onAcquisition),
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
+            }
+            item(key = "sleep") {
+                ActionRow(Icons.Rounded.Bedtime, tr(R.string.sleep_timer)) {
+                    sleepDialog = true
+                }
             }
             item(key = "health") {
                 val unavailable =
@@ -479,6 +485,33 @@ fun SettingsSheet(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+    if (sleepDialog) {
+        AlertDialog(
+            onDismissRequest = { sleepDialog = false },
+            title = { Text(tr(R.string.sleep_timer)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(15, 30, 60, 90).forEach { minutes ->
+                        TextButton(onClick = {
+                            sleepDialog = false
+                            app.playback?.setSleepTimer(minutes)
+                            app.action {
+                                app.notices.emit(tr(R.string.sleep_timer_set, minutes))
+                            }
+                        }) { Text(tr(R.string.sleep_timer_minutes, minutes)) }
+                    }
+                    TextButton(onClick = {
+                        sleepDialog = false
+                        app.playback?.cancelSleepTimer()
+                    }) { Text(tr(R.string.sleep_timer_cancel)) }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { sleepDialog = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
     }
     if (confirmArchive) {
         AlertDialog(

@@ -4,6 +4,9 @@ import java.security.SecureRandom
 import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 
 private val playbackRandom = SecureRandom()
@@ -81,6 +84,9 @@ class PlaybackQueue(private val app: SpotygramApp, private val exo: Player) {
 
     private val saves = Channel<Saved>(Channel.CONFLATED)
     private val handler = MainTasks(scope)
+    private val sleepUntilState = MutableStateFlow(0L)
+    val sleepUntil: StateFlow<Long> = sleepUntilState.asStateFlow()
+    private var sleepTimer: Runnable? = null
     // Dragging changes audio immediately, but only the settled speed writes a small preference.
     private val persistSpeed = Runnable {
         val speed = exo.playbackParameters.speed
@@ -524,6 +530,26 @@ class PlaybackQueue(private val app: SpotygramApp, private val exo: Player) {
         return blocked
     }
 
+    fun setSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        if (minutes <= 0) return
+        val until = System.currentTimeMillis() + minutes * 60_000L
+        sleepUntilState.value = until
+        val timer = Runnable {
+            sleepTimer = null
+            sleepUntilState.value = 0
+            exo.pause()
+        }
+        sleepTimer = timer
+        handler.postDelayed(timer, minutes * 60_000L)
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimer?.let { handler.removeCallbacks(it) }
+        sleepTimer = null
+        sleepUntilState.value = 0
+    }
+
     fun pauseForCacheCleanup() {
         savePosition()
         cleanupPosition = exo.currentPosition.coerceAtLeast(0)
@@ -730,6 +756,7 @@ class PlaybackQueue(private val app: SpotygramApp, private val exo: Player) {
     fun close(): Job {
         handler.removeCallbacks(slide)
         handler.removeCallbacks(persistSpeed)
+        cancelSleepTimer()
         persistSpeed.run()
         save()
         saves.close()
