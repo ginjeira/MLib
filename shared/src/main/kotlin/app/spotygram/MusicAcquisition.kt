@@ -953,7 +953,11 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val account = request(json("getMe"))
         val startedKey = "music_bot_started_${account.getLong("id")}"
         if (!app.prefs.getBoolean(startedKey, false)) {
-            sendText(bot.getLong("id"), "/start")
+            // A /start resets or interrupts the bot conversation for accounts that
+            // already used it. Only send it when this account has no history with
+            // the bot; after this check, never send it again for this account.
+            val hasHistory = history(bot.getLong("id"), 1).isNotEmpty()
+            if (!hasHistory) sendText(bot.getLong("id"), "/start")
             app.prefs.edit().putBoolean(startedKey, true).apply()
         }
         return bot
