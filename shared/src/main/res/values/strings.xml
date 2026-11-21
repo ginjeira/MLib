@@ -592,4 +592,7 @@
     <string name="acquisition_status_failed">Failed</string>
     <string name="acquisition_status_skipped_duplicate">Already exists</string>
     <string name="album_repaired">Replaced %1$d unavailable album track(s) with an existing copy.</string>
+    <string name="repair_library">Repair unavailable tracks</string>
+    <string name="library_repaired">Repaired %1$d unavailable track(s).</string>
+    <string name="library_repair_none">No unavailable tracks needed repair.</string>
 </resources>

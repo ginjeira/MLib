@@ -597,4 +597,7 @@
     <string name="acquisition_status_failed">Falhou</string>
     <string name="acquisition_status_skipped_duplicate">Já existe</string>
     <string name="album_repaired">Substituí %1$d faixa(s) indisponível(is) do álbum por uma cópia existente.</string>
+    <string name="repair_library">Reparar faixas indisponíveis</string>
+    <string name="library_repaired">Reparei %1$d faixa(s) indisponível(is).</string>
+    <string name="library_repair_none">Nenhuma faixa indisponível precisava de reparação.</string>
 </resources>

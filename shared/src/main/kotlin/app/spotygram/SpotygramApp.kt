@@ -720,8 +720,8 @@ class SpotygramApp(val platform: Platform) {
      * Re-check unavailable records when a playlist/album is opened and restore them if the
      * message can still be fetched. Nothing is marked unavailable by this method.
      */
-    suspend fun revalidateUnavailable(candidates: List<Track>) {
-        var changed = false
+    suspend fun revalidateUnavailable(candidates: List<Track>): Int {
+        var changed = 0
         for (track in candidates.take(50)) {
             if (track.available || track.local || track.imported || track.profileUserId != 0L)
                 continue
@@ -750,7 +750,7 @@ class SpotygramApp(val platform: Platform) {
                         )
                     )
                 )
-                changed = true
+                changed++
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -759,7 +759,31 @@ class SpotygramApp(val platform: Platform) {
                 revalidating.remove(track.id)
             }
         }
-        if (changed) library.reload()
+        if (changed > 0) library.reload()
+        return changed
+    }
+
+    /**
+     * User-triggered repair for old libraries: revalidate stale message references and
+     * re-point unavailable playlist/album entries to playable copies.
+     */
+    suspend fun repairUnavailableLibrary(): Int {
+        awaitLibrary()
+        val before = library.state.value
+        val restored =
+            revalidateUnavailable(
+                before.tracks.filter {
+                    !it.available && !it.local && !it.imported && it.profileUserId == 0L
+                }
+            )
+        var repaired = 0
+        for (playlist in library.state.value.playlists) {
+            repaired += library.repairPlaylistTracks(playlist.id)
+        }
+        for (album in library.state.value.albums) {
+            repaired += library.repairAlbumTracks(album.id)
+        }
+        return restored + repaired
     }
 
     suspend fun resolve(track: Track, publish: Boolean = true): Int {
