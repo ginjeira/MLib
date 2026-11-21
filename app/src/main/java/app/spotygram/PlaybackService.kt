@@ -36,12 +36,14 @@ class PlaybackService : MediaLibraryService() {
         private const val ALL_TRACKS = "mlib:tracks"
         private const val PLAYLISTS = "mlib:playlists"
         private const val ALBUMS = "mlib:albums"
+private const val ARTISTS = "mlib:artists"
         private const val FAVORITES = "mlib:favorites"
 private const val OFFLINE = "mlib:offline"
 private const val RECENT = "mlib:recent"
         private const val TRACK_PREFIX = "track:"
         private const val PLAYLIST_PREFIX = "playlist:"
         private const val ALBUM_PREFIX = "album:"
+private const val ARTIST_PREFIX = "artist:"
 
         /**
          * The service must be exported for Android Auto and Automotive OS. These are the
@@ -122,6 +124,7 @@ private const val RECENT = "mlib:recent"
                         folder(ALL_TRACKS, tr(R.string.all_tracks)),
                         folder(PLAYLISTS, tr(R.string.playlists)),
                         folder(ALBUMS, tr(R.string.albums)),
+                        folder(ARTISTS, tr(R.string.artists)),
                         folder(FAVORITES, tr(R.string.favorites)),
                         folder(OFFLINE, tr(R.string.offline_tracks)),
                         folder(RECENT, tr(R.string.recently_added)),
@@ -154,6 +157,14 @@ private const val RECENT = "mlib:recent"
                     PLAYLISTS -> library.playlists.map { playlist ->
                         folder("$PLAYLIST_PREFIX${playlist.id}", playlist.name)
                     }
+                    ARTISTS -> library.tracks
+                        .asSequence()
+                        .filter { it.local || it.available }
+                        .filter { it.artist.isNotBlank() }
+                        .groupBy { it.artist }
+                        .toList()
+                        .sortedBy { it.first.lowercase() }
+                        .map { (artist, _) -> folder("$ARTIST_PREFIX$artist", artist) }
                     ALBUMS -> library.albums.map { album ->
                         folder(
                             "$ALBUM_PREFIX${album.id}",
@@ -169,6 +180,18 @@ private const val RECENT = "mlib:recent"
                             playlist?.tracks.orEmpty().mapNotNull(library.byId::get)
                                 .filter { it.local || it.available }
                                 .map(::trackItem)
+                        }
+                        parentId.startsWith(ARTIST_PREFIX) -> {
+                            val artist = parentId.removePrefix(ARTIST_PREFIX)
+                            library.tracks
+                                .asSequence()
+                                .filter {
+                                    it.artist.equals(artist, ignoreCase = true) &&
+                                        (it.local || it.available)
+                                }
+                                .sortedWith(compareBy<Track> { it.title.lowercase() })
+                                .map(::trackItem)
+                                .toList()
                         }
                         parentId.startsWith(ALBUM_PREFIX) -> {
                             val albumId = parentId.removePrefix(ALBUM_PREFIX)
@@ -205,6 +228,8 @@ private const val RECENT = "mlib:recent"
                             folder(mediaId, it.name)
                         }
                     }
+                    mediaId.startsWith(ARTIST_PREFIX) ->
+                        folder(mediaId, mediaId.removePrefix(ARTIST_PREFIX))
                     mediaId.startsWith(ALBUM_PREFIX) -> {
                         val id = mediaId.removePrefix(ALBUM_PREFIX)
                         library.albums.firstOrNull { it.id == id }?.let {
