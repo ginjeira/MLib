@@ -435,13 +435,21 @@ internal fun AcquisitionSheet(
             onDismissRequest = { confirmAcquire = false },
             title = { Text(tr(R.string.acquisition_confirm_title)) },
             text = {
-                Text(
-                    tr(
-                        R.string.acquisition_confirm_message,
-                        selected.size,
-                        destination?.displayTitle ?: "",
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        tr(
+                            R.string.acquisition_confirm_message,
+                            selected.size,
+                            destination?.displayTitle ?: "",
+                        )
                     )
-                )
+                    if (selected.size >= 10) {
+                        Text(
+                            tr(R.string.acquisition_confirm_large, selected.size),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {

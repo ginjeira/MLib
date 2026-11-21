@@ -610,4 +610,5 @@
     <string name="acquisition_destination_sync_channel">O canal privado do CloudSync não pode ser usado como destino de música.</string>
     <string name="dedup_destination_only">Deduplicar apenas no destino</string>
     <string name="dedup_destination_only_help">Compara as faixas recebidas apenas com o destino selecionado. Desliga para comparar também com todas as fontes ativas da biblioteca.</string>
+    <string name="acquisition_confirm_large">%1$d pedidos selecionados. Coleções grandes podem demorar muito e terminar parcialmente.</string>
 </resources>
