@@ -617,4 +617,6 @@
         <string name="chat_picker_no_destinations">No writable groups or channels were found in your Telegram account.</string>
     <string name="archive_channel_ready">Archive channel ready</string>
     <string name="archive_channel_ready_help">%1$s is available as a source and acquisition destination.</string>
+    <string name="offline_tracks">Offline</string>
+    <string name="recently_added">Recently added</string>
 </resources>

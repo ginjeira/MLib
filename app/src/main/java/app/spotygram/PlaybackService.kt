@@ -37,6 +37,8 @@ class PlaybackService : MediaLibraryService() {
         private const val PLAYLISTS = "mlib:playlists"
         private const val ALBUMS = "mlib:albums"
         private const val FAVORITES = "mlib:favorites"
+private const val OFFLINE = "mlib:offline"
+private const val RECENT = "mlib:recent"
         private const val TRACK_PREFIX = "track:"
         private const val PLAYLIST_PREFIX = "playlist:"
         private const val ALBUM_PREFIX = "album:"
@@ -121,6 +123,8 @@ class PlaybackService : MediaLibraryService() {
                         folder(PLAYLISTS, tr(R.string.playlists)),
                         folder(ALBUMS, tr(R.string.albums)),
                         folder(FAVORITES, tr(R.string.favorites)),
+                        folder(OFFLINE, tr(R.string.offline_tracks)),
+                        folder(RECENT, tr(R.string.recently_added)),
                     )
                     ALL_TRACKS -> library.tracks
                         .asSequence()
@@ -132,6 +136,19 @@ class PlaybackService : MediaLibraryService() {
                         .asSequence()
                         .filter { it.liked && (it.local || it.available) }
                         .sortedWith(compareBy<Track> { it.title.lowercase() }.thenBy { it.artist.lowercase() })
+                        .map(::trackItem)
+                        .toList()
+                    OFFLINE -> library.tracks
+                        .asSequence()
+                        .filter { it.local && !it.temporary }
+                        .sortedWith(compareBy<Track> { it.title.lowercase() }.thenBy { it.artist.lowercase() })
+                        .map(::trackItem)
+                        .toList()
+                    RECENT -> library.tracks
+                        .asSequence()
+                        .filter { it.local || it.available }
+                        .sortedByDescending { it.date }
+                        .take(100)
                         .map(::trackItem)
                         .toList()
                     PLAYLISTS -> library.playlists.map { playlist ->
@@ -178,6 +195,8 @@ class PlaybackService : MediaLibraryService() {
             ): ListenableFuture<LibraryResult<androidx.media3.common.MediaItem>> {
                 val library = app.library.state.value
                 val item = when {
+                    mediaId == OFFLINE -> folder(OFFLINE, tr(R.string.offline_tracks))
+                    mediaId == RECENT -> folder(RECENT, tr(R.string.recently_added))
                     mediaId.startsWith(TRACK_PREFIX) ->
                         library.byId[mediaId.removePrefix(TRACK_PREFIX)]?.let(::trackItem)
                     mediaId.startsWith(PLAYLIST_PREFIX) -> {

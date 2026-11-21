@@ -622,4 +622,6 @@
         <string name="chat_picker_no_destinations">Não foram encontrados grupos ou canais com permissão de escrita na tua conta Telegram.</string>
     <string name="archive_channel_ready">Canal de arquivo pronto</string>
     <string name="archive_channel_ready_help">%1$s está disponível como fonte e destino de aquisição.</string>
+    <string name="offline_tracks">Offline</string>
+    <string name="recently_added">Adicionadas recentemente</string>
 </resources>
