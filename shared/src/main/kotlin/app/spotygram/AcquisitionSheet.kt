@@ -42,12 +42,26 @@ internal fun AcquisitionSheet(
         val localMatches = runCatching { app.searchChats("GinjMusic") }.getOrDefault(emptyList())
         destinations = if (localMatches.isNotEmpty()) localMatches else
             runCatching { app.searchChats("GinjMusic", onServer = true) }.getOrDefault(emptyList())
+        val savedKey = "acquisition_destination_${AppText.savedChatId}"
+        val saved = app.prefs.getLong(savedKey, 0L)
+        if (saved != 0L && destinations.none { it.id == saved }) {
+            runCatching {
+                    app.telegram.rememberChat(
+                        app.telegram.request(json("getChat", "chat_id" to saved))
+                    )
+                }
+                .getOrNull()
+                ?.let { destinations = listOf(it) + destinations }
+        }
         if (destinations.none { it.id == destinationId }) {
             // Never silently fall back to an arbitrary chat: an acquisition could
             // otherwise forward music to the wrong conversation.
-            destinationId = destinations.firstOrNull {
-                it.title.contains("GinjMusic", ignoreCase = true)
-            }?.id ?: 0L
+            destinationId =
+                destinations.firstOrNull { it.id == saved }?.id
+                    ?: destinations.firstOrNull {
+                        it.title.contains("GinjMusic", ignoreCase = true)
+                    }?.id
+                    ?: 0L
         }
     }
 
@@ -390,7 +404,21 @@ internal fun AcquisitionSheet(
                         onDone = { pickingDestination = false },
                         header = false,
                         onChoice = { choice, _ ->
-                            destinationId = choice.id
+                            if (choice.title.startsWith("mlib-", ignoreCase = true)) {
+                                app.action {
+                                    app.notices.emit(
+                                        tr(R.string.acquisition_destination_sync_channel)
+                                    )
+                                }
+                            } else {
+                                destinationId = choice.id
+                                app.prefs.edit()
+                                    .putLong(
+                                        "acquisition_destination_${AppText.savedChatId}",
+                                        choice.id,
+                                    )
+                                    .apply()
+                            }
                             if (destinations.none { it.id == choice.id }) {
                                 destinations = destinations + choice
                             }

@@ -340,6 +340,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
         try {
             val destination = request(json("getChat", "chat_id" to destinationChatId))
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
+            require(!destinationTitle.startsWith("mlib-", ignoreCase = true)) {
+                tr(R.string.acquisition_destination_sync_channel)
+            }
             val jobId = UUID.randomUUID().toString()
             val now = System.currentTimeMillis()
             val job = AcquisitionJob(

@@ -607,4 +607,5 @@
     <string name="library_health">Saúde da biblioteca</string>
     <string name="library_health_summary">%1$d indisponíveis · %2$d grupos duplicados · %3$d sem capa</string>
     <string name="library_health_ok">Está tudo em ordem.</string>
+    <string name="acquisition_destination_sync_channel">O canal privado do CloudSync não pode ser usado como destino de música.</string>
 </resources>

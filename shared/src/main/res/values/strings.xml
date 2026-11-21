@@ -602,4 +602,5 @@
     <string name="library_health">Library health</string>
     <string name="library_health_summary">%1$d unavailable · %2$d duplicate groups · %3$d without cover</string>
     <string name="library_health_ok">Everything looks good.</string>
+    <string name="acquisition_destination_sync_channel">The private CloudSync channel cannot be used as a music destination.</string>
 </resources>
