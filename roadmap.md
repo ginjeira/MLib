@@ -7,38 +7,38 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.18
+## 0. Estado da versão 0.1.19
 
-Verificado em **21-11-2026, 19:40 UTC**.
+Verificado em **21-11-2026, 21:25 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.18** (publicada em 21-11-2026 19:38:00) |
-| Tag `v0.1.18` | **Criada** (commit `f5f7785`) |
-| Release `v0.1.18` | **Publicada**; run `44938534455` concluído com sucesso |
-| Baseline para `main` | **Sucesso** (`44938284501`) |
-| Validação anterior | **v0.1.17 validada pelo owner** |
-| `origin/main` | `f5f7785`; versão 0.1.18 |
-| Documentação | **Atualizada para 0.1.17/0.1.18** |
-| Bloqueio actual | Nenhum; falta validação em dispositivo da 0.1.18 |
+| Última release pública | **v0.1.19** (publicada em 21-11-2026 21:23:03) |
+| Tag `v0.1.19` | **Criada** (`f69e208`) |
+| Release `v0.1.19` | **Publicada**; run `44948048125` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (`44947764825`) |
+| `origin/main` | `f69e208`; versão 0.1.19 |
+| Documentação | **Atualizada para 0.1.19** |
+| Bloqueio actual | Nenhum; falta validação em dispositivo |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.18-arm64.apk` SHA-256 | `013a6ea126433f43346fb46ec3a704274a45e06be828587e6a5aa5e3ee514d19` ✅ |
-| `mlib-0.1.18-x86_64.apk` SHA-256 | `69ccca13bf0327c4f5e8fe0996dd173c455ddf89fa40d9d3ed155a34e25913db` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `d497aa00cc2cebf83534a3ad6441039965edf872d02e1cd8d3b444b2cbe2d177` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.18` / `1018` ✅ |
+| `mlib-0.1.19-arm64.apk` SHA-256 | `59a6fc73c54a5d9ba6f76ee98c61d68d4218c801b275bca76d5b1945dc6703af` ✅ |
+| `mlib-0.1.19-x86_64.apk` SHA-256 | `584c68a3b86cb02d599e300cbb503bbee23e1fd63a16478bb4ed6ebe9d114698` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `3b46bb85023b41acf67554c66a27e2328a77a8204bbd74275b262b3a57c97c1c` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.19` / `1019` ✅ |
 | ABIs | `arm64-v8a` e `x86_64` ✅ |
 | Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
 
-**Conclusão:** a `v0.1.18` integra destinos apenas em grupos/canais, Android Auto Offline/Recent, duplicados/merge, histórico de jobs, confirmação de “Completar álbum” e pesquisa de capas em playlists.
+**Conclusão:** a `v0.1.19` inclui o filtro owner/admin no Adicionar origem, cache nativo, Artists no Android Auto, exportação JSON, auto-download de favoritos e enriquecimento de álbuns.
 
 Sequência imediata:
 
-1. Validar a **0.1.18** no dispositivo.
-2. Integrar o lote da **0.1.19**: cache nativo, Artists no Android Auto, exportação JSON, auto-download de favoritos e enriquecimento de álbuns.
+1. Validar a 0.1.19 no dispositivo, sobretudo o seletor de origens.
+2. Confirmar que contactos, bots, linhas vazias e grupos sem ownership desaparecem.
+3. Confirmar que o cache nativo acelera as releases seguintes.
 ## 0.2 Progresso por wave — 21-11-2026
 
 | Wave | Estado | Progresso | Notas |
@@ -46,10 +46,10 @@ Sequência imediata:
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
-| Wave 3 — confiança/biblioteca | **Em curso** | ~60% | Saúde, reparação global e merge de duplicados na 0.1.18; exportação JSON na branch. Faltam pesquisa unificada e golden tests. |
-| Wave 4 — álbuns/capas | **Parcial** | ~45% | Confirmação de completar álbum e capas de playlist na 0.1.18; enriquecimento iTunes/Deezer na branch. Faltam pré-visualização de faixas e upload local. |
-| Wave 5 — setup/jobs | **Parcial** | ~55% | `/start` apenas no setup, canal de arquivo e histórico de jobs persistido na 0.1.18. Faltam retry parcial e testes crash/restart. |
-| Wave 6 — descoberta/poder | **Iniciada** | ~25% | Sleep timer (0.1.16), Android Auto Offline/Recent (0.1.18), Artists e auto-download de favoritos na branch. Faltam widgets, import/export completo, privacidade, scrobbling e smart playlists. |
+| Wave 3 — confiança/biblioteca | **Em curso** | ~70% | Saúde, reparação, merge de duplicados e exportação JSON na 0.1.19. Faltam pesquisa unificada e golden tests. |
+| Wave 4 — álbuns/capas | **Parcial** | ~55% | Confirmação de completar álbum, capas de playlist e enriquecimento iTunes/Deezer na 0.1.19. Faltam pré-visualização de faixas e upload local. |
+| Wave 5 — setup/jobs | **Parcial** | ~60% | `/start` apenas no setup, canal de arquivo e histórico de jobs na 0.1.19. Faltam retry parcial e testes crash/restart. |
+| Wave 6 — descoberta/poder | **Em curso** | ~35% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download de favoritos. Faltam widgets, import/export completo, privacidade, scrobbling e smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
