@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,7 +34,8 @@ internal fun AcquisitionSheet(
     var provider by remember { mutableStateOf(AcquisitionProvider.DEEZER) }
     var destinations by remember { mutableStateOf<List<ChatChoice>>(emptyList()) }
     var destinationId by rememberSaveable { mutableLongStateOf(0L) }
-    var destinationMenu by remember { mutableStateOf(false) }
+    var pickingDestination by remember { mutableStateOf(false) }
+    var confirmAcquire by remember { mutableStateOf(false) }
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
@@ -172,26 +174,10 @@ internal fun AcquisitionSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Box {
-                OutlinedButton(
-                    onClick = { destinationMenu = true },
-                    enabled = destinations.isNotEmpty() && !state.acquiring && !hasPendingJob,
-                ) { Text(tr(R.string.acquisition_choose_destination)) }
-                DropdownMenu(
-                    expanded = destinationMenu,
-                    onDismissRequest = { destinationMenu = false },
-                ) {
-                    destinations.forEach { chat ->
-                        DropdownMenuItem(
-                            text = { Text(chat.displayTitle) },
-                            onClick = {
-                                destinationId = chat.id
-                                destinationMenu = false
-                            },
-                        )
-                    }
-                }
-            }
+            OutlinedButton(
+                onClick = { pickingDestination = true },
+                enabled = !state.acquiring && !hasPendingJob,
+            ) { Text(tr(R.string.acquisition_choose_destination)) }
             IconButton(
                 onClick = { scope.launch { loadDestinations() } },
                 enabled = !state.acquiring && !hasPendingJob,
@@ -298,13 +284,7 @@ internal fun AcquisitionSheet(
                     }
                 }
                 Button(
-                    onClick = {
-                        scope.launch {
-                            runCatching {
-                                withContext(Dispatchers.IO) { acquisition.acquire(search.id, selected.toList(), destinationId) }
-                            }
-                        }
-                    },
+                    onClick = { confirmAcquire = true },
                     enabled = selected.isNotEmpty() && destinationId != 0L && !state.acquiring && !hasPendingJob,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -352,14 +332,14 @@ internal fun AcquisitionSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            "Estado: ${job.status.wireValue}",
+                            tr(R.string.acquisition_job_status, tr(acquisitionStatusLabel(job.status))),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (job.status == AcquisitionJobStatus.FAILED)
                                 MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         )
                         job.items.forEach { item ->
                             Text(
-                                "${item.optionNumber}. ${item.title} — ${item.status.wireValue}",
+                                "${item.optionNumber}. ${item.title} — ${tr(acquisitionStatusLabel(item.status))}",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             if (item.error.isNotBlank()) {
@@ -386,7 +366,91 @@ internal fun AcquisitionSheet(
             )
         }
     }
+    if (pickingDestination) {
+        Dialog(onDismissRequest = { pickingDestination = false }) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(0.95f).heightIn(max = 620.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 6.dp,
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            tr(R.string.acquisition_destination),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        IconButton(onClick = { pickingDestination = false }) {
+                            Icon(Icons.Rounded.Close, contentDescription = tr(R.string.close))
+                        }
+                    }
+                    ChatPicker(
+                        app = app,
+                        library = app.library.state.value,
+                        onDone = { pickingDestination = false },
+                        header = false,
+                        onChoice = { choice, _ ->
+                            destinationId = choice.id
+                            if (destinations.none { it.id == choice.id }) {
+                                destinations = destinations + choice
+                            }
+                            pickingDestination = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+    if (confirmAcquire) {
+        val destination = destinations.firstOrNull { it.id == destinationId }
+        AlertDialog(
+            onDismissRequest = { confirmAcquire = false },
+            title = { Text(tr(R.string.acquisition_confirm_title)) },
+            text = {
+                Text(
+                    tr(
+                        R.string.acquisition_confirm_message,
+                        selected.size,
+                        destination?.displayTitle ?: "",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmAcquire = false
+                    val chosen = selected.toList()
+                    scope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                acquisition.acquire(
+                                    state.search?.id ?: return@withContext,
+                                    chosen,
+                                    destinationId,
+                                )
+                            }
+                        }
+                    }
+                }) { Text(tr(R.string.acquisition_confirm_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmAcquire = false }) {
+                    Text(tr(R.string.cancel))
+                }
+            },
+        )
+    }
 }
+
+private fun acquisitionStatusLabel(status: AcquisitionJobStatus): Int =
+    when (status) {
+        AcquisitionJobStatus.QUEUED -> R.string.acquisition_status_queued
+        AcquisitionJobStatus.RUNNING -> R.string.acquisition_status_running
+        AcquisitionJobStatus.FORWARDING -> R.string.acquisition_status_forwarding
+        AcquisitionJobStatus.COMPLETED -> R.string.acquisition_status_completed
+        AcquisitionJobStatus.PARTIAL -> R.string.acquisition_status_partial
+        AcquisitionJobStatus.FAILED -> R.string.acquisition_status_failed
+        AcquisitionJobStatus.SKIPPED_DUPLICATE -> R.string.acquisition_status_skipped_duplicate
+    }
 
 private fun acquisitionTypeLabel(type: AcquisitionContentType): Int =
     when (type) {

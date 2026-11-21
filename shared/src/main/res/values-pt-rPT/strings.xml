@@ -584,4 +584,17 @@
     <string name="album_search_covers">Procurar capas</string>
     <string name="sync_key_unavailable">A chave de sincronização MLib não está disponível. Usa Reparar armazenamento de sincronização para reiniciar a chave deste dispositivo.</string>
     <string name="sync_payload_too_large">A biblioteca é demasiado grande para um único snapshot de sincronização. A operação foi parada; reduz a biblioteca ou aguarda uma atualização do protocolo com snapshots em partes.</string>
+    <string name="playlist_repaired">Substituí %1$d faixa(s) indisponível(is) por uma cópia existente.</string>
+    <string name="acquisition_confirm_title">Enviar para o Telegram?</string>
+    <string name="acquisition_confirm_message">Vais encaminhar %1$d opção(ões) selecionada(s) para \"%2$s\". Continuar?</string>
+    <string name="acquisition_confirm_action">Enviar</string>
+    <string name="acquisition_job_status">Estado: %1$s</string>
+    <string name="acquisition_status_queued">Em fila</string>
+    <string name="acquisition_status_running">Em execução</string>
+    <string name="acquisition_status_forwarding">A encaminhar</string>
+    <string name="acquisition_status_completed">Concluído</string>
+    <string name="acquisition_status_partial">Parcial</string>
+    <string name="acquisition_status_failed">Falhou</string>
+    <string name="acquisition_status_skipped_duplicate">Já existe</string>
+    <string name="album_repaired">Substituí %1$d faixa(s) indisponível(is) do álbum por uma cópia existente.</string>
 </resources>

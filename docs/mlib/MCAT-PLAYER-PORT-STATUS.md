@@ -18,7 +18,17 @@ Este documento usa:
 
 **Consequência:** alterações feitas no MCat Player depois de `a41cf5c` não estão refletidas. Antes de declarar paridade, é obrigatório repetir a auditoria com acesso ao commit actual (ver secção 8).
 
-## 1. Sumário executivo
+## 1. Origem: MCat e MCat Player
+
+O MCat original está público em `https://github.com/ginjeira/MCat` (Python/Telethon, HEAD auditado `78e8279`). O MCat Player é a evolução Web/JavaScript que foi usada como referência de produto. O MLib está a portar **comportamento**, não a stack Python/Telethon/Express.
+
+Três diferenças do MCat original que são relevantes para o roadmap:
+
+1. **`/arm` e `/live`** — o MCat tinha um modo de simulação e só encaminhava depois de uma autorização explícita. O MLib actual encaminha logo após a selecção; falta um passo de pré-visualização/arm antes do envio real.
+2. **Diagnóstico operacional** — `/music-check`, `/duplicates`, `/hist-music-find`, `/status` e `/export` davam visibilidade e exportação. O MLib tem saúde da biblioteca planeada, mas não tem exportação/auditoria equivalente.
+3. **Latência da selecção** — o MCat documentou uma proposta para medir cada etapa e evitar cliques cegos. O MLib usa polling fixo; vale a pena instrumentar e adaptar as esperas.
+
+## 2. Sumário executivo
 
 O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 antigas — conclusão da recepção e cardinalidade de artista — estão fechadas ao nível de código e testes automatizados no HEAD actual:
 
@@ -26,7 +36,9 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a release pública `v0.1.9` foi construída antes destas correcções. A próxima release (`v0.1.10`) é a primeira que as inclui.
+**Importante:** a `v0.1.10` foi publicada em 23:43:53 e é a primeira release que inclui as correcções do commit `993eafb`.
+
+**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 
@@ -42,7 +54,7 @@ O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bo
 
 Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualização in-app. Bloqueiam apenas a declaração de **paridade funcional com o MCat Player**.
 
-## 2. Estados usados
+## 3. Estados usados
 
 | Estado | Significado |
 |---|---|
@@ -53,7 +65,7 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 | **Divergência deliberada** | MLib faz diferente por segurança/produto; não copiar sem decisão explícita. |
 | **Não portar** | Arquitectura do MCat Player excluída por decisão. |
 
-## 3. Matriz de estado actual
+## 4. Matriz de estado actual
 
 | ID | Capacidade MCat Player | Estado no MLib | Evidência MLib | Estado | Prioridade |
 |---|---|---|---|---|---|
@@ -61,7 +73,10 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 | ACQ-02 | Artista multi-faixa apenas com contagem >1 | `isMultiTrack()` usa `expectedCount` | `MusicAcquisitionRules.kt`; teste `artistCardinalityUsesExpectedCount…` | **Portado** | — |
 | ACQ-03 | Fixtures de pesquisa/callbacks | 8 pares tipo/provider e parsing numerado | `mcat-protocol-v1.json`; testes golden | **Portado** | — |
 | ACQ-04 | Paginação e colecções grandes | 100/página, 20 páginas, limite 2.000 mensagens | `MusicAcquisition.kt:1155-1168` | **Parcial** | P2 |
-| SRC-01 | Destino escolhido e fontes de dedup | Só procura “GinjMusic”; destino é adicionado às fontes **depois** do job; dedup usa todas as fontes da biblioteca | `AcquisitionSheet.kt:39-53`; `MusicAcquisition.kt:417,793` | **Parcial** | P1 |
+| ACQ-05 | Simulação/arm antes do envio real | Confirmação com destino/contagem implementada; simulação completa ainda não | `AcquisitionSheet.kt` diálogo de confirmação | **Parcial** | P1 |
+| ACQ-06 | Medição/adaptação da latência de selecção | Polling fixo; sem métricas por etapa | `MusicAcquisition.kt` wait/click | **Parcial** | P2 |
+| LIB-02 | Auditoria/exportação operacional | Saúde planeada; sem `/status`, `/duplicates`, `/export` equivalentes | `Library`/UI | **Parcial** | P2 |
+| SRC-01 | Destino escolhido e fontes de dedup | Selector de qualquer chat implementado; indexação antes da dedup e fontes configuráveis ainda pendentes | `AcquisitionSheet.kt` ChatPicker; `MusicAcquisition.kt:417,793` | **Parcial** | P1 |
 | SET-01 | Setup do bot e arquivo pessoal | `/start` é enviado ao pesquisar; não há wizard nem criação do canal-arquivo | `MusicAcquisition.kt` (sendText `/start`); sem ecrã de setup | **Em falta** | P2 |
 | FWD-01 | Encaminhamento e importação | `forwardMessages`, parser, upsert, refresh | `MusicAcquisition.kt:806-850` | **Portado, falta live** | P1 live |
 | DED-01 | Igualdade de gravações | Port directo de `areTracksDuplicate` | `MusicAcquisitionRules.kt:130`; golden tests | **Portado** | — |
@@ -81,7 +96,7 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 | WEB-01 | PWA, Express, localStorage, API MCat, proxy de áudio | Excluído por arquitectura | Decisões MLib | **Não portar** | — |
 | LIVE-01 | Aceitação T01–T20 | Sem prova real Telegram/dispositivo | — | **Em falta** | P0 live |
 
-## 4. Trabalho restante, por prioridade
+## 5. Trabalho restante, por prioridade
 
 ### P1 — necessário para paridade útil
 
@@ -104,6 +119,19 @@ Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualiz
 6. Testes: primeira aquisição num destino não indexado; retry; destino sem permissão; dois destinos.
 
 **Critério de aceitação:** adquirir a mesma faixa duas vezes para o mesmo destino não cria duplicados, mesmo quando o destino não era fonte antes do primeiro job.
+
+#### ACQ-05 — Pré-visualização/arm antes do encaminhamento
+
+**Estado:** a confirmação explícita com destino e número de opções já está implementada na branch `fix/playlist-repair` (commit `2adc71d`). O modo de simulação completa ainda não existe.
+
+**Trabalho restante**
+
+- Modo “simular” que corre o fluxo e mostra o que seria encaminhado, sem enviar.
+- Mostrar faixas já existentes, faixas a adquirir e duplicados ignorados.
+- Guardar a autorização por job, não globalmente.
+- Testes de que simulação nunca chama `forwardMessages`.
+
+**Critério de aceitação:** nenhuma mensagem é encaminhada sem uma confirmação explícita que mostre destino e contagem; em modo simulação, nenhuma mensagem é enviada.
 
 #### DED-02 — Merge de metadata de faixas
 
@@ -190,6 +218,24 @@ Sem este cuidado, a regra fuzzy do MCat Player pode destruir identidade de álbu
 - Definir comportamento ao atingir o limite: resultado parcial explícito, nunca perda silenciosa.
 - Confirmar ordem cronológica, sem duplicados, com mensagens editadas/substituídas.
 
+#### ACQ-06 — Latência e cliques adaptativos
+
+O MCat documentou uma proposta para medir envio, filtro, lista e seleção, e nunca repetir um clique cego. O MLib deve:
+
+- instrumentar tempos por etapa sem guardar conteúdo sensível;
+- avançar por evento/estado observado em vez de intervalos fixos;
+- repetir no máximo uma vez após timeout confirmado;
+- parar e pedir intervenção em estados ambíguos.
+
+#### LIB-02 — Auditoria e exportação
+
+Equivalente operacional a `/status`, `/duplicates`, `/hist-music-find` e `/export`:
+
+- contagens por fonte, disponibilidade, offline e sync;
+- lista de duplicados e possíveis correspondências;
+- pesquisa por título/artista nos históricos configurados;
+- exportação JSON/CSV/M3U com limites e sem expor segredos.
+
 #### DUP-01 — Revisão de duplicados
 
 - Trocar “esconder duplicados” por vista de revisão com escolha de representante.
@@ -198,7 +244,7 @@ Sem este cuidado, a regra fuzzy do MCat Player pode destruir identidade de álbu
 
 ### P3 — limpeza observada durante esta revisão
 
-- `AcquisitionSheet.kt:355` ainda mostra `"Estado: …"` hardcoded em português; mover para recurso antes de considerar a UI EN/PT fechada.
+- ~~`AcquisitionSheet.kt:355` mostrava `"Estado: …"` hardcoded.~~ Resolvido na branch `fix/playlist-repair`: estado e estados por item passaram a recursos EN/PT.
 - O fallback de capa Unsplash é usado como capa de playlist/álbum em falta; deve ser tratado como placeholder explícito, não como metadata real.
 
 ### P0 live — aceitação real
@@ -216,7 +262,7 @@ Executar T01–T20 do `PORTABILITY-GAPS-REPORT.md` numa conta Telegram real e di
 
 Um build verde não substitui estes testes.
 
-## 5. Divergências deliberadas (não “portar”)
+## 6. Divergências deliberadas (não “portar”)
 
 | Área | Decisão MLib |
 |---|---|
@@ -228,14 +274,14 @@ Um build verde não substitui estes testes.
 | Catálogo | Sem playlists canónicas, demo ou blacklist específica do MCat Player sem decisão explícita. |
 | Dependência | MCat e MCat Player são referências; não são dependências de runtime. |
 
-## 6. Impacto na release Android
+## 7. Impacto na release Android
 
 - **Nenhum item da secção 4 bloqueia `v0.1.10`.**
 - `v0.1.10` deve servir para validar a actualização in-app e o fluxo de aquisição já existente.
 - A primeira prioridade após a release é o **teste live de aquisição** (`ACQ-01`, `FWD-01`, `DED-01`), porque é o maior risco não comprovado.
 - Só depois faz sentido investir em SRC-01/DED-02/ALB-03 e no resto da paridade.
 
-## 7. Ordem recomendada
+## 8. Ordem recomendada
 
 1. Publicar e instalar `v0.1.10`; testar actualização a partir de `v0.1.9`.
 2. Teste live de uma faixa, uma playlist pequena e uma aquisição parcial.
@@ -247,7 +293,7 @@ Um build verde não substitui estes testes.
 8. JOB-01/02, ACQ-04: jobs e colecções grandes.
 9. T01–T20 e declaração de paridade.
 
-## 8. Procedimento para reauditar o MCat Player
+## 9. Procedimento para reauditar o MCat Player
 
 Quando o repositório voltar a estar acessível:
 
@@ -259,7 +305,7 @@ Quando o repositório voltar a estar acessível:
 
 Se o repositório tiver sido apagado, usar o commit `a41cf5c` como referência histórica e registar essa limitação em qualquer decisão de produto.
 
-## 9. Definição de portabilidade concluída
+## 10. Definição de portabilidade concluída
 
 A portabilidade considera-se concluída quando:
 
@@ -271,7 +317,7 @@ A portabilidade considera-se concluída quando:
 - Android arm64/x86_64 e actualização in-app estiverem validados;
 - este documento e o `PORTABILITY-GAPS-REPORT.md` apontarem para o mesmo estado.
 
-## 10. Referências internas
+## 11. Referências internas
 
 - `docs/mlib/PORTABILITY-GAPS-REPORT.md`
 - `docs/mlib/PORTABILITY-CONTRACT.md`

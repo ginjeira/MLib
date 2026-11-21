@@ -136,6 +136,72 @@ class LibraryMigrationTest {
     }
 
     @Test
+    fun repairsUnavailablePlaylistMemberWithPlayableDuplicate() = runBlocking {
+        val root = Files.createTempDirectory("mlib-playlist-repair").toFile()
+        val library = library(root)
+        try {
+            library.reload()
+            val deleted =
+                Track(
+                    "1:10", 1, 10, 100, "Song", "Artist", 180, 1_000, "Source", 1,
+                    fileKey = "same-recording",
+                )
+            val available =
+                Track(
+                    "1:11", 1, 11, 101, "Song", "Artist", 180, 1_000, "Source", 2,
+                    fileKey = "same-recording",
+                )
+            library.source(ChatChoice(1, "Source"), true)
+            library.upsert(listOf(deleted, available))
+            val playlist = library.createPlaylist("Test", listOf(deleted.id))
+            library.unavailable(1, listOf(10))
+
+            assertEquals(1, library.repairPlaylistTracks(playlist))
+
+            assertEquals(
+                listOf(available.id),
+                library.state.value.playlists.first { it.id == playlist }.tracks,
+            )
+        } finally {
+            library.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun repairsUnavailableAlbumMemberWithPlayableDuplicate() = runBlocking {
+        val root = Files.createTempDirectory("mlib-album-repair").toFile()
+        val library = library(root)
+        try {
+            library.reload()
+            val deleted =
+                Track(
+                    "1:20", 1, 20, 200, "Song", "Artist", 180, 1_000, "Source", 1,
+                    fileKey = "same-album-recording",
+                )
+            val available =
+                Track(
+                    "1:21", 1, 21, 201, "Song", "Artist", 180, 1_000, "Source", 2,
+                    fileKey = "same-album-recording",
+                )
+            library.source(ChatChoice(1, "Source"), true)
+            library.upsert(listOf(deleted, available))
+            val album = library.createOrUpdateAlbum("Album", "Artist", listOf(deleted.id))
+            library.unavailable(1, listOf(20))
+
+            assertEquals(1, library.repairAlbumTracks(album))
+
+            assertEquals(
+                listOf(available.id),
+                library.state.value.albums.first { it.id == album }.tracks,
+            )
+        } finally {
+            library.close()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun upgradingVersionSevenPreservesLibraryAndSyncJournal() = runBlocking {
         val root = Files.createTempDirectory("mlib-migration").toFile()
         val databaseFile = File(root, "library.db")

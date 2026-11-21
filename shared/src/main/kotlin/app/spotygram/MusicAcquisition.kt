@@ -783,6 +783,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         // Deduplicate each received recording independently. This is essential
         // when a partial collection is resumed: existing tracks stay reused,
         // while newly arrived tracks are still forwarded to the target.
+        // Never reuse a track whose Telegram message is known to be gone: doing so
+        // would put an already-deleted record back into a new playlist.
         for (sourceMessage in audioMessages) {
             try {
                 val candidate = parseAcquiredTrack(sourceMessage, destinationTitle)
@@ -792,6 +794,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 }
                 val existingTrack = app.library.state.value.tracks.firstOrNull { track ->
                     track.chatId in allowedDedupChats &&
+                        (track.available || track.local) &&
                         MusicAcquisitionRules.areTracksDuplicate(
                             candidate.title, candidate.artist, track.title, track.artist,
                         )
