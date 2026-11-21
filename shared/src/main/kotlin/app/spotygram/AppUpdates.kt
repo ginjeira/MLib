@@ -35,6 +35,7 @@ class AppUpdates(private val app: SpotygramApp) {
     fun automatic(enabled: Boolean) {
         prefs.edit().putBoolean("automatic", enabled).apply()
         state.value = state.value.copy(automatic = enabled)
+        if (enabled) check()
     }
 
     fun dismiss(version: String = state.value.version) {
@@ -63,7 +64,7 @@ class AppUpdates(private val app: SpotygramApp) {
             if (manual) state.value = state.value.copy(result = R.string.update_rate_limited)
             return
         }
-        if (!manual && (now - lastSuccess < 86_400_000L || now - lastFailure < 600_000L)) return
+        if (!manual && (now - lastSuccess < 3_600_000L || now - lastFailure < 600_000L)) return
         state.value = state.value.copy(checking = true, result = 0)
         app.scope.launch {
             try {

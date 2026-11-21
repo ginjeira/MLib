@@ -12,13 +12,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val app
         get() = (application as AndroidApplication).model
 
     private val playerConnection by lazy { PlayerConnection(this, app) }
+    private var updateCheckJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +84,15 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         app.headerSticker.visibility(true)
         playerConnection.start()
-        app.updates.check()
+        updateCheckJob?.cancel()
+        updateCheckJob = lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    app.updates.check()
+                    delay(15 * 60 * 1000L)
+                }
+            }
+        }
     }
 
     override fun onStop() {

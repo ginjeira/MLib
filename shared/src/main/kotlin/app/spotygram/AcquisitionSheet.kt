@@ -398,11 +398,18 @@ internal fun AcquisitionSheet(
                             Icon(Icons.Rounded.Close, contentDescription = tr(R.string.close))
                         }
                     }
+                    Text(
+                        tr(R.string.acquisition_destination_own_only),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     ChatPicker(
                         app = app,
                         library = app.library.state.value,
                         onDone = { pickingDestination = false },
                         header = false,
+                        serverSearch = false,
+                        allowPublicSearch = false,
                         onChoice = { choice, _ ->
                             if (choice.title.startsWith("mlib-", ignoreCase = true)) {
                                 app.action {

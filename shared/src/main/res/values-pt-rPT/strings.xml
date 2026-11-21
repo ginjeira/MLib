@@ -364,7 +364,7 @@
         <item quantity="one">%d faixa</item>
         <item quantity="other">%d faixas</item>
     </plurals>
-    <string name="update_automatic_help">Uma vez por dia após uma consulta bem-sucedida, quando abre a aplicação. Em caso de falha, tenta novamente após 10 minutos. Sem verificações em segundo plano nem transferências automáticas.</string>
+        <string name="update_automatic_help">Verifica de hora a hora enquanto a app está aberta, após uma consulta bem-sucedida. Não interrompe trabalho pendente.</string>
     <string name="update_wait">Verificação recente. Tente novamente mais tarde.</string>
     <string name="update_dismiss">Não voltar a lembrar esta versão</string>
     <string name="update_no_browser">Não existe nenhuma aplicação disponível para abrir a página da versão.</string>
@@ -611,4 +611,5 @@
     <string name="dedup_destination_only">Deduplicar apenas no destino</string>
     <string name="dedup_destination_only_help">Compara as faixas recebidas apenas com o destino selecionado. Desliga para comparar também com todas as fontes ativas da biblioteca.</string>
     <string name="acquisition_confirm_large">%1$d pedidos selecionados. Coleções grandes podem demorar muito e terminar parcialmente.</string>
+    <string name="acquisition_destination_own_only">Só são mostrados chats da tua conta Telegram.</string>
 </resources>

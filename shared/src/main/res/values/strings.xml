@@ -331,7 +331,7 @@
     </plurals>
     <string name="updates">Updates</string>
     <string name="update_automatic">Check automatically</string>
-    <string name="update_automatic_help">Once per day after a successful check when the app opens. Failed checks retry after 10 minutes. No background checks or automatic downloads.</string>
+        <string name="update_automatic_help">Checks hourly while the app is open after a successful check. Pending work is not interrupted.</string>
     <string name="update_check">Check for updates</string>
     <string name="update_checking">Checking…</string>
     <string name="update_current">You have the latest version.</string>
@@ -606,4 +606,5 @@
     <string name="dedup_destination_only">Deduplicate only in the destination</string>
     <string name="dedup_destination_only_help">Compare incoming tracks only with the selected destination chat. Turn this off to also compare with every enabled library source.</string>
     <string name="acquisition_confirm_large">%1$d requests selected. Large collections can take a long time and may finish partially.</string>
+    <string name="acquisition_destination_own_only">Only chats in your Telegram account are shown.</string>
 </resources>
