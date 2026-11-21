@@ -53,7 +53,7 @@ fun SharingSheet(
     val pinned by app.sharing.pinned.collectAsStateWithLifecycle()
     val settings by app.sharing.defaults.collectAsStateWithLifecycle()
     val sending by app.sharing.sending.collectAsStateWithLifecycle()
-    val online = auth.type == "authorizationStateReady" && connection.isEmpty()
+    val online = auth.type == "authorizationStateReady" && telegramOnline(connection)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val environment = remember { HazeSourceSelection.Behind.where { it.zIndex == 0f } }
     var query by rememberSaveable(track.id) { mutableStateOf("") }

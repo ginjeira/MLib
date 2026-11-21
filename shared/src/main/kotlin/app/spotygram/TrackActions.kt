@@ -153,7 +153,7 @@ private fun ProfileAudioButton(app: SpotygramApp, track: Track, onChanged: (Bool
     var error by remember(track.id) { mutableStateOf("") }
     var retry by remember(track.id) { mutableIntStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val connected = auth.type == "authorizationStateReady" && connection.isEmpty()
+    val connected = auth.type == "authorizationStateReady" && telegramOnline(connection)
     LaunchedEffect(track.id, auth.type, connection, revision, retry, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             if (!connected || changing) return@repeatOnLifecycle

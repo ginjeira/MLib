@@ -120,7 +120,7 @@ class Sharing(private val app: SpotygramApp) {
         check(telegram.auth.value.type == "authorizationStateReady") {
             tr(R.string.telegram_required)
         }
-        check(telegram.connection.value.isEmpty()) { tr(R.string.share_offline) }
+        check(telegramOnline(telegram.connection.value)) { tr(R.string.share_offline) }
     }
 
     private fun chatList(folder: Int) =

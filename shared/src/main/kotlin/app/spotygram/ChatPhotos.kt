@@ -63,7 +63,7 @@ class ChatPhotos(private val telegram: Telegram) {
                         return@withPermit
                     }
                     publish(id, photo.fileId, "", version)
-                    if (telegram.connection.value.isNotEmpty()) return@withPermit
+                    if (!telegramOnline(telegram.connection.value)) return@withPermit
                     val response =
                         telegram.request(
                             json(

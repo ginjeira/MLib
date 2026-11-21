@@ -158,7 +158,7 @@ class Profiles(private val app: SpotygramApp) {
                     return@withLock
                 if (
                     telegram.auth.value.type != "authorizationStateReady" ||
-                        telegram.connection.value.isNotEmpty()
+                        !telegramOnline(telegram.connection.value)
                 ) {
                     errors.update { it + (id to tr(R.string.profile_offline)) }
                     return@withLock
@@ -250,7 +250,7 @@ class Profiles(private val app: SpotygramApp) {
         check(telegram.auth.value.type == "authorizationStateReady") {
             tr(R.string.telegram_required)
         }
-        check(telegram.connection.value.isEmpty()) { tr(R.string.profile_offline) }
+        check(telegramOnline(telegram.connection.value)) { tr(R.string.profile_offline) }
     }
 
     private suspend fun audioFile(track: Track): Int {
@@ -397,7 +397,7 @@ class Profiles(private val app: SpotygramApp) {
         }
         if (
             telegram.auth.value.type != "authorizationStateReady" ||
-                telegram.connection.value.isNotEmpty()
+                !telegramOnline(telegram.connection.value)
         )
             return users.values.toList()
         suspend fun addUser(id: Long) {
@@ -475,7 +475,7 @@ class Profiles(private val app: SpotygramApp) {
             telegram.avatarSlots.withPermit {
                 if (
                     telegram.auth.value.type != "authorizationStateReady" ||
-                        telegram.connection.value.isNotEmpty()
+                        !telegramOnline(telegram.connection.value)
                 )
                     return@withPermit
                 val user = telegram.request(json("getUser", "user_id" to profile.id))
