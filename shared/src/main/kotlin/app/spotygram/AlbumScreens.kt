@@ -47,6 +47,7 @@ fun AlbumsScreen(
     var selected by remember { mutableStateOf<Album?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmDeduplicate by remember { mutableStateOf(false) }
+    var confirmComplete by remember { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
     var newTitle by remember { mutableStateOf("") }
     var newArtist by remember { mutableStateOf("") }
@@ -100,7 +101,7 @@ fun AlbumsScreen(
                         contentDescription = tr(R.string.album_download_offline),
                         onClick = { onDownloadToDevice(tracks.map { it.id }) },
                     )
-                    TextButton(onClick = { onDownload(current) }) { Text(tr(R.string.album_find_tracks)) }
+                    TextButton(onClick = { confirmComplete = true }) { Text(tr(R.string.album_find_tracks)) }
                     TextButton(onClick = {
                         editTitle = current.title; editArtist = current.artist; editYear = current.year
                         editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
@@ -231,7 +232,32 @@ fun AlbumsScreen(
                     }
                 }
             }
-            if (confirmDeduplicate) {
+            if (confirmComplete) {
+                AlertDialog(
+                    onDismissRequest = { confirmComplete = false },
+                    title = { Text(tr(R.string.album_complete_title)) },
+                    text = {
+                        Text(
+                            tr(
+                                R.string.album_complete_help,
+                                current.title,
+                                tracks.size,
+                            )
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            confirmComplete = false
+                            onDownload(current)
+                        }) { Text(tr(R.string.album_complete_action)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmComplete = false }) {
+                            Text(tr(R.string.cancel))
+                        }
+                    },
+                )
+            }            if (confirmDeduplicate) {
                 AlertDialog(
                     onDismissRequest = { confirmDeduplicate = false },
                     title = { Text(tr(R.string.album_deduplicate_title)) },

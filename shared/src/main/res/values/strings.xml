@@ -614,4 +614,7 @@
     <string name="sleep_timer_minutes">%1$d minutes</string>
     <string name="sleep_timer_set">Sleep timer set for %1$d minutes.</string>
     <string name="sleep_timer_cancel">Cancel timer</string>
+    <string name="album_complete_title">Complete album?</string>
+    <string name="album_complete_help">MLib will search the bot for \"%1$s\" and reuse the %2$d tracks already in this album. New tracks will be added to the album.</string>
+    <string name="album_complete_action">Complete album</string>
 </resources>
