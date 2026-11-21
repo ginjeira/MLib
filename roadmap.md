@@ -7,40 +7,40 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.14
+## 0. Estado da versão 0.1.15
 
-Verificado em **21-11-2026, 12:36 UTC**.
+Verificado em **21-11-2026, 13:48 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.14** (publicada em 21-11-2026 12:35:06) |
-| Tag `v0.1.14` | **Criada** (commit `c8298ef`) |
-| Release `v0.1.14` | **Publicada**; run `44901087262` concluído com sucesso |
-| Baseline para `main` | **Sucesso** |
-| `origin/main` | `c8298ef`; versão 0.1.14 |
-| Branch `feat/source-revalidate` | **Integrada** em `main` |
-| Documentação | **Atualizada para 0.1.14** |
+| Última release pública | **v0.1.15** (publicada em 21-11-2026 13:47:06) |
+| Tag `v0.1.15` | **Criada** (commit `02cd594`) |
+| Release `v0.1.15` | **Publicada**; run `44906607735` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (`44906395536`) |
+| `origin/main` | `02cd594`; versão 0.1.15 |
+| Branch `feat/wave5-setup` | **Pendente** (canal de arquivo + sleep timer) |
+| Documentação | **Atualizada para 0.1.15** |
 | Bloqueio actual | Nenhum; falta validação em dispositivo |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.14-arm64.apk` SHA-256 | `8bb1b3112636edd17b174bd2df127f66f85563c8023a838a65deb10a34a771c8` ✅ |
-| `mlib-0.1.14-x86_64.apk` SHA-256 | `bf083bb79c11de5052c0082e0c97784802b4251b3701d0d3de17c4b3e5371be4` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `93efdf62ce4be92abed522c50f37e9fdf9e5f4680f97b32edc19646f74fc0bae` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.14` / `1014` ✅ |
+| `mlib-0.1.15-arm64.apk` SHA-256 | `4cabf0b24f23cc81aa3b3fe51f979d6d89628284a1fc037a7bda01f21627db0c` ✅ |
+| `mlib-0.1.15-x86_64.apk` SHA-256 | `7c6527e68805ad03efb9f0c9218e13d86ef0d25d05f310c8ee3df5f02ae8c8ce` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `f4b166a6deb22fcd10985e1fc9292bb24a9865346e92ec754f9037fcba118982` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.15` / `1015` ✅ |
 | ABIs | `arm64-v8a` e `x86_64` ✅ |
 | Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
 
-**Conclusão:** a `v0.1.14` integra a Wave 1 parcial: destino persistido, pré-indexação, dedup por destino, confirmação, revalidação de fontes/perfis, saúde da biblioteca e o novo rótulo **Completar álbum**.
+**Conclusão:** a `v0.1.15` inclui verificação automática de atualizações (horária com a app aberta), destino apenas com chats da conta, bloqueio do canal CloudSync e o estado actual da Wave 1.
 
 Sequência imediata:
 
-1. Atualizar a app de **0.1.13** para **0.1.14**.
-2. Abrir um álbum e confirmar **Completar álbum**.
-3. Confirmar a persistência do destino e a dedup por destino.
-4. Executar os testes live da Wave 1 antes de a declarar concluída.
+1. Atualizar manualmente de **0.1.14** para **0.1.15** (última vez que é necessário fazer o check manual).
+2. Confirmar que a sincronização e o auto-update ficam estáveis.
+3. Confirmar que o seletor de destino só mostra chats da conta.
+4. Validar a 0.1.15 e depois integrar `feat/wave5-setup` na 0.1.16.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -51,8 +51,8 @@ Sequência imediata:
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
 | Wave 3 — confiança/biblioteca | **Iniciada** | ~35% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
 | Wave 4 — álbuns/capas | **Parcial** | ~25% | Dedup exacta + confirmação, reparação/revalidação de álbuns. Faltam completar álbum com pré-visualização, enriquecimento e gestor de capas. |
-| Wave 5 — setup/jobs | **Parcial** | ~30% | `/start` apenas no setup explícito; reparação global incluída na 0.1.13. Faltam arquivo pessoal, estado por opção, retry parcial e testes crash/restart. |
-| Wave 6 — descoberta/poder | **Não iniciada** | 0% | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
+| Wave 5 — setup/jobs | **Parcial** | ~35% | `/start` apenas no setup explícito; reparação global na 0.1.13; canal de arquivo na branch. Faltam estado por opção, retry parcial e testes crash/restart. |
+| Wave 6 — descoberta/poder | **Iniciada** | ~5% | Sleep timer na branch; restantes funcionalidades pendentes. | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
