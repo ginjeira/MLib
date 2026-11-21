@@ -36,4 +36,4 @@ Automatic publication from `main` is intentional: the owner is the only user and
 - No physical-device, live Telegram acquisition, two-device CloudSync, installation or update test was performed in this remediation pass.
 - Desktop packaging remains intentionally disabled and fails closed.
 - Post-audit branch `fix/playlist-repair` adds stale-message revalidation, playlist/album repair via an available copy, arbitrary destination selection, and a destination confirmation before acquisition; it was merged into main and is included in v0.1.11.
-- `v0.1.12` was published on 21-11-2026 at 10:51:16. Both APK hashes match GitHub digests and the published SHA256SUMS; both are signed by the pinned certificate. It also treats TDLib connectionStateUpdating as online. Device testing remains pending.
+- `v0.1.13` was published on 21-11-2026 at 11:38:49. Both APK hashes match GitHub digests and the published SHA256SUMS; both are signed by the pinned certificate. It includes the connection-state fix, explicit bot setup and global library repair. Device testing remains pending.

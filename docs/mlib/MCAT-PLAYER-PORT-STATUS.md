@@ -36,7 +36,7 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a `v0.1.12` foi publicada em 10:51:16 e inclui as correcções do commit `993eafb`, a revalidação/reparação de mensagens e o fix de `connectionStateUpdating`. A branch `feat/library-repair` (reparação global e `/start` apenas no setup) continua pendente.
+**Importante:** a `v0.1.13` foi publicada em 11:38:49 e inclui as correcções do commit `993eafb`, a revalidação/reparação de mensagens, o fix de `connectionStateUpdating`, `/start` apenas no setup e a reparação global.
 
 **Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch foi integrada em `main` e incluída na `v0.1.11`.
 

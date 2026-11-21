@@ -7,53 +7,51 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.12
+## 0. Estado da versão 0.1.13
 
-Verificado em **21-11-2026, 10:57 UTC**.
+Verificado em **21-11-2026, 11:40 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.12** (publicada em 21-11-2026 10:51:16) |
-| Tag `v0.1.12` | **Criada** (commit `d08bee1`) |
-| Release `v0.1.12` | **Publicada**; run `44893620305` concluído com sucesso |
-| Baseline para `main` | **Sucesso** (run `44893392217`) |
-| `origin/main` | `d08bee1` (bump para 0.1.12) |
-| Branch `feat/library-repair` | **Pendente** (reparação global, `/start` só no setup) |
-| Documentação | **Atualizada para 0.1.12** |
+| Última release pública | **v0.1.13** (publicada em 21-11-2026 11:38:49) |
+| Tag `v0.1.13` | **Criada** (commit `2aa4582`) |
+| Release `v0.1.13` | **Publicada**; run `44897163278` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (run `44896916742`) |
+| `origin/main` | `aef4d31` + docs; versão 0.1.13 |
+| Branch `feat/source-revalidate` | **Pendente** (pré-indexação, revalidação de fontes/perfis, saúde e dedup por destino) |
+| Documentação | **Atualizada para 0.1.13** |
 | Bloqueio actual | Nenhum; falta teste de instalação/actualização em dispositivo |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.12-arm64.apk` SHA-256 | `e8b5cebbf3d90b2fa580007b4f2c32bfcf29c67943a76e648999c259969de62a` ✅ |
-| `mlib-0.1.12-x86_64.apk` SHA-256 | `083e331d3efab054ec3aa13017a35f4a1036602bb4c24eedee09bbff65ff0fce` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `afefd3ebe0c9e3ff2bf002da3bbd4c99d1024d78042bc0a51847f94afe762ef5` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.12` / `1012` ✅ |
+| `mlib-0.1.13-arm64.apk` SHA-256 | `dbf3d06f5c3c26194d4472c2aa3eadb73ea7af4a8db5d6a972b32a255bac7a37` ✅ |
+| `mlib-0.1.13-x86_64.apk` SHA-256 | `9652fb5ebebc8a3ef04f3a85addab75afb6de50250f754d252437fb7d4e2ea13` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `0ef473db53972a3fb1b5e5b3de427dc5c51128682c7861cc29adb60cfa846de2` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.13` / `1013` ✅ |
 | ABIs | `arm64-v8a` e `x86_64` ✅ |
 | Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
 
-**Conclusão:** a `v0.1.12` está publicada e corrige a alternância offline/synced. O TDLib `connectionStateUpdating` passou a ser tratado como online, evitando cancelamentos/restarts do CloudSync e do refresh durante updates.
+**Conclusão:** a `v0.1.13` inclui o `/start` apenas no setup explícito, a reparação global da biblioteca e o fix de conexão da 0.1.12. A próxima release integra a branch `feat/source-revalidate`.
 
 Sequência imediata:
 
-1. Atualizar a app de **0.1.11** para **0.1.12**.
-2. Confirmar que a sincronização fica estável e não alterna.
-3. Confirmar que partilha/origens/perfis não ficam bloqueados durante updates.
-4. Testar a playlist reparada.
-
-A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (reparação global e `/start` apenas no setup) fica para a próxima release.
+1. Atualizar a app de **0.1.12** para **0.1.13**.
+2. Confirmar que `/start` não é enviado ao pesquisar.
+3. Confirmar a reparação global em Definições.
+4. Manter a 0.1.13 como base para integrar a branch `feat/source-revalidate`.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
 | Wave | Estado | Progresso | Notas |
 |---|---|---:|---|
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
-| Wave 1 — aquisição fiável | **Em curso** | ~55% | Destino, confirmação, pré-indexação, revalidação de fontes/perfis e dedup de indisponíveis feitos. Faltam estimativa, simulação completa, latência, fontes configuráveis e testes >2.000. |
+| Wave 1 — aquisição fiável | **Em curso** | ~75% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino e aviso de seleções grandes. Faltam simulação completa, latência, seleção arbitrária de fontes e testes >2.000. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
-| Wave 3 — confiança/biblioteca | **Iniciada** | ~25% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
+| Wave 3 — confiança/biblioteca | **Iniciada** | ~30% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
 | Wave 4 — álbuns/capas | **Parcial** | ~25% | Dedup exacta + confirmação, reparação/revalidação de álbuns. Faltam completar álbum com pré-visualização, enriquecimento e gestor de capas. |
-| Wave 5 — setup/jobs | **Parcial** | ~25% | `/start` apenas no setup explícito; reparação global. Faltam arquivo pessoal, estado por opção, retry parcial e testes crash/restart. |
+| Wave 5 — setup/jobs | **Parcial** | ~30% | `/start` apenas no setup explícito; reparação global incluída na 0.1.13. Faltam arquivo pessoal, estado por opção, retry parcial e testes crash/restart. |
 | Wave 6 — descoberta/poder | **Não iniciada** | 0% | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 
