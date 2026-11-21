@@ -145,6 +145,15 @@ fun SettingsSheet(
                 ActionRow(Icons.Rounded.ContentCopy, tr(R.string.review_duplicates)) {
                     duplicateDialog = true
                 }
+                ActionRow(Icons.Rounded.ContentCopy, tr(R.string.export_library)) {
+                    val json = app.library.exportJson()
+                    if (json.length > 500_000) {
+                        app.action { app.notices.emit(tr(R.string.export_library_too_large)) }
+                    } else {
+                        clipboard.setText(AnnotatedString(json))
+                        app.action { app.notices.emit(tr(R.string.export_library_done)) }
+                    }
+                }
                 ListItem(
                     headlineContent = { Text(tr(R.string.dedup_destination_only)) },
                     supportingContent = { Text(tr(R.string.dedup_destination_only_help)) },

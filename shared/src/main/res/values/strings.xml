@@ -627,4 +627,7 @@
     <string name="album_complete_title">Complete album?</string>
     <string name="album_complete_help">MLib will search the bot for \"%1$s\" and reuse the %2$d tracks already in this album. New tracks will be added to the album.</string>
     <string name="album_complete_action">Complete album</string>
+    <string name="export_library">Copy library JSON</string>
+    <string name="export_library_done">Library JSON copied to the clipboard.</string>
+    <string name="export_library_too_large">The library is too large to copy as text.</string>
 </resources>

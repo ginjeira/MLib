@@ -632,4 +632,7 @@
     <string name="album_complete_title">Completar álbum?</string>
     <string name="album_complete_help">O MLib vai procurar \"%1$s\" no bot e reutilizar as %2$d faixas já existentes neste álbum. As faixas novas serão adicionadas ao álbum.</string>
     <string name="album_complete_action">Completar álbum</string>
+    <string name="export_library">Copiar JSON da biblioteca</string>
+    <string name="export_library_done">JSON da biblioteca copiado para a área de transferência.</string>
+    <string name="export_library_too_large">A biblioteca é demasiado grande para copiar como texto.</string>
 </resources>
