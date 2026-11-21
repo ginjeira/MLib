@@ -235,7 +235,9 @@ class Telegram(
                 }
                 else -> true
             }
-        val choice = ChatChoice(chat.getLong("id"), chat.getString("title"), canPost)
+        val groupOrChannel = kind == "chatTypeBasicGroup" || kind == "chatTypeSupergroup"
+        val choice =
+            ChatChoice(chat.getLong("id"), chat.getString("title"), canPost, groupOrChannel)
         chats[choice.id] = choice
         chatPhotos.changed(choice.id, chat.optJSONObject("photo"))
         return choice

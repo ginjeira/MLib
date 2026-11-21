@@ -614,7 +614,7 @@
     <string name="sleep_timer_minutes">%1$d minutes</string>
     <string name="sleep_timer_set">Sleep timer set for %1$d minutes.</string>
     <string name="sleep_timer_cancel">Cancel timer</string>
-    <string name="chat_picker_no_destinations">No writable chats or channels were found in your Telegram account.</string>
+        <string name="chat_picker_no_destinations">No writable groups or channels were found in your Telegram account.</string>
     <string name="archive_channel_ready">Archive channel ready</string>
     <string name="archive_channel_ready_help">%1$s is available as a source and acquisition destination.</string>
 </resources>

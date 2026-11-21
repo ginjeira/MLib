@@ -618,14 +618,17 @@ fun ChatPicker(
                 withContext(Dispatchers.Default) {
                     val seen = HashSet<Long>()
                     val sourceChoices =
-                        if (destinationOnly) library.sources.map { ChatChoice(it.id, it.title) }
+                        if (destinationOnly)
+                            library.sources.map {
+                                ChatChoice(it.id, it.title, groupOrChannel = true)
+                            }
                         else emptyList()
                     val merged =
                         ArrayList<ChatChoice>(sourceChoices.size + local.size + remote.size)
                     for (choices in listOf(sourceChoices, local, remote)) {
                         for (choice in choices) {
                             ensureActive()
-                            if (destinationOnly && !choice.canPost) continue
+                            if (destinationOnly && (!choice.groupOrChannel || !choice.canPost)) continue
                             if (seen.add(choice.id)) merged.add(choice)
                         }
                     }
