@@ -732,8 +732,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val botChatId = session.botChatId
         // Do not skip an entire collection because its first track already exists.
         // Partial retries must still fetch missing tracks and release the bot turn.
-        val allowedDedupChats = app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
-            .apply { add(destinationChatId) }
+        val allowedDedupChats =
+            if (app.prefs.getBoolean("dedup_destination_only", false)) {
+                mutableSetOf(destinationChatId)
+            } else {
+                app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
+                    .apply { add(destinationChatId) }
+            }
         val latestBeforeSelection = latestMessageId(botChatId)
         val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)

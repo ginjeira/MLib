@@ -73,6 +73,9 @@ fun SettingsSheet(
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
     val hideDuplicates by app.hideDuplicates.collectAsStateWithLifecycle()
+    var dedupDestinationOnly by remember {
+        mutableStateOf(app.prefs.getBoolean("dedup_destination_only", false))
+    }
     val resumeLongAudio by app.resumeLongAudio.collectAsStateWithLifecycle()
     val resumeMinutes by app.resumeMinutes.collectAsStateWithLifecycle()
     var editingResume by rememberSaveable { mutableStateOf(false) }
@@ -131,6 +134,22 @@ fun SettingsSheet(
                         )
                     }
                 }
+                ListItem(
+                    headlineContent = { Text(tr(R.string.dedup_destination_only)) },
+                    supportingContent = { Text(tr(R.string.dedup_destination_only_help)) },
+                    trailingContent = {
+                        GlassSwitch(
+                            checked = dedupDestinationOnly,
+                            onCheckedChange = {
+                                dedupDestinationOnly = it
+                                app.prefs.edit()
+                                    .putBoolean("dedup_destination_only", it)
+                                    .apply()
+                            },
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
             }
             item(key = "appearance") {
                 Text(

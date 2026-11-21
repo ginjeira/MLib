@@ -603,4 +603,6 @@
     <string name="library_health_summary">%1$d unavailable · %2$d duplicate groups · %3$d without cover</string>
     <string name="library_health_ok">Everything looks good.</string>
     <string name="acquisition_destination_sync_channel">The private CloudSync channel cannot be used as a music destination.</string>
+    <string name="dedup_destination_only">Deduplicate only in the destination</string>
+    <string name="dedup_destination_only_help">Compare incoming tracks only with the selected destination chat. Turn this off to also compare with every enabled library source.</string>
 </resources>
