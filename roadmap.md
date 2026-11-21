@@ -44,6 +44,20 @@ Sequência imediata:
 
 A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (reparação global e `/start` apenas no setup) fica para a próxima release.
 
+## 0.2 Progresso por wave — 21-11-2026
+
+| Wave | Estado | Progresso | Notas |
+|---|---|---:|---|
+| Wave 0 — release/update | **Quase concluída** | ~85% | v0.1.12 validada; v0.1.13 em construção. Faltam smoke tests live e screenshots. |
+| Wave 1 — aquisição fiável | **Em curso** | ~50% | Destino, confirmação, pré-indexação, revalidação e dedup de indisponíveis feitos. Faltam estimativa, simulação completa, latência, fontes configuráveis e testes >2.000. |
+| Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
+| Wave 3 — confiança/biblioteca | **Iniciada** | ~25% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
+| Wave 4 — álbuns/capas | **Parcial** | ~25% | Dedup exacta + confirmação, reparação/revalidação de álbuns. Faltam completar álbum com pré-visualização, enriquecimento e gestor de capas. |
+| Wave 5 — setup/jobs | **Parcial** | ~25% | `/start` apenas no setup explícito; reparação global. Faltam arquivo pessoal, estado por opção, retry parcial e testes crash/restart. |
+| Wave 6 — descoberta/poder | **Não iniciada** | 0% | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
+| Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
+
+**Leitura rápida:** o produto já é utilizável para o ciclo principal (biblioteca + aquisição + update), mas a paridade de produto está sobretudo nas Waves 1, 3, 4 e 5. A Wave 2 é a maior alteração visual e deve entrar depois de fechar a confiabilidade da biblioteca.
 ## 1. Regras do roadmap
 
 - Cada wave termina com **código, testes, documentação e evidência de release**.
@@ -68,7 +82,7 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 - [x] Push de `main`; baseline verde.
 - [x] Release `v0.1.12` pública, non-draft e non-prerelease.
 - [x] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
-- [ ] Instalar `v0.1.11` release; actualizar in-app para `v0.1.12`.
+- [x] Instalar `v0.1.11`/`v0.1.12` e confirmar actualização in-app.
 - [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
 - [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
 - [ ] Smoke test live: uma faixa, uma playlist pequena, um cancelamento/retry.
@@ -92,9 +106,9 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 
 **Tarefas**
 
-- [ ] Selector de qualquer chat/canal com permissão de publicação.
+- [x] Selector de qualquer chat/canal com permissão de publicação.
 - [ ] Persistir destino por conta Telegram.
-- [ ] Indexar/refrescar o destino **antes** de comparar duplicados.
+- [x] Indexar/refrescar o destino **antes** de comparar duplicados (branch `feat/source-revalidate`).
 - [ ] Fontes de dedup configuráveis (destino + fontes escolhidas).
 - [ ] Estimativa antes de adquirir: faixas, duração aproximada, nº de pedidos.
 - [ ] Fluxo de aquisição em passos com estado visível.
@@ -154,7 +168,7 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 **Tarefas**
 
 - [ ] Pesquisa unificada: biblioteca + Telegram + bot, com filtros e histórico.
-- [ ] Dashboard “Biblioteca saudável”: em falta, duplicados, ficheiros inválidos, capas, sync.
+- [x] Resumo “Biblioteca saudável” em Definições (branch `feat/source-revalidate`); detalhe/duplicados ainda pendentes.
 - [ ] Estúdio de duplicados: comparar, escolher keeper, fundir metadata, undo.
 - [ ] Preservar favoritos, playlists, álbuns e caminho local válido.
 - [ ] Sugestões de merge de álbuns com pré-visualização; nunca automático.
@@ -204,7 +218,7 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 
 **Tarefas**
 
-- [ ] Setup opcional: verificar bot, enviar `/start`, confirmar resposta.
+- [x] Setup explícito do bot com `/start` apenas se não houver histórico; arquivo pessoal ainda pendente.
 - [ ] Escolher/criar canal-arquivo privado, marcá-lo como fonte/destino.
 - [ ] Manter CloudSync separado do arquivo musical.
 - [ ] Estado persistido por opção/faixa, progresso e resultado.
