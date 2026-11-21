@@ -931,6 +931,7 @@ fun SpotygramUI(
                                                             }
                                                         }
                                                     },
+                                                    onEnrich = { album -> app.enrichAlbum(album) },
                                                 )
                                             else ->
                                                 SourcesScreen(

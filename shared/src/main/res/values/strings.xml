@@ -634,4 +634,7 @@
     <string name="export_library_too_large">The library is too large to copy as text.</string>
     <string name="auto_download_favorites">Auto-download favourites</string>
     <string name="auto_download_favorites_help">Downloads a favourite for offline use when the local copy is missing.</string>
+    <string name="album_enrich">Fill metadata</string>
+    <string name="album_enriching">Filling metadata…</string>
+    <string name="album_enrich_failed">Could not fill metadata.</string>
 </resources>

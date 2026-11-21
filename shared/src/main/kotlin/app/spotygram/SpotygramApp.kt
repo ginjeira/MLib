@@ -947,6 +947,68 @@ class SpotygramApp(val platform: Platform) {
         suggestions.take(20)
     }
 
+    suspend fun enrichAlbum(album: Album): AlbumEnrichment? = withContext(Dispatchers.IO) {
+        val term =
+            listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" ").trim()
+        if (term.isBlank()) return@withContext null
+        val encoded = java.net.URLEncoder.encode(term, Charsets.UTF_8.name())
+        var result = AlbumEnrichment()
+        fun fetch(url: String, parse: (JSONObject) -> Unit) {
+            val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            try {
+                connection.connectTimeout = 8_000
+                connection.readTimeout = 8_000
+                connection.setRequestProperty("User-Agent", "MLib/1.0")
+                if (connection.responseCode in 200..299) {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    if (body.length <= 1_000_000) parse(JSONObject(body))
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+        runCatching {
+            fetch("https://itunes.apple.com/search?term=$encoded&entity=album&limit=1") { json ->
+                val item = json.optJSONArray("results")?.optJSONObject(0) ?: return@fetch
+                result =
+                    result.copy(
+                        title = item.optString("collectionName").ifBlank { result.title },
+                        artist = item.optString("artistName").ifBlank { result.artist },
+                        year =
+                            item.optString("releaseDate").take(4)
+                                .takeIf { it.length == 4 && it.all(Char::isDigit) }
+                                .orEmpty()
+                                .ifBlank { result.year },
+                        genre = item.optString("primaryGenreName").ifBlank { result.genre },
+                        coverUrl =
+                            item.optString("artworkUrl100")
+                                .replace("100x100bb", "600x600bb")
+                                .ifBlank { result.coverUrl },
+                    )
+            }
+        }
+        if (result.coverUrl.isBlank() || result.year.isBlank()) {
+            runCatching {
+                fetch("https://api.deezer.com/search/album?q=$encoded&limit=1") { json ->
+                    val item = json.optJSONArray("data")?.optJSONObject(0) ?: return@fetch
+                    result =
+                        result.copy(
+                            title = item.optString("title").ifBlank { result.title },
+                            artist =
+                                item.optJSONObject("artist")?.optString("name").orEmpty()
+                                    .ifBlank { result.artist },
+                            year =
+                                item.optString("release_date").take(4)
+                                    .takeIf { it.length == 4 && it.all(Char::isDigit) }
+                                    .orEmpty()
+                                    .ifBlank { result.year },
+                            coverUrl = item.optString("cover_xl").ifBlank { result.coverUrl },
+                        )
+                }
+            }
+        }
+        result.takeUnless { it.isEmpty }
+    }
     suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
         awaitLibrary()
         val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }

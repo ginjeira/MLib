@@ -116,6 +116,17 @@ data class Playlist(
     val coverUrl: String = "",
 )
 
+data class AlbumEnrichment(
+    val title: String = "",
+    val artist: String = "",
+    val year: String = "",
+    val genre: String = "",
+    val coverUrl: String = "",
+) {
+    val isEmpty: Boolean
+        get() = title.isBlank() && artist.isBlank() && year.isBlank() &&
+            genre.isBlank() && coverUrl.isBlank()
+}
 data class Album(
     val id: String,
     val title: String,

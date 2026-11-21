@@ -42,6 +42,7 @@ fun AlbumsScreen(
     onUpdate: (String, String, String, String, String, String) -> Unit,
     onSuggestCovers: suspend (String, String) -> List<String>,
     onRepairUnavailable: suspend (Album) -> Unit,
+    onEnrich: suspend (Album) -> AlbumEnrichment?,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -53,6 +54,8 @@ fun AlbumsScreen(
     var newArtist by remember { mutableStateOf("") }
     var selectedTracks by remember { mutableStateOf(setOf<String>()) }
     var editing by remember { mutableStateOf(false) }
+    var enriching by remember { mutableStateOf(false) }
+    var enrichError by remember { mutableStateOf("") }
     var editTitle by remember { mutableStateOf("") }
     var editArtist by remember { mutableStateOf("") }
     var editYear by remember { mutableStateOf("") }
@@ -149,6 +152,46 @@ fun AlbumsScreen(
                         OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text(tr(R.string.year)) }, singleLine = true)
                         OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text(tr(R.string.genre)) }, singleLine = true)
                         OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text(tr(R.string.cover_url)) }, singleLine = true)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                enabled = !enriching,
+                                onClick = {
+                                    scope.launch {
+                                        enriching = true
+                                        enrichError = ""
+                                        val enriched =
+                                            runCatching { onEnrich(current) }
+                                                .getOrElse {
+                                                    enrichError =
+                                                        it.message ?: tr(R.string.album_enrich_failed)
+                                                    null
+                                                }
+                                        if (enriched != null) {
+                                            editTitle = editTitle.ifBlank { enriched.title }
+                                            editArtist = editArtist.ifBlank { enriched.artist }
+                                            editYear = editYear.ifBlank { enriched.year }
+                                            editGenre = editGenre.ifBlank { enriched.genre }
+                                            editCover = editCover.ifBlank { enriched.coverUrl }
+                                        }
+                                        enriching = false
+                                    }
+                                },
+                            ) {
+                                Text(
+                                    tr(
+                                        if (enriching) R.string.album_enriching
+                                        else R.string.album_enrich
+                                    )
+                                )
+                            }
+                        }
+                        if (enrichError.isNotBlank()) {
+                            Text(
+                                enrichError,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TextButton(enabled = !coverSearchBusy && editTitle.isNotBlank(), onClick = {
                                 scope.launch {
