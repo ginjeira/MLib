@@ -199,6 +199,9 @@ fun SpotygramUI(
                 if (groupedFavorites) library.duplicates.aliases(track.id).map { it.id }
                 else emptyList()
             val (liked, previousLikes) = app.library.like(track, sameFile, aliases)
+            if (liked && app.prefs.getBoolean("auto_download_favorites", false)) {
+                app.download(listOf(track.id))
+            }
             if (!liked)
                 scope.launch {
                     if (
