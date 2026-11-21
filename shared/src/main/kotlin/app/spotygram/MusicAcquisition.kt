@@ -356,6 +356,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             )
             state.value = state.value.copy(jobs = (listOf(job) + state.value.jobs).take(30))
             val destinationChoice = app.telegram.rememberChat(destination)
+            // Index a new destination before comparing duplicates. Without this, a
+            // first acquisition into a chat that already contains the same recordings
+            // can forward them again because those messages were never scanned.
+            if (app.library.state.value.sources.none { it.id == destinationChatId }) {
+                app.library.source(destinationChoice, true)
+                app.refresh()
+            }
 
             val completed = mutableListOf<AcquiredItem>()
             val batchTracks = mutableListOf<Track>()

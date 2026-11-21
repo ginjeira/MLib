@@ -719,6 +719,26 @@ fun SpotygramUI(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                LaunchedEffect(source?.id, profileId, library.tracks.size) {
+                                    if (playlist == null) {
+                                        val candidates =
+                                            when {
+                                                source != null ->
+                                                    library.tracks.filter { it.chatId == source.id }
+                                                profileId != null ->
+                                                    library.tracks.filter {
+                                                        it.profileUserId == profileId
+                                                    }
+                                                else -> emptyList()
+                                            }
+                                        if (candidates.any {
+                                                !it.available && !it.local && !it.imported
+                                            }
+                                        ) {
+                                            app.revalidateUnavailable(candidates)
+                                        }
+                                    }
+                                }
                                 Box(Modifier.weight(1f).widthIn(max = 720.dp).fillMaxWidth()) {
                                     pages.SaveableStateProvider(
                                         "$tab:$playlistId:$sourceId:$profileId"
