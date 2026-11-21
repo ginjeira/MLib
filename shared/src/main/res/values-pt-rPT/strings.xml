@@ -619,4 +619,9 @@
     <string name="sleep_timer_minutes">%1$d minutos</string>
     <string name="sleep_timer_set">Temporizador definido para %1$d minutos.</string>
     <string name="sleep_timer_cancel">Cancelar temporizador</string>
+    <string name="review_duplicates">Rever duplicados</string>
+    <string name="no_duplicates">Não foram encontrados grupos duplicados.</string>
+    <string name="duplicate_group_count">%1$d cópias</string>
+    <string name="merge_duplicates">Manter a melhor cópia e fundir</string>
+    <string name="duplicates_merged">Fundi %1$d duplicado(s).</string>
 </resources>

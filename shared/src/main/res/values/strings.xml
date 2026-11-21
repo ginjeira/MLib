@@ -614,4 +614,9 @@
     <string name="sleep_timer_minutes">%1$d minutes</string>
     <string name="sleep_timer_set">Sleep timer set for %1$d minutes.</string>
     <string name="sleep_timer_cancel">Cancel timer</string>
+    <string name="review_duplicates">Review duplicates</string>
+    <string name="no_duplicates">No duplicate groups found.</string>
+    <string name="duplicate_group_count">%1$d copies</string>
+    <string name="merge_duplicates">Keep the best copy and merge</string>
+    <string name="duplicates_merged">Merged %1$d duplicate(s).</string>
 </resources>
