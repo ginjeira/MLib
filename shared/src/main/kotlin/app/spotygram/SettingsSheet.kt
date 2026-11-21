@@ -81,6 +81,7 @@ fun SettingsSheet(
     var editingResume by rememberSaveable { mutableStateOf(false) }
     var editingSyncKey by rememberSaveable { mutableStateOf(false) }
     var repairSync by rememberSaveable { mutableStateOf(false) }
+    var confirmArchive by remember { mutableStateOf(false) }
     var recoveryCode by remember { mutableStateOf("") }
     var syncKeyInput by remember { mutableStateOf("") }
     var syncKeyError by rememberSaveable { mutableStateOf("") }
@@ -387,6 +388,9 @@ fun SettingsSheet(
                         )
                     }
                 }
+                ActionRow(Icons.Rounded.CreateNewFolder, tr(R.string.create_archive_channel)) {
+                    confirmArchive = true
+                }
 
                 HorizontalDivider(
                     Modifier.padding(vertical = 16.dp),
@@ -475,6 +479,25 @@ fun SettingsSheet(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+    if (confirmArchive) {
+        AlertDialog(
+            onDismissRequest = { confirmArchive = false },
+            title = { Text(tr(R.string.create_archive_channel)) },
+            text = { Text(tr(R.string.create_archive_help)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmArchive = false
+                    app.action {
+                        val channel = app.createArchiveChannel()
+                        app.notices.emit(tr(R.string.archive_channel_created, channel.displayTitle))
+                    }
+                }) { Text(tr(R.string.create)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmArchive = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
     }
     if (repairSync) {
         AlertDialog(

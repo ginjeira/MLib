@@ -607,4 +607,7 @@
     <string name="dedup_destination_only_help">Compare incoming tracks only with the selected destination chat. Turn this off to also compare with every enabled library source.</string>
     <string name="acquisition_confirm_large">%1$d requests selected. Large collections can take a long time and may finish partially.</string>
     <string name="acquisition_destination_own_only">Only chats in your Telegram account are shown.</string>
+    <string name="create_archive_channel">Create archive channel</string>
+    <string name="create_archive_help">Creates a private channel named MLib Archive in your Telegram account and selects it as source and destination. You can delete it later in Telegram.</string>
+    <string name="archive_channel_created">Archive channel ready: %1$s</string>
 </resources>

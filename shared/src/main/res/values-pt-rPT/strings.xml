@@ -612,4 +612,7 @@
     <string name="dedup_destination_only_help">Compara as faixas recebidas apenas com o destino selecionado. Desliga para comparar também com todas as fontes ativas da biblioteca.</string>
     <string name="acquisition_confirm_large">%1$d pedidos selecionados. Coleções grandes podem demorar muito e terminar parcialmente.</string>
     <string name="acquisition_destination_own_only">Só são mostrados chats da tua conta Telegram.</string>
+    <string name="create_archive_channel">Criar canal de arquivo</string>
+    <string name="create_archive_help">Cria um canal privado chamado MLib Archive na tua conta Telegram e selecciona-o como fonte e destino. Podes apagá-lo mais tarde no Telegram.</string>
+    <string name="archive_channel_created">Canal de arquivo pronto: %1$s</string>
 </resources>
