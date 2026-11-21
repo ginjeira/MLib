@@ -56,6 +56,9 @@ class TrackDuplicates(tracks: List<Track>) {
 
     fun aliases(id: String): List<Track> = groups[id].orEmpty()
 
+    fun groupCount(): Int =
+        groups.values.distinctBy { it.firstOrNull()?.id }.count { it.size > 1 }
+
     fun key(id: String): String = groups[id]?.firstOrNull()?.id ?: id
 
     fun display(track: Track): Track {

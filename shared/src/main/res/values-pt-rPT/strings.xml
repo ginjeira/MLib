@@ -604,4 +604,7 @@
     <string name="music_bot_setup_action">Ativar bot de música</string>
     <string name="music_bot_activated">Bot de música ativado.</string>
     <string name="music_bot_already_used">Esta conta já utilizou o bot de música.</string>
+    <string name="library_health">Saúde da biblioteca</string>
+    <string name="library_health_summary">%1$d indisponíveis · %2$d grupos duplicados · %3$d sem capa</string>
+    <string name="library_health_ok">Está tudo em ordem.</string>
 </resources>
