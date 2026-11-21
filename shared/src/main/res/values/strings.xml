@@ -627,4 +627,7 @@
     <string name="album_complete_title">Complete album?</string>
     <string name="album_complete_help">MLib will search the bot for \"%1$s\" and reuse the %2$d tracks already in this album. New tracks will be added to the album.</string>
     <string name="album_complete_action">Complete album</string>
+    <string name="album_enrich">Fill metadata</string>
+    <string name="album_enriching">Filling metadata…</string>
+    <string name="album_enrich_failed">Could not fill metadata.</string>
 </resources>
