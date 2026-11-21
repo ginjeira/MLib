@@ -30,6 +30,8 @@ Três diferenças do MCat original que são relevantes para o roadmap:
 
 ## 2. Sumário executivo
 
+**Wave 1 fechada pelo owner em 21-11-2026:** a aceitação funcional de destino, indexação, confirmação, dedup e revalidação foi validada. ACQ-05 parte 2, ACQ-06, multi-seleção de fontes e testes >2.000 passam para a Wave 1.1 (hardening não bloqueante).
+
 O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 antigas — conclusão da recepção e cardinalidade de artista — estão fechadas ao nível de código e testes automatizados no HEAD actual:
 
 - `MusicAcquisitionRules.completionReason()` implementa contagem esperada, sinal textual, faixa única, silêncio de 9 s e deadlines de 45 s/240 s.

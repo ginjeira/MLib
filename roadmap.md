@@ -47,12 +47,12 @@ Sequência imediata:
 | Wave | Estado | Progresso | Notas |
 |---|---|---:|---|
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
-| Wave 1 — aquisição fiável | **Quase concluída** | ~85% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Faltam simulação completa, latência, seleção arbitrária de fontes e testes live >2.000. |
+| Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
 | Wave 3 — confiança/biblioteca | **Iniciada** | ~35% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
 | Wave 4 — álbuns/capas | **Parcial** | ~25% | Dedup exacta + confirmação, reparação/revalidação de álbuns. Faltam completar álbum com pré-visualização, enriquecimento e gestor de capas. |
-| Wave 5 — setup/jobs | **Parcial** | ~35% | `/start` apenas no setup explícito; reparação global na 0.1.13; canal de arquivo na branch. Faltam estado por opção, retry parcial e testes crash/restart. |
-| Wave 6 — descoberta/poder | **Iniciada** | ~5% | Sleep timer na branch; restantes funcionalidades pendentes. | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
+| Wave 5 — setup/jobs | **Parcial** | ~40% | `/start` apenas no setup explícito; reparação global na 0.1.13; canal de arquivo implementado na branch para a 0.1.16. Faltam estado por opção, retry parcial e testes crash/restart. |
+| Wave 6 — descoberta/poder | **Iniciada** | ~10% | Sleep timer implementado na branch para a 0.1.16; restantes funcionalidades pendentes. | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
@@ -105,19 +105,27 @@ Sequência imediata:
 
 **Itens:** SRC-01, ACQ-04, parte de JOB-01.
 
-**Tarefas**
+**Tarefas — concluídas**
 
 - [x] Selector de qualquer chat/canal com permissão de publicação.
-- [ ] Persistir destino por conta Telegram.
-- [x] Indexar/refrescar o destino **antes** de comparar duplicados (branch `feat/source-revalidate`).
-- [ ] Fontes de dedup configuráveis (destino + fontes escolhidas).
-- [ ] Estimativa antes de adquirir: faixas, duração aproximada, nº de pedidos.
-- [ ] Fluxo de aquisição em passos com estado visível.
-- [x] Confirmação explícita com destino e contagem antes de encaminhar (ACQ-05, parte 1; branch `fix/playlist-repair`).
-- [ ] Modo de simulação completa, sem encaminhar, antes da autorização real (ACQ-05, parte 2).
-- [ ] Instrumentação de latência e esperas adaptativas, sem cliques cegos (ACQ-06).
-- [ ] Testes >100 mensagens e limite de 2.000; comportamento parcial explícito.
-- [ ] Nunca usar o canal CloudSync como destino musical.
+- [x] Persistir destino por conta Telegram.
+- [x] Indexar/refrescar o destino **antes** de comparar duplicados.
+- [x] Fontes de dedup configuráveis (destino vs todas as fontes; multi-seleção arbitrária fica para Wave 1.1).
+- [x] Estimativa/aviso antes de adquirir (contagem de opções e aviso de seleções grandes).
+- [x] Fluxo de aquisição com estado visível e confirmação.
+- [x] Confirmação explícita com destino e contagem antes de encaminhar (ACQ-05 parte 1).
+- [x] Nunca usar o canal CloudSync como destino musical.
+
+**Validação:** owner confirmou a Wave 1 em 21-11-2026. A aceitação funcional principal está fechada.
+
+### Wave 1.1 — hardening não bloqueante
+
+Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robustez:
+
+- [ ] Modo de simulação completa sem encaminhar (ACQ-05 parte 2).
+- [ ] Instrumentação de latência e esperas adaptativas (ACQ-06).
+- [ ] Multi-seleção arbitrária de fontes de dedup.
+- [ ] Testes live >100 mensagens e limite de 2.000.
 
 **Aceitação**
 
