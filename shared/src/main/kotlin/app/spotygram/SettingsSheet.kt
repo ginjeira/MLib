@@ -83,6 +83,7 @@ fun SettingsSheet(
     var repairSync by rememberSaveable { mutableStateOf(false) }
     var confirmArchive by remember { mutableStateOf(false) }
     var sleepDialog by remember { mutableStateOf(false) }
+    var duplicateDialog by remember { mutableStateOf(false) }
     var recoveryCode by remember { mutableStateOf("") }
     var syncKeyInput by remember { mutableStateOf("") }
     var syncKeyError by rememberSaveable { mutableStateOf("") }
@@ -140,6 +141,9 @@ fun SettingsSheet(
                             else tr(R.string.library_repaired, repaired)
                         )
                     }
+                }
+                ActionRow(Icons.Rounded.ContentCopy, tr(R.string.review_duplicates)) {
+                    duplicateDialog = true
                 }
                 ListItem(
                     headlineContent = { Text(tr(R.string.dedup_destination_only)) },
@@ -500,6 +504,56 @@ fun SettingsSheet(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+    if (duplicateDialog) {
+        val groups = library.duplicates.duplicateGroups()
+        AlertDialog(
+            onDismissRequest = { duplicateDialog = false },
+            title = { Text(tr(R.string.review_duplicates)) },
+            text = {
+                Column(
+                    Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (groups.isEmpty()) {
+                        Text(tr(R.string.no_duplicates))
+                    }
+                    groups.forEach { group ->
+                        val best =
+                            group.sortedWith(
+                                compareByDescending<Track> { it.local }
+                                    .thenByDescending { it.available }
+                                    .thenByDescending { it.size }
+                            ).first()
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                "${best.title} — ${best.artist}",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                tr(R.string.duplicate_group_count, group.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(onClick = {
+                                app.action {
+                                    val merged =
+                                        app.library.mergeTracks(
+                                            best.id,
+                                            group.map { it.id },
+                                        )
+                                    app.notices.emit(tr(R.string.duplicates_merged, merged))
+                                }
+                            }) { Text(tr(R.string.merge_duplicates)) }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { duplicateDialog = false }) { Text(tr(R.string.close)) }
+            },
+        )
     }
     if (sleepDialog) {
         AlertDialog(

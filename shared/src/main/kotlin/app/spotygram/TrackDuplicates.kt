@@ -56,8 +56,13 @@ class TrackDuplicates(tracks: List<Track>) {
 
     fun aliases(id: String): List<Track> = groups[id].orEmpty()
 
-    fun groupCount(): Int =
-        groups.values.distinctBy { it.firstOrNull()?.id }.count { it.size > 1 }
+    fun duplicateGroups(): List<List<Track>> =
+        groups.values
+            .distinctBy { it.firstOrNull()?.id }
+            .filter { it.size > 1 }
+            .sortedWith(compareBy({ it.first().title.lowercase(Locale.ROOT) }, { it.first().artist.lowercase(Locale.ROOT) }))
+
+    fun groupCount(): Int = duplicateGroups().size
 
     fun key(id: String): String = groups[id]?.firstOrNull()?.id ?: id
 

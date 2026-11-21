@@ -1117,6 +1117,132 @@ class Library(private val platform: Platform) : AutoCloseable {
         repaired
     }
 
+    /**
+     * Merge duplicate recordings into one keeper. Physical files are never deleted; the
+     * keeper inherits a local path, favourite state, playlist and album memberships. The
+     * removed records receive sync tombstones so every device converges.
+     */
+    suspend fun mergeTracks(keeperId: String, duplicateIds: List<String>): Int =
+        withContext(Dispatchers.IO) {
+            val ids = duplicateIds.filter { it != keeperId }.distinct()
+            if (ids.isEmpty()) return@withContext 0
+            val keeper = state.value.byId[keeperId] ?: return@withContext 0
+            var merged = 0
+            writableDatabase.transaction {
+                val duplicates = ids.mapNotNull { state.value.byId[it] }
+                if (duplicates.isEmpty()) return@transaction
+                val values = linkedMapOf<String, Any?>()
+                val liked = keeper.liked || duplicates.any { it.liked }
+                if (liked) {
+                    execSQL("UPDATE tracks SET liked=1 WHERE id=?", arrayOf<Any>(keeperId))
+                    values["favorite/$keeperId"] = true
+                }
+                if (keeper.path.isEmpty()) {
+                    duplicates.firstOrNull { it.path.isNotEmpty() && File(it.path).isFile }?.let {
+                        execSQL(
+                            "UPDATE tracks SET path=?,art=? WHERE id=?",
+                            arrayOf<Any>(it.path, it.art, keeperId),
+                        )
+                    }
+                }
+                rawQuery(
+                        "SELECT id,sync_id FROM playlists WHERE account=?",
+                        arrayOf(sync.account.toString()),
+                    ).use { playlists ->
+                        while (playlists.moveToNext()) {
+                            val playlist = playlists.getLong(0)
+                            val uid = playlists.getString(1)
+                            val members =
+                                rawQuery(
+                                        "SELECT track FROM playlist_tracks WHERE playlist=? ORDER BY position",
+                                        arrayOf(playlist.toString()),
+                                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                            if (members.none { it in ids }) continue
+                            val present = members.toMutableSet()
+                            for (id in ids) {
+                                if (id !in present) continue
+                                if (keeperId in present) {
+                                    delete(
+                                        "playlist_tracks",
+                                        "playlist=? AND track=?",
+                                        arrayOf(playlist.toString(), id),
+                                    )
+                                } else {
+                                    execSQL(
+                                        "UPDATE playlist_tracks SET track=? WHERE playlist=? AND track=?",
+                                        arrayOf<Any>(keeperId, playlist, id),
+                                    )
+                                    present.add(keeperId)
+                                }
+                                present.remove(id)
+                                values["playlist/$uid/member/$id"] = false
+                            }
+                            val order =
+                                rawQuery(
+                                        "SELECT track FROM playlist_tracks WHERE playlist=? ORDER BY position",
+                                        arrayOf(playlist.toString()),
+                                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                            values["playlist/$uid/order"] = JSONArray(order)
+                            if (keeperId in present) values["playlist/$uid/member/$keeperId"] = true
+                        }
+                    }
+                rawQuery(
+                        "SELECT id FROM albums WHERE account=?",
+                        arrayOf(sync.account.toString()),
+                    ).use { albums ->
+                        while (albums.moveToNext()) {
+                            val albumId = albums.getString(0)
+                            val members =
+                                rawQuery(
+                                        "SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",
+                                        arrayOf(albumId),
+                                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                            if (members.none { it in ids }) continue
+                            val present = members.toMutableSet()
+                            for (id in ids) {
+                                if (id !in present) continue
+                                if (keeperId in present) {
+                                    delete(
+                                        "album_tracks",
+                                        "album_id=? AND track=?",
+                                        arrayOf(albumId, id),
+                                    )
+                                } else {
+                                    execSQL(
+                                        "UPDATE album_tracks SET track=? WHERE album_id=? AND track=?",
+                                        arrayOf<Any>(keeperId, albumId, id),
+                                    )
+                                    present.add(keeperId)
+                                }
+                                present.remove(id)
+                                values["album/$albumId/member/$id"] = false
+                            }
+                            val order =
+                                rawQuery(
+                                        "SELECT track FROM album_tracks WHERE album_id=? ORDER BY position",
+                                        arrayOf(albumId),
+                                    ).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
+                            values["album/$albumId/order"] = JSONArray(order)
+                            if (keeperId in present) values["album/$albumId/member/$keeperId"] = true
+                        }
+                    }
+                for (id in ids) {
+                    sync.descriptor(this, id)?.let { values["track/$id"] = it.put("deleted", true) }
+                    values["favorite/$id"] = false
+                }
+                for (chunk in ids.chunked(400)) {
+                    execSQL(
+                        "DELETE FROM tracks WHERE id IN(${chunk.joinToString(",") { "?" }})",
+                        chunk.toTypedArray(),
+                    )
+                }
+                sync.descriptor(this, keeperId)?.let { values["track/$keeperId"] = it }
+                sync.edit(this, values)
+                merged = duplicates.size
+            }
+            if (merged > 0) reload()
+            merged
+        }
     suspend fun removeFromPlaylist(playlist: Long, track: String) =
         removeFromPlaylist(playlist, listOf(track))
 
