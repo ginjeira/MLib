@@ -523,6 +523,7 @@ fun ChatPicker(
     refreshRequest: Int = 0,
     serverSearch: Boolean = true,
     allowPublicSearch: Boolean = true,
+    destinationOnly: Boolean = false,
     onChoice: (ChatChoice, Boolean) -> Unit = { choice, selected ->
         app.action { app.library.source(choice, selected) }
     },
@@ -610,14 +611,21 @@ fun ChatPicker(
             remote,
             savedChatId,
             LocalConfiguration.current.locales,
+            destinationOnly,
+            library.sources,
         ) {
             value =
                 withContext(Dispatchers.Default) {
                     val seen = HashSet<Long>()
-                    val merged = ArrayList<ChatChoice>(local.size + remote.size)
-                    for (choices in listOf(local, remote)) {
+                    val sourceChoices =
+                        if (destinationOnly) library.sources.map { ChatChoice(it.id, it.title) }
+                        else emptyList()
+                    val merged =
+                        ArrayList<ChatChoice>(sourceChoices.size + local.size + remote.size)
+                    for (choices in listOf(sourceChoices, local, remote)) {
                         for (choice in choices) {
                             ensureActive()
+                            if (destinationOnly && !choice.canPost) continue
                             if (seen.add(choice.id)) merged.add(choice)
                         }
                     }
@@ -703,6 +711,7 @@ fun ChatPicker(
                             when {
                                 loading || localLoading -> R.string.loading_chats
                                 searching -> R.string.searching_chats
+                                search.isEmpty() && destinationOnly -> R.string.chat_picker_no_destinations
                                 search.isEmpty() -> R.string.chat_list_empty
                                 else -> R.string.chat_search_empty
                             }

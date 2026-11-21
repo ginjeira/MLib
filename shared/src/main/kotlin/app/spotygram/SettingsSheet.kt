@@ -394,8 +394,23 @@ fun SettingsSheet(
                         )
                     }
                 }
-                ActionRow(Icons.Rounded.CreateNewFolder, tr(R.string.create_archive_channel)) {
-                    confirmArchive = true
+                val archiveSource =
+                    library.sources.firstOrNull {
+                        it.title.equals("MLib Archive", ignoreCase = true)
+                    }
+                if (archiveSource == null) {
+                    ActionRow(Icons.Rounded.CreateNewFolder, tr(R.string.create_archive_channel)) {
+                        confirmArchive = true
+                    }
+                } else {
+                    ListItem(
+                        headlineContent = { Text(tr(R.string.archive_channel_ready)) },
+                        supportingContent = {
+                            Text(tr(R.string.archive_channel_ready_help, archiveSource.title))
+                        },
+                        leadingContent = { Icon(Icons.Rounded.Folder, null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
                 }
 
                 HorizontalDivider(
