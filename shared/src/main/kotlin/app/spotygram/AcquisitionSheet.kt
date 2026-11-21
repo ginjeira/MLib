@@ -410,6 +410,7 @@ internal fun AcquisitionSheet(
                         header = false,
                         serverSearch = false,
                         allowPublicSearch = false,
+                        destinationOnly = true,
                         onChoice = { choice, _ ->
                             if (choice.title.startsWith("mlib-", ignoreCase = true)) {
                                 app.action {

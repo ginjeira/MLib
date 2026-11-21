@@ -98,7 +98,11 @@ data class UserProfile(
     fun source() = Source(id, title, complete = true, documentsComplete = true, profile = true)
 }
 
-data class ChatChoice(val id: Long, val title: String) {
+data class ChatChoice(
+    val id: Long,
+    val title: String,
+    val canPost: Boolean = true,
+) {
     val displayTitle
         get() = chatTitle(id, title)
 }

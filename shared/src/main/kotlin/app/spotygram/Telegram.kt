@@ -221,7 +221,21 @@ class Telegram(
     }
 
     fun rememberChat(chat: JSONObject): ChatChoice {
-        val choice = ChatChoice(chat.getLong("id"), chat.getString("title"))
+        val type = chat.optJSONObject("type")
+        val kind = type?.optString("@type").orEmpty()
+        val permissions = chat.optJSONObject("permissions")
+        val canPost =
+            when (kind) {
+                "chatTypePrivate", "chatTypeSecret" -> true
+                "chatTypeBasicGroup" ->
+                    permissions?.optBoolean("can_send_basic_messages", true) ?: true
+                "chatTypeSupergroup" -> {
+                    val channel = type?.optBoolean("is_channel") == true
+                    permissions?.optBoolean("can_send_basic_messages", !channel) ?: !channel
+                }
+                else -> true
+            }
+        val choice = ChatChoice(chat.getLong("id"), chat.getString("title"), canPost)
         chats[choice.id] = choice
         chatPhotos.changed(choice.id, chat.optJSONObject("photo"))
         return choice
