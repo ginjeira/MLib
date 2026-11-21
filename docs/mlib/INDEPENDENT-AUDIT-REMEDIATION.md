@@ -35,5 +35,5 @@ Automatic publication from `main` is intentional: the owner is the only user and
 - The desktop image build and the signed release build still need to run in the repository CI. The signer fingerprint pinned in CI is the existing MLib release certificate: `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200`.
 - No physical-device, live Telegram acquisition, two-device CloudSync, installation or update test was performed in this remediation pass.
 - Desktop packaging remains intentionally disabled and fails closed.
-- Post-audit branch `fix/playlist-repair` adds stale-message revalidation, playlist/album repair via an available copy, arbitrary destination selection, and a destination confirmation before acquisition; it is not part of the v0.1.10 tag.
-- `v0.1.10` was published on 20-11-2026 at 23:43:53. Both APK hashes match GitHub digests and the published SHA256SUMS; both are signed by the pinned certificate. Device update testing remains pending.
+- Post-audit branch `fix/playlist-repair` adds stale-message revalidation, playlist/album repair via an available copy, arbitrary destination selection, and a destination confirmation before acquisition; it was merged into main and is included in v0.1.11.
+- `v0.1.11` was published on 21-11-2026 at 01:47:31. Both APK hashes match GitHub digests and the published SHA256SUMS; both are signed by the pinned certificate. Device update and playlist-repair testing remain pending.

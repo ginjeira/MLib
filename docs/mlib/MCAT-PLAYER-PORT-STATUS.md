@@ -36,9 +36,9 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a `v0.1.10` foi publicada em 23:43:53 e é a primeira release que inclui as correcções do commit `993eafb`.
+**Importante:** a `v0.1.11` foi publicada em 01:47:31 e inclui as correcções do commit `993eafb`, a revalidação de mensagens e a branch `fix/playlist-repair`.
 
-**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch não está integrada na `v0.1.10`.
+**Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch foi integrada em `main` e incluída na `v0.1.11`.
 
 O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bot:
 
@@ -52,7 +52,7 @@ O que resta portar é sobretudo **produto e biblioteca**, não o protocolo do bo
 8. revisão explícita de duplicados;
 9. validação live T01–T20.
 
-Nenhum destes itens bloqueia a release Android `v0.1.10` nem o teste de actualização in-app. Bloqueiam apenas a declaração de **paridade funcional com o MCat Player**.
+Nenhum destes itens bloqueia a release Android `v0.1.11` nem o teste de actualização in-app. Bloqueiam apenas a declaração de **paridade funcional com o MCat Player**.
 
 ## 3. Estados usados
 
@@ -276,14 +276,14 @@ Um build verde não substitui estes testes.
 
 ## 7. Impacto na release Android
 
-- **Nenhum item da secção 4 bloqueia `v0.1.10`.**
-- `v0.1.10` deve servir para validar a actualização in-app e o fluxo de aquisição já existente.
+- **Nenhum item da secção 4 bloqueia `v0.1.11`.**
+- `v0.1.11` deve servir para validar a actualização in-app e o fluxo de aquisição já existente.
 - A primeira prioridade após a release é o **teste live de aquisição** (`ACQ-01`, `FWD-01`, `DED-01`), porque é o maior risco não comprovado.
 - Só depois faz sentido investir em SRC-01/DED-02/ALB-03 e no resto da paridade.
 
 ## 8. Ordem recomendada
 
-1. Publicar e instalar `v0.1.10`; testar actualização a partir de `v0.1.9`.
+1. Publicar e instalar `v0.1.11`; testar actualização a partir de `v0.1.9`.
 2. Teste live de uma faixa, uma playlist pequena e uma aquisição parcial.
 3. SRC-01: destino/indexação antes de dedup.
 4. DED-02 + DUP-01: merge e revisão de duplicados.

@@ -7,42 +7,42 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.10
+## 0. Estado da versão 0.1.11
 
-Verificado em **20-11-2026, 23:47 UTC**.
+Verificado em **21-11-2026, 01:50 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.10** (publicada em 20-11-2026 23:43:53) |
-| Tag `v0.1.10` | **Criada** (`bb8b53c`, commit `5b6b045`) |
-| Release `v0.1.10` | **Publicada**; run `44834370323` concluído com sucesso |
-| Baseline para `main` | **Sucesso** às 23:03 |
-| `origin/main` | `5b6b045` (bump para 0.1.10) |
-| Branch actual | `fix/playlist-repair`, vários commits à frente de `main` |
-| Documentação | **Commitada e publicada**; actualizações na branch |
+| Última release pública | **v0.1.11** (publicada em 21-11-2026 01:47:31) |
+| Tag `v0.1.11` | **Criada** (commit `2c30982`) |
+| Release `v0.1.11` | **Publicada**; run `44848263549` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (run `44842267889`) |
+| `origin/main` | `2c30982` (bump para 0.1.11) |
+| Branch `fix/playlist-repair` | **Integrada** em `main` |
+| Documentação | **Atualizada para 0.1.11** |
 | Bloqueio actual | Nenhum; falta teste de instalação/actualização em dispositivo |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.10-arm64.apk` SHA-256 | `a29421d1a975014edd2a655c6c5211b8c0be364664a9d67e3d75778f9e896aa8` ✅ |
-| `mlib-0.1.10-x86_64.apk` SHA-256 | `1728744eaf3cd0ee66cf24c42b6d9c58fb9ca34f5c96f74ce6b68348f35c8b65` ✅ |
-| `SHA256SUMS.txt` | Contém ambos os hashes, sem caminhos absolutos ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.10` / `1010` ✅ |
+| `mlib-0.1.11-arm64.apk` SHA-256 | `29b32d2294fa2d9c73395756d58a8a5de39b7991becd643a5e4f60608bfdca30` ✅ |
+| `mlib-0.1.11-x86_64.apk` SHA-256 | `9f8577195c3e73d0ee95d70c9d07f9d6ccd8c499b6c8cca42ef5e83b2edb685f` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `b941344e868bfa423e0f27fc9d55b1b1c6b5c512f9fc546a8fdd26c0fbd1ed65` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.11` / `1011` ✅ |
 | ABIs | `arm64-v8a` e `x86_64` ✅ |
 | Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
 
-**Conclusão:** a `v0.1.10` está publicada e verificada. Falta apenas o teste real: instalar a `v0.1.9` release e actualizar in-app para `v0.1.10`.
+**Conclusão:** a `v0.1.11` está publicada, verificada e inclui a reparação das faixas indisponíveis por cópia existente, a revalidação de álbuns, o seletor de destino e a confirmação antes de adquirir.
 
 Sequência imediata:
 
-1. Instalar a release **v0.1.9** num dispositivo.
-2. Actualizar in-app para **v0.1.10** e confirmar preservação de dados.
-3. Validar a aquisição live e o fix das mensagens eliminadas.
-4. Só depois avaliar merge da branch `fix/playlist-repair` para a próxima release.
+1. Atualizar a app de **0.1.10** para **0.1.11**.
+2. Abrir a playlist “80's Hair Metal…” e confirmar a reparação das faixas.
+3. Confirmar preservação de dados e CloudSync.
+4. Validar a aquisição live e o novo seletor de destino.
 
-A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclui.
+A `v0.1.11` inclui as correcções do commit `993eafb`, o fix de revalidação `cbad0c2` e a branch `fix/playlist-repair`.
 
 ## 1. Regras do roadmap
 
@@ -56,7 +56,7 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 
 ## 2. Waves
 
-### Wave 0 — Publicar 0.1.10 e validar actualização
+### Wave 0 — Publicar releases de avaliação e validar actualização
 
 **Objectivo:** provar o ciclo release → download → instalação in-app.
 
@@ -66,16 +66,16 @@ A `v0.1.10` inclui as correcções do commit `993eafb`; a `v0.1.9` não as inclu
 
 - [x] Commit das docs pendentes.
 - [x] Push de `main`; baseline verde.
-- [x] Release `v0.1.10` pública, non-draft e non-prerelease.
+- [x] Release `v0.1.11` pública, non-draft e non-prerelease.
 - [x] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
-- [ ] Instalar `v0.1.9` release; actualizar in-app para `v0.1.10`.
+- [ ] Instalar `v0.1.10` release; actualizar in-app para `v0.1.11`.
 - [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
 - [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
 - [ ] Smoke test live: uma faixa, uma playlist pequena, um cancelamento/retry.
 
 **Aceitação**
 
-- A app instalada em `v0.1.9` detecta, descarrega e instala `v0.1.10` sem perder dados.
+- A app instalada em `v0.1.10` detecta, descarrega e instala `v0.1.11` sem perder dados.
 - A versão instalada fica `0.1.10` e os dados da biblioteca permanecem.
 - Nenhum crash/ANR no fluxo de actualização.
 - Relatório de execução anexado à release.
@@ -374,5 +374,5 @@ Assim que o push for possível:
 1. commit das docs pendentes;
 2. push;
 3. acompanhar baseline;
-4. confirmar `v0.1.10`;
+4. confirmar `v0.1.11`;
 5. executar Wave 0 e só depois iniciar Wave 1.
