@@ -340,6 +340,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
         try {
             val destination = request(json("getChat", "chat_id" to destinationChatId))
             val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
+            require(!destinationTitle.startsWith("mlib-", ignoreCase = true)) {
+                tr(R.string.acquisition_destination_sync_channel)
+            }
             val jobId = UUID.randomUUID().toString()
             val now = System.currentTimeMillis()
             val job = AcquisitionJob(
@@ -356,6 +359,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
             )
             state.value = state.value.copy(jobs = (listOf(job) + state.value.jobs).take(30))
             val destinationChoice = app.telegram.rememberChat(destination)
+            // Index a new destination before comparing duplicates. Without this, a
+            // first acquisition into a chat that already contains the same recordings
+            // can forward them again because those messages were never scanned.
+            if (app.library.state.value.sources.none { it.id == destinationChatId }) {
+                app.library.source(destinationChoice, true)
+                app.refresh()
+            }
 
             val completed = mutableListOf<AcquiredItem>()
             val batchTracks = mutableListOf<Track>()
@@ -722,8 +732,13 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val botChatId = session.botChatId
         // Do not skip an entire collection because its first track already exists.
         // Partial retries must still fetch missing tracks and release the bot turn.
-        val allowedDedupChats = app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
-            .apply { add(destinationChatId) }
+        val allowedDedupChats =
+            if (app.prefs.getBoolean("dedup_destination_only", false)) {
+                mutableSetOf(destinationChatId)
+            } else {
+                app.library.state.value.sources.mapTo(mutableSetOf()) { it.id }
+                    .apply { add(destinationChatId) }
+            }
         val latestBeforeSelection = latestMessageId(botChatId)
         val searchMessage = request(
             json("getMessage", "chat_id" to botChatId, "message_id" to session.resultMessageId)

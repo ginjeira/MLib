@@ -73,6 +73,9 @@ fun SettingsSheet(
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
     val hideDuplicates by app.hideDuplicates.collectAsStateWithLifecycle()
+    var dedupDestinationOnly by remember {
+        mutableStateOf(app.prefs.getBoolean("dedup_destination_only", false))
+    }
     val resumeLongAudio by app.resumeLongAudio.collectAsStateWithLifecycle()
     val resumeMinutes by app.resumeMinutes.collectAsStateWithLifecycle()
     var editingResume by rememberSaveable { mutableStateOf(false) }
@@ -100,6 +103,51 @@ fun SettingsSheet(
                     leadingContent = { Icon(Icons.Rounded.Search, null) },
                     trailingContent = { Icon(Icons.Rounded.ChevronRight, null) },
                     modifier = Modifier.clickable(onClick = onAcquisition),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+            item(key = "health") {
+                val unavailable =
+                    library.tracks.count { !it.available && !it.local && !it.imported }
+                val duplicates = library.duplicates.groupCount()
+                val noCover = library.tracks.count { it.art.isBlank() }
+                Text(
+                    tr(R.string.library_health),
+                    Modifier.padding(top = 8.dp, bottom = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    if (unavailable + duplicates + noCover == 0) {
+                        tr(R.string.library_health_ok)
+                    } else {
+                        tr(R.string.library_health_summary, unavailable, duplicates, noCover)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ActionRow(Icons.Rounded.Build, tr(R.string.repair_library)) {
+                    app.action {
+                        val repaired = app.repairUnavailableLibrary()
+                        app.notices.emit(
+                            if (repaired == 0) tr(R.string.library_repair_none)
+                            else tr(R.string.library_repaired, repaired)
+                        )
+                    }
+                }
+                ListItem(
+                    headlineContent = { Text(tr(R.string.dedup_destination_only)) },
+                    supportingContent = { Text(tr(R.string.dedup_destination_only_help)) },
+                    trailingContent = {
+                        GlassSwitch(
+                            checked = dedupDestinationOnly,
+                            onCheckedChange = {
+                                dedupDestinationOnly = it
+                                app.prefs.edit()
+                                    .putBoolean("dedup_destination_only", it)
+                                    .apply()
+                            },
+                        )
+                    },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
             }
@@ -339,15 +387,7 @@ fun SettingsSheet(
                         )
                     }
                 }
-                ActionRow(Icons.Rounded.Build, tr(R.string.repair_library)) {
-                    app.action {
-                        val repaired = app.repairUnavailableLibrary()
-                        app.notices.emit(
-                            if (repaired == 0) tr(R.string.library_repair_none)
-                            else tr(R.string.library_repaired, repaired)
-                        )
-                    }
-                }
+
                 HorizontalDivider(
                     Modifier.padding(vertical = 16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
