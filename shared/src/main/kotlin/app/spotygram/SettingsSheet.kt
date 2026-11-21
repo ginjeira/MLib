@@ -81,6 +81,8 @@ fun SettingsSheet(
     var editingResume by rememberSaveable { mutableStateOf(false) }
     var editingSyncKey by rememberSaveable { mutableStateOf(false) }
     var repairSync by rememberSaveable { mutableStateOf(false) }
+    var confirmArchive by remember { mutableStateOf(false) }
+    var sleepDialog by remember { mutableStateOf(false) }
     var recoveryCode by remember { mutableStateOf("") }
     var syncKeyInput by remember { mutableStateOf("") }
     var syncKeyError by rememberSaveable { mutableStateOf("") }
@@ -105,6 +107,11 @@ fun SettingsSheet(
                     modifier = Modifier.clickable(onClick = onAcquisition),
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
+            }
+            item(key = "sleep") {
+                ActionRow(Icons.Rounded.Bedtime, tr(R.string.sleep_timer)) {
+                    sleepDialog = true
+                }
             }
             item(key = "health") {
                 val unavailable =
@@ -387,6 +394,9 @@ fun SettingsSheet(
                         )
                     }
                 }
+                ActionRow(Icons.Rounded.CreateNewFolder, tr(R.string.create_archive_channel)) {
+                    confirmArchive = true
+                }
 
                 HorizontalDivider(
                     Modifier.padding(vertical = 16.dp),
@@ -475,6 +485,52 @@ fun SettingsSheet(
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+    if (sleepDialog) {
+        AlertDialog(
+            onDismissRequest = { sleepDialog = false },
+            title = { Text(tr(R.string.sleep_timer)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(15, 30, 60, 90).forEach { minutes ->
+                        TextButton(onClick = {
+                            sleepDialog = false
+                            app.playback?.setSleepTimer(minutes)
+                            app.action {
+                                app.notices.emit(tr(R.string.sleep_timer_set, minutes))
+                            }
+                        }) { Text(tr(R.string.sleep_timer_minutes, minutes)) }
+                    }
+                    TextButton(onClick = {
+                        sleepDialog = false
+                        app.playback?.cancelSleepTimer()
+                    }) { Text(tr(R.string.sleep_timer_cancel)) }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { sleepDialog = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
+    }
+    if (confirmArchive) {
+        AlertDialog(
+            onDismissRequest = { confirmArchive = false },
+            title = { Text(tr(R.string.create_archive_channel)) },
+            text = { Text(tr(R.string.create_archive_help)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmArchive = false
+                    app.action {
+                        val channel = app.createArchiveChannel()
+                        app.notices.emit(tr(R.string.archive_channel_created, channel.displayTitle))
+                    }
+                }) { Text(tr(R.string.create)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmArchive = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
     }
     if (repairSync) {
         AlertDialog(

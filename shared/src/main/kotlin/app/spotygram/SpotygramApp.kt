@@ -376,6 +376,43 @@ class SpotygramApp(val platform: Platform) {
         return choices
     }
 
+    /**
+     * Explicit initial setup only. Reuses an existing "MLib Archive" chat when possible;
+     * otherwise creates a private channel and selects it as source and destination.
+     */
+    suspend fun createArchiveChannel(): ChatChoice {
+        check(telegram.auth.value.type == "authorizationStateReady") {
+            tr(R.string.telegram_required)
+        }
+        val existing =
+            searchChats("MLib Archive").firstOrNull {
+                it.title.equals("MLib Archive", ignoreCase = true) &&
+                    !it.title.startsWith("mlib-", ignoreCase = true)
+            }
+        val choice =
+            existing
+                ?: telegram
+                    .rememberChat(
+                        telegram.request(
+                            json(
+                                "createNewSupergroupChat",
+                                "title" to "MLib Archive",
+                                "is_forum" to false,
+                                "is_channel" to true,
+                                "description" to "MLib music archive",
+                                "message_auto_delete_time" to 0,
+                                "for_import" to false,
+                            )
+                        )
+                    )
+        library.source(choice, true)
+        prefs.edit()
+            .putLong("acquisition_destination_${AppText.savedChatId}", choice.id)
+            .apply()
+        library.reload()
+        return choice
+    }
+
     suspend fun addPublicChat(value: String) {
         val name =
             value
