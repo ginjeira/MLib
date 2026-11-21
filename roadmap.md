@@ -7,42 +7,42 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.11
+## 0. Estado da versão 0.1.12
 
-Verificado em **21-11-2026, 01:50 UTC**.
+Verificado em **21-11-2026, 10:57 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.11** (publicada em 21-11-2026 01:47:31) |
-| Tag `v0.1.11` | **Criada** (commit `2c30982`) |
-| Release `v0.1.11` | **Publicada**; run `44848263549` concluído com sucesso |
-| Baseline para `main` | **Sucesso** (run `44842267889`) |
-| `origin/main` | `2c30982` (bump para 0.1.11) |
-| Branch `fix/playlist-repair` | **Integrada** em `main` |
-| Documentação | **Atualizada para 0.1.11** |
+| Última release pública | **v0.1.12** (publicada em 21-11-2026 10:51:16) |
+| Tag `v0.1.12` | **Criada** (commit `d08bee1`) |
+| Release `v0.1.12` | **Publicada**; run `44893620305` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (run `44893392217`) |
+| `origin/main` | `d08bee1` (bump para 0.1.12) |
+| Branch `feat/library-repair` | **Pendente** (reparação global, `/start` só no setup) |
+| Documentação | **Atualizada para 0.1.12** |
 | Bloqueio actual | Nenhum; falta teste de instalação/actualização em dispositivo |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.11-arm64.apk` SHA-256 | `29b32d2294fa2d9c73395756d58a8a5de39b7991becd643a5e4f60608bfdca30` ✅ |
-| `mlib-0.1.11-x86_64.apk` SHA-256 | `9f8577195c3e73d0ee95d70c9d07f9d6ccd8c499b6c8cca42ef5e83b2edb685f` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `b941344e868bfa423e0f27fc9d55b1b1c6b5c512f9fc546a8fdd26c0fbd1ed65` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.11` / `1011` ✅ |
+| `mlib-0.1.12-arm64.apk` SHA-256 | `e8b5cebbf3d90b2fa580007b4f2c32bfcf29c67943a76e648999c259969de62a` ✅ |
+| `mlib-0.1.12-x86_64.apk` SHA-256 | `083e331d3efab054ec3aa13017a35f4a1036602bb4c24eedee09bbff65ff0fce` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `afefd3ebe0c9e3ff2bf002da3bbd4c99d1024d78042bc0a51847f94afe762ef5` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.12` / `1012` ✅ |
 | ABIs | `arm64-v8a` e `x86_64` ✅ |
 | Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
 
-**Conclusão:** a `v0.1.11` está publicada, verificada e inclui a reparação das faixas indisponíveis por cópia existente, a revalidação de álbuns, o seletor de destino e a confirmação antes de adquirir.
+**Conclusão:** a `v0.1.12` está publicada e corrige a alternância offline/synced. O TDLib `connectionStateUpdating` passou a ser tratado como online, evitando cancelamentos/restarts do CloudSync e do refresh durante updates.
 
 Sequência imediata:
 
-1. Atualizar a app de **0.1.10** para **0.1.11**.
-2. Abrir a playlist “80's Hair Metal…” e confirmar a reparação das faixas.
-3. Confirmar preservação de dados e CloudSync.
-4. Validar a aquisição live e o novo seletor de destino.
+1. Atualizar a app de **0.1.11** para **0.1.12**.
+2. Confirmar que a sincronização fica estável e não alterna.
+3. Confirmar que partilha/origens/perfis não ficam bloqueados durante updates.
+4. Testar a playlist reparada.
 
-A `v0.1.11` inclui as correcções do commit `993eafb`, o fix de revalidação `cbad0c2` e a branch `fix/playlist-repair`.
+A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (reparação global e `/start` apenas no setup) fica para a próxima release.
 
 ## 1. Regras do roadmap
 
@@ -66,16 +66,16 @@ A `v0.1.11` inclui as correcções do commit `993eafb`, o fix de revalidação `
 
 - [x] Commit das docs pendentes.
 - [x] Push de `main`; baseline verde.
-- [x] Release `v0.1.11` pública, non-draft e non-prerelease.
+- [x] Release `v0.1.12` pública, non-draft e non-prerelease.
 - [x] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
-- [ ] Instalar `v0.1.10` release; actualizar in-app para `v0.1.11`.
+- [ ] Instalar `v0.1.11` release; actualizar in-app para `v0.1.12`.
 - [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
 - [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
 - [ ] Smoke test live: uma faixa, uma playlist pequena, um cancelamento/retry.
 
 **Aceitação**
 
-- A app instalada em `v0.1.10` detecta, descarrega e instala `v0.1.11` sem perder dados.
+- A app instalada em `v0.1.11` detecta, descarrega e instala `v0.1.12` sem perder dados.
 - A versão instalada fica `0.1.10` e os dados da biblioteca permanecem.
 - Nenhum crash/ANR no fluxo de actualização.
 - Relatório de execução anexado à release.
@@ -374,5 +374,5 @@ Assim que o push for possível:
 1. commit das docs pendentes;
 2. push;
 3. acompanhar baseline;
-4. confirmar `v0.1.11`;
+4. confirmar `v0.1.12`;
 5. executar Wave 0 e só depois iniciar Wave 1.
