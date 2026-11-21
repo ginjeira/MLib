@@ -474,7 +474,7 @@
     <string name="library">Library</string>
     <string name="loading">Loading…</string>
     <string name="album_download_offline">Download album for offline</string>
-    <string name="album_find_tracks">Find tracks</string>
+    <string name="album_find_tracks">Complete album</string>
     <string name="edit">Edit</string>
     <string name="album_remove_track">Remove from album</string>
     <string name="album_edit_title">Edit album</string>

@@ -479,7 +479,7 @@
     <string name="albums_empty">Ainda não existem álbuns na biblioteca.</string>
     <string name="album_delete">Eliminar álbum</string>
     <string name="album_download_offline">Transferir álbum para offline</string>
-    <string name="album_find_tracks">Procurar faixas</string>
+    <string name="album_find_tracks">Completar álbum</string>
     <string name="edit">Editar</string>
     <string name="album_remove_track">Remover do álbum</string>
     <string name="album_edit_title">Editar álbum</string>
