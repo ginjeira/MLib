@@ -1243,6 +1243,82 @@ class Library(private val platform: Platform) : AutoCloseable {
             if (merged > 0) reload()
             merged
         }
+    /** Local, secret-free library snapshot for diagnostics or backup. */
+    fun exportJson(): String {
+        val state = state.value
+        val tracks =
+            JSONArray().apply {
+                state.tracks
+                    .sortedWith(compareBy<Track> { it.artist.lowercase() }.thenBy { it.title.lowercase() })
+                    .forEach { track ->
+                        put(
+                            JSONObject()
+                                .put("id", track.id)
+                                .put("title", track.title)
+                                .put("artist", track.artist)
+                                .put("duration", track.duration)
+                                .put("size", track.size)
+                                .put("source", track.source)
+                                .put("liked", track.liked)
+                                .put("local", track.local)
+                                .put("available", track.available)
+                                .put("temporary", track.temporary)
+                                .put("imported", track.imported)
+                                .put("chat", track.chatId)
+                                .put("message", track.messageId)
+                                .put("file_key", track.fileKey)
+                                .put("path", track.path)
+                        )
+                    }
+            }
+        val albums =
+            JSONArray().apply {
+                state.albums.forEach { album ->
+                    put(
+                        JSONObject()
+                            .put("id", album.id)
+                            .put("title", album.title)
+                            .put("artist", album.artist)
+                            .put("year", album.year)
+                            .put("genre", album.genre)
+                            .put("cover", album.coverUrl)
+                            .put("tracks", JSONArray(album.tracks))
+                    )
+                }
+            }
+        val playlists =
+            JSONArray().apply {
+                state.playlists.forEach { playlist ->
+                    put(
+                        JSONObject()
+                            .put("id", playlist.id)
+                            .put("name", playlist.name)
+                            .put("description", playlist.description)
+                            .put("cover", playlist.coverUrl)
+                            .put("tracks", JSONArray(playlist.tracks))
+                    )
+                }
+            }
+        val sources =
+            JSONArray().apply {
+                state.sources.forEach { source ->
+                    put(
+                        JSONObject()
+                            .put("id", source.id)
+                            .put("title", source.title)
+                            .put("profile", source.profile)
+                    )
+                }
+            }
+        return JSONObject()
+            .put("schema", 1)
+            .put("exported_at", System.currentTimeMillis())
+            .put("tracks", tracks)
+            .put("albums", albums)
+            .put("playlists", playlists)
+            .put("sources", sources)
+            .toString(2)
+    }
     suspend fun removeFromPlaylist(playlist: Long, track: String) =
         removeFromPlaylist(playlist, listOf(track))
 
