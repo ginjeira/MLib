@@ -629,4 +629,7 @@
     <string name="duplicate_group_count">%1$d cópias</string>
     <string name="merge_duplicates">Manter a melhor cópia e fundir</string>
     <string name="duplicates_merged">Fundi %1$d duplicado(s).</string>
+    <string name="album_complete_title">Completar álbum?</string>
+    <string name="album_complete_help">O MLib vai procurar \"%1$s\" no bot e reutilizar as %2$d faixas já existentes neste álbum. As faixas novas serão adicionadas ao álbum.</string>
+    <string name="album_complete_action">Completar álbum</string>
 </resources>
