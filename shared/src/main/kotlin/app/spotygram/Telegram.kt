@@ -198,6 +198,29 @@ class Telegram(
         scope.launch { runCatching { request(json("getAuthorizationState")) } }
     }
 
+    private val ownerAdminCache = java.util.concurrent.ConcurrentHashMap<Long, Boolean>()
+
+    suspend fun isOwnerOrAdmin(chatId: Long): Boolean {
+        ownerAdminCache[chatId]?.let { return it }
+        val me = AppText.savedChatId
+        if (me == 0L) return false
+        val member =
+            runCatching {
+                    request(
+                        json(
+                            "getChatMember",
+                            "chat_id" to chatId,
+                            "member_id" to me,
+                        )
+                    )
+                }
+                .getOrNull() ?: return false
+        val status = member.optJSONObject("status")?.optString("@type").orEmpty()
+        val owned =
+            status == "chatMemberStatusCreator" || status == "chatMemberStatusAdministrator"
+        ownerAdminCache[chatId] = owned
+        return owned
+    }
     suspend fun request(obj: JSONObject, timeout: Long = 30_000): JSONObject {
         check(client != 0) { tr(R.string.telegram_required) }
         val id = sequence.incrementAndGet().toString()
@@ -399,6 +422,7 @@ class Telegram(
                 }
             }
             "authorizationStateClosed" -> {
+                ownerAdminCache.clear()
                 requests.values.forEach {
                     it.completeExceptionally(TelegramException(401, tr(R.string.telegram_required)))
                 }

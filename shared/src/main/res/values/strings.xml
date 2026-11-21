@@ -627,4 +627,5 @@
     <string name="album_complete_title">Complete album?</string>
     <string name="album_complete_help">MLib will search the bot for \"%1$s\" and reuse the %2$d tracks already in this album. New tracks will be added to the album.</string>
     <string name="album_complete_action">Complete album</string>
+    <string name="chat_picker_no_sources">No groups or channels were found in your Telegram account.</string>
 </resources>
