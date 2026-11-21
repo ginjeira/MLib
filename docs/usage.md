@@ -174,9 +174,7 @@ active send running; Android keeps a quiet transfer notification, and desktop
 keeps its process alive. Sharing settings, pins and recent recipients stay on
 this device, with recipient history kept separately for each Telegram account.
 
-<img src="screenshots/sharing-light.png" width="300" alt="Selected recipient in quick access and Telegram's main chat list">
 
-<img src="screenshots/desktop-sharing-light.png" width="800" alt="Sharing panel beside the full player's send button on desktop">
 
 The shared interface in narrow and wide Linux windows, with demonstration
 recordings and recipients.
@@ -254,9 +252,7 @@ The chosen speed keeps the original pitch and applies to subsequent songs,
 including after an app restart. **1×** restores normal speed. The button gains
 a subtle accent and the mini-player shows the value whenever speed differs from 1×.
 
-<img src="screenshots/speed-light.png" width="300" alt="Playback speed panel with slider and quick choices">
 
-<img src="screenshots/speed-desktop-dark.png" width="900" alt="The compact desktop speed panel anchored to its player button">
 
 On desktop, the full player has a **0–100% volume slider** below Download, speed
 and Queue. The speaker button after Next in the mini-player opens the same slider

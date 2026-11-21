@@ -48,14 +48,16 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 
 | Wave | Estado | Progresso | Notas |
 |---|---|---:|---|
-| Wave 0 — release/update | **Quase concluída** | ~85% | v0.1.12 validada; v0.1.13 em construção. Faltam smoke tests live e screenshots. |
-| Wave 1 — aquisição fiável | **Em curso** | ~50% | Destino, confirmação, pré-indexação, revalidação e dedup de indisponíveis feitos. Faltam estimativa, simulação completa, latência, fontes configuráveis e testes >2.000. |
+| Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
+| Wave 1 — aquisição fiável | **Em curso** | ~55% | Destino, confirmação, pré-indexação, revalidação de fontes/perfis e dedup de indisponíveis feitos. Faltam estimativa, simulação completa, latência, fontes configuráveis e testes >2.000. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
 | Wave 3 — confiança/biblioteca | **Iniciada** | ~25% | Resumo de saúde e reparação global na branch. Faltam pesquisa unificada, estúdio de duplicados/merge, exportação e testes golden. |
 | Wave 4 — álbuns/capas | **Parcial** | ~25% | Dedup exacta + confirmação, reparação/revalidação de álbuns. Faltam completar álbum com pré-visualização, enriquecimento e gestor de capas. |
 | Wave 5 — setup/jobs | **Parcial** | ~25% | `/start` apenas no setup explícito; reparação global. Faltam arquivo pessoal, estado por opção, retry parcial e testes crash/restart. |
 | Wave 6 — descoberta/poder | **Não iniciada** | 0% | Artistas, smart downloads, widgets, Auto, import/export, privacidade, scrobbling, smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
+
+**Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
 
 **Leitura rápida:** o produto já é utilizável para o ciclo principal (biblioteca + aquisição + update), mas a paridade de produto está sobretudo nas Waves 1, 3, 4 e 5. A Wave 2 é a maior alteração visual e deve entrar depois de fechar a confiabilidade da biblioteca.
 ## 1. Regras do roadmap
@@ -83,9 +85,10 @@ A `v0.1.12` inclui o fix de conexão `b988593`; a branch `feat/library-repair` (
 - [x] Release `v0.1.12` pública, non-draft e non-prerelease.
 - [x] Confirmar APKs arm64/x86_64, `SHA256SUMS.txt` e fingerprint do assinante.
 - [x] Instalar `v0.1.11`/`v0.1.12` e confirmar actualização in-app.
+- [x] Confirmar a reparação da playlist na 0.1.12.
+- [ ] Smoke test live de aquisição completa (movido para a aceitação da Wave 1).
 - [x] Corrigir o texto hardcoded `"Estado: …"` em `AcquisitionSheet.kt` (branch `fix/playlist-repair`).
-- [ ] Substituir screenshots antigas que ainda mostram Spotygram/russo.
-- [ ] Smoke test live: uma faixa, uma playlist pequena, um cancelamento/retry.
+- [x] Remover screenshots antigas Spotygram/russo do caminho activo; legado em `docs/screenshots/legacy/` e captura actual pendente.
 
 **Aceitação**
 

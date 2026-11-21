@@ -2,7 +2,9 @@
 
 [Documentation](README.md) · **English**
 
-This page records observed behavior and its limits. A build does not establish
+> Historical inherited verification log. The old screenshots were moved to `screenshots/legacy/` because they showed the pre-MLib identity; current screenshots are pending in `screenshots/README.md`.
+>
+> This page records observed behavior and its limits. A build does not establish
 account access, physical sound or responsiveness on another computer. Temporary
 inspection code, timings and account data stay outside the checkout.
 
