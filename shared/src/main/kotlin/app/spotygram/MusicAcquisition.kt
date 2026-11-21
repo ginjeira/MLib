@@ -953,14 +953,29 @@ class MusicAcquisition(private val app: SpotygramApp) {
         val account = request(json("getMe"))
         val startedKey = "music_bot_started_${account.getLong("id")}"
         if (!app.prefs.getBoolean(startedKey, false)) {
-            // A /start resets or interrupts the bot conversation for accounts that
-            // already used it. Only send it when this account has no history with
-            // the bot; after this check, never send it again for this account.
             val hasHistory = history(bot.getLong("id"), 1).isNotEmpty()
-            if (!hasHistory) sendText(bot.getLong("id"), "/start")
+            if (!hasHistory) error(tr(R.string.music_bot_setup_required))
             app.prefs.edit().putBoolean(startedKey, true).apply()
         }
         return bot
+    }
+
+    /**
+     * Explicit initial setup only. Never called from a search: once this account has
+     * used the bot (or this method has sent /start), the flag prevents another /start.
+     */
+    suspend fun activateBot(): Boolean = botLane.withLock {
+        val bot = request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
+        val account = request(json("getMe"))
+        val startedKey = "music_bot_started_${account.getLong("id")}"
+        if (app.prefs.getBoolean(startedKey, false)) return@withLock false
+        if (history(bot.getLong("id"), 1).isNotEmpty()) {
+            app.prefs.edit().putBoolean(startedKey, true).apply()
+            return@withLock false
+        }
+        sendText(bot.getLong("id"), "/start")
+        app.prefs.edit().putBoolean(startedKey, true).apply()
+        true
     }
 
     private suspend fun sendText(chatId: Long, text: String): JSONObject =

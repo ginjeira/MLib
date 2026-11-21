@@ -595,4 +595,8 @@
     <string name="repair_library">Repair unavailable tracks</string>
     <string name="library_repaired">Repaired %1$d unavailable track(s).</string>
     <string name="library_repair_none">No unavailable tracks needed repair.</string>
+    <string name="music_bot_setup_required">Activate the music bot in Settings before searching.</string>
+    <string name="music_bot_setup_action">Activate music bot</string>
+    <string name="music_bot_activated">Music bot activated.</string>
+    <string name="music_bot_already_used">This account has already used the music bot.</string>
 </resources>
