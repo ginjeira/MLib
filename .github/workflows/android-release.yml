@@ -82,6 +82,18 @@ jobs:
           keytool -list -keystore "$MLIB_STATE/mlib-release.jks" \
             -storepass "$MLIB_ANDROID_KEYSTORE_PASSWORD" -alias "$MLIB_ANDROID_KEY_ALIAS" >/dev/null
           echo "MLIB_VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Restore native TDLib/OpenSSL cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ${{ env.MLIB_STATE }}/jniLibs
+            ${{ env.MLIB_STATE }}/tdlib-src
+            ${{ env.MLIB_STATE }}/native/openssl
+            ${{ env.MLIB_STATE }}/native/openssl-arm64-v8a
+            ${{ env.MLIB_STATE }}/native/openssl-x86_64
+          key: mlib-native-${{ runner.os }}-${{ hashFiles('tools/build-native.sh') }}
+          restore-keys: |
+            mlib-native-${{ runner.os }}-
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
       - name: Build signed Android release APKs
         run: bash tools/build.sh release
