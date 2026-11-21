@@ -521,6 +521,8 @@ fun ChatPicker(
     onDone: () -> Unit,
     header: Boolean = true,
     refreshRequest: Int = 0,
+    serverSearch: Boolean = true,
+    allowPublicSearch: Boolean = true,
     onChoice: (ChatChoice, Boolean) -> Unit = { choice, selected ->
         app.action { app.library.source(choice, selected) }
     },
@@ -585,7 +587,7 @@ fun ChatPicker(
         }
     }
     LaunchedEffect(search, online, refresh, refreshRequest, lifecycle) {
-        if (search.isEmpty() || !online) return@LaunchedEffect
+        if (!serverSearch || search.isEmpty() || !online) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             searching = true
             searchError = null
@@ -652,7 +654,7 @@ fun ChatPicker(
             Modifier.fillMaxWidth(),
         )
         if (loading || searching || localLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        if (search.startsWith("@") || search.contains("t.me/"))
+        if (allowPublicSearch && (search.startsWith("@") || search.contains("t.me/")))
             TextButton(
                 onClick = {
                     app.action {
