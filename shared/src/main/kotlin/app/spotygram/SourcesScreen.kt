@@ -642,8 +642,16 @@ fun ChatPicker(
                         compareBy<ChatChoice> { it.id != savedChatId }
                             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.displayTitle }
                     )
-                    ensureActive()
-                    merged
+                    if (sourcesOnly) {
+                        val owned = ArrayList<ChatChoice>()
+                        for (choice in merged) {
+                            ensureActive()
+                            if (app.telegram.isOwnerOrAdmin(choice.id)) owned += choice
+                        }
+                        owned
+                    } else {
+                        merged
+                    }
                 }
         }
     val error = localError ?: loadError ?: searchError
