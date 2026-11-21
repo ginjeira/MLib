@@ -165,7 +165,7 @@ class SpotygramApp(val platform: Platform) {
         }
         scope.launch {
             combine(telegram.auth.map { it.type }, telegram.connection) { type, connection ->
-                    type == "authorizationStateReady" && connection.isEmpty()
+                    type == "authorizationStateReady" && telegramOnline(connection)
                 }
                 .distinctUntilChanged()
                 .collectLatest { connected ->

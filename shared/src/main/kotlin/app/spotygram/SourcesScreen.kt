@@ -353,7 +353,7 @@ fun SourcePicker(
             )
             GlassIconButton(
                 onClick = { refresh++ },
-                enabled = auth.type == "authorizationStateReady" && connection.isEmpty(),
+                enabled = auth.type == "authorizationStateReady" && telegramOnline(connection),
             ) {
                 Icon(
                     Icons.Rounded.Refresh,
@@ -415,7 +415,7 @@ private fun ProfilePicker(
     val auth by app.telegram.auth.collectAsStateWithLifecycle()
     val connection by app.telegram.connection.collectAsStateWithLifecycle()
     val selfId by app.profiles.selfId.collectAsStateWithLifecycle()
-    val online = auth.type == "authorizationStateReady" && connection.isEmpty()
+    val online = auth.type == "authorizationStateReady" && telegramOnline(connection)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var query by rememberSaveable { mutableStateOf("") }
     var refresh by remember { mutableIntStateOf(0) }
@@ -529,7 +529,7 @@ fun ChatPicker(
     val auth by app.telegram.auth.collectAsStateWithLifecycle()
     val connection by app.telegram.connection.collectAsStateWithLifecycle()
     val ready = auth.type == "authorizationStateReady"
-    val online = ready && connection.isEmpty()
+    val online = ready && telegramOnline(connection)
     var query by rememberSaveable { mutableStateOf("") }
     val search = query.trim()
     var refresh by remember { mutableIntStateOf(0) }

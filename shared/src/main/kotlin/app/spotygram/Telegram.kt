@@ -15,6 +15,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import org.json.JSONObject
 
+/**
+ * TDLib reports connectionStateUpdating while it is connected and fetching updates.
+ * Treating it as offline makes sync/refresh flip between offline and synced on every
+ * update burst. Only waiting-for-network/connecting/proxy states are actually offline.
+ */
+fun telegramOnline(state: String): Boolean =
+    state.isEmpty() || state == "connectionStateUpdating"
+
 class Telegram(
     private val platform: Platform,
     private val scope: CoroutineScope,
