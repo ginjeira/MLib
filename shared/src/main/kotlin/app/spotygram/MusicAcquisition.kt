@@ -145,9 +145,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private var activeSearchId: String? = null
     private val searchCancellationRequested = AtomicBoolean(false)
     private val pendingJobKey = "mlib_pending_music_acquisition"
+    private val jobsKey = "mlib_acquisition_jobs"
 
     init {
-        state.value = state.value.copy(pendingJob = readPendingJob())
+        state.value =
+            state.value.copy(
+                pendingJob = readPendingJob(),
+                jobs = readJobs(),
+            )
     }
 
     suspend fun search(
@@ -358,6 +363,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 items = selected.map { AcquisitionJobItem(it.number, it.title) },
             )
             state.value = state.value.copy(jobs = (listOf(job) + state.value.jobs).take(30))
+            persistJobs(state.value.jobs)
             val destinationChoice = app.telegram.rememberChat(destination)
             // Index a new destination before comparing duplicates. Without this, a
             // first acquisition into a chat that already contains the same recordings
@@ -646,6 +652,101 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
     }
 
+    private fun persistJobs(jobs: List<AcquisitionJob>) {
+        val array = JSONArray()
+        jobs.take(30).forEach { job ->
+            array.put(
+                JSONObject()
+                    .put("id", job.id)
+                    .put("query", job.query)
+                    .put("content_type", job.contentType.name)
+                    .put("provider", job.provider.name)
+                    .put("destination_chat_id", job.destinationChatId)
+                    .put("destination_title", job.destinationTitle)
+                    .put("status", job.status.name)
+                    .put("created_at", job.createdAt)
+                    .put("updated_at", job.updatedAt)
+                    .put("error", job.error)
+                    .put(
+                        "items",
+                        JSONArray().apply {
+                            job.items.forEach { item ->
+                                put(
+                                    JSONObject()
+                                        .put("option_number", item.optionNumber)
+                                        .put("title", item.title)
+                                        .put("status", item.status.name)
+                                        .put("track_ids", JSONArray(item.trackIds))
+                                        .put("error", item.error)
+                                )
+                            }
+                        },
+                    )
+            )
+        }
+        app.prefs.edit().putString(jobsKey, array.toString()).apply()
+    }
+
+    private fun readJobs(): List<AcquisitionJob> =
+        runCatching {
+                val array = JSONArray(app.prefs.getString(jobsKey, null) ?: return emptyList())
+                buildList {
+                    for (index in 0 until array.length()) {
+                        val value = array.optJSONObject(index) ?: continue
+                        val contentType =
+                            AcquisitionContentType.entries.firstOrNull {
+                                it.name == value.optString("content_type")
+                            } ?: continue
+                        val provider =
+                            AcquisitionProvider.entries.firstOrNull {
+                                it.name == value.optString("provider")
+                            } ?: continue
+                        val status =
+                            AcquisitionJobStatus.entries.firstOrNull {
+                                it.name == value.optString("status")
+                            } ?: AcquisitionJobStatus.QUEUED
+                        val items = mutableListOf<AcquisitionJobItem>()
+                        value.optJSONArray("items")?.let { itemArray ->
+                            for (itemIndex in 0 until itemArray.length()) {
+                                val item = itemArray.optJSONObject(itemIndex) ?: continue
+                                val itemStatus =
+                                    AcquisitionJobStatus.entries.firstOrNull {
+                                        it.name == item.optString("status")
+                                    } ?: AcquisitionJobStatus.QUEUED
+                                val ids = mutableListOf<String>()
+                                item.optJSONArray("track_ids")?.let { idArray ->
+                                    for (idIndex in 0 until idArray.length())
+                                        ids += idArray.optString(idIndex)
+                                }
+                                items +=
+                                    AcquisitionJobItem(
+                                        optionNumber = item.optInt("option_number"),
+                                        title = item.optString("title"),
+                                        status = itemStatus,
+                                        trackIds = ids,
+                                        error = item.optString("error"),
+                                    )
+                            }
+                        }
+                        add(
+                            AcquisitionJob(
+                                id = value.optString("id"),
+                                query = value.optString("query"),
+                                contentType = contentType,
+                                provider = provider,
+                                destinationChatId = value.optLong("destination_chat_id"),
+                                destinationTitle = value.optString("destination_title"),
+                                status = status,
+                                createdAt = value.optLong("created_at"),
+                                updatedAt = value.optLong("updated_at"),
+                                items = items,
+                                error = value.optString("error"),
+                            )
+                        )
+                    }
+                }
+            }
+            .getOrDefault(emptyList())
     private fun updateJob(jobId: String, transform: (AcquisitionJob) -> AcquisitionJob) {
         val now = System.currentTimeMillis()
         state.value = state.value.copy(
@@ -653,6 +754,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 if (job.id == jobId) transform(job).copy(updatedAt = now) else job
             },
         )
+        persistJobs(state.value.jobs)
     }
 
     private fun updateJobItem(
