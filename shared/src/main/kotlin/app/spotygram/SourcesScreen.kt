@@ -397,6 +397,9 @@ fun SourcePicker(
                 onDone,
                 header = false,
                 refreshRequest = refresh,
+                serverSearch = false,
+                allowPublicSearch = false,
+                sourcesOnly = true,
                 onChoice = { choice, selected ->
                     if (selected) enabled += choice.id
                     pending += app.action { app.library.source(choice, selected) }
@@ -524,6 +527,7 @@ fun ChatPicker(
     serverSearch: Boolean = true,
     allowPublicSearch: Boolean = true,
     destinationOnly: Boolean = false,
+    sourcesOnly: Boolean = false,
     onChoice: (ChatChoice, Boolean) -> Unit = { choice, selected ->
         app.action { app.library.source(choice, selected) }
     },
@@ -628,7 +632,9 @@ fun ChatPicker(
                     for (choices in listOf(sourceChoices, local, remote)) {
                         for (choice in choices) {
                             ensureActive()
+                            if (choice.title.isBlank()) continue
                             if (destinationOnly && (!choice.groupOrChannel || !choice.canPost)) continue
+                            if (sourcesOnly && !choice.groupOrChannel) continue
                             if (seen.add(choice.id)) merged.add(choice)
                         }
                     }
@@ -715,6 +721,7 @@ fun ChatPicker(
                                 loading || localLoading -> R.string.loading_chats
                                 searching -> R.string.searching_chats
                                 search.isEmpty() && destinationOnly -> R.string.chat_picker_no_destinations
+                                search.isEmpty() && sourcesOnly -> R.string.chat_picker_no_sources
                                 search.isEmpty() -> R.string.chat_list_empty
                                 else -> R.string.chat_search_empty
                             }
