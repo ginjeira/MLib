@@ -328,6 +328,17 @@ fun SettingsSheet(
                         app.platform.stopDownloads(app)
                     }
                 ActionRow(Icons.Rounded.Add, tr(R.string.import_files), onClick = onImport)
+                ActionRow(Icons.Rounded.Forum, tr(R.string.music_bot_setup_action)) {
+                    app.action {
+                        val activated = app.acquisition.activateBot()
+                        app.notices.emit(
+                            tr(
+                                if (activated) R.string.music_bot_activated
+                                else R.string.music_bot_already_used
+                            )
+                        )
+                    }
+                }
                 ActionRow(Icons.Rounded.Build, tr(R.string.repair_library)) {
                     app.action {
                         val repaired = app.repairUnavailableLibrary()

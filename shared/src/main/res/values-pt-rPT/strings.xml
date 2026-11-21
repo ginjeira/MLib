@@ -600,4 +600,8 @@
     <string name="repair_library">Reparar faixas indisponíveis</string>
     <string name="library_repaired">Reparei %1$d faixa(s) indisponível(is).</string>
     <string name="library_repair_none">Nenhuma faixa indisponível precisava de reparação.</string>
+    <string name="music_bot_setup_required">Ativa o bot de música nas definições antes de pesquisar.</string>
+    <string name="music_bot_setup_action">Ativar bot de música</string>
+    <string name="music_bot_activated">Bot de música ativado.</string>
+    <string name="music_bot_already_used">Esta conta já utilizou o bot de música.</string>
 </resources>
