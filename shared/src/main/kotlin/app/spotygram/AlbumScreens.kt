@@ -240,15 +240,15 @@ fun AlbumsScreen(
                         Text(
                             tr(
                                 R.string.album_complete_help,
-                                current.title,
-                                tracks.size,
+                                current?.title.orEmpty(),
+                                current?.tracks?.size ?: 0,
                             )
                         )
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             confirmComplete = false
-                            onDownload(current)
+                            current?.let(onDownload)
                         }) { Text(tr(R.string.album_complete_action)) }
                     },
                     dismissButton = {
@@ -257,7 +257,8 @@ fun AlbumsScreen(
                         }
                     },
                 )
-            }            if (confirmDeduplicate) {
+            }
+            if (confirmDeduplicate) {
                 AlertDialog(
                     onDismissRequest = { confirmDeduplicate = false },
                     title = { Text(tr(R.string.album_deduplicate_title)) },
