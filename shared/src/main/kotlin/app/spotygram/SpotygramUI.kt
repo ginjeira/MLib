@@ -905,6 +905,7 @@ fun SpotygramUI(
                                                     onDownloadToDevice = ::downloadToDevice,
                                                     download = download,
                                                     onDownload = { album ->
+                                                        sheet = "acquisition"
                                                         app.action {
                                                             app.acquisition.search(
                                                                 listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" "),
@@ -912,7 +913,6 @@ fun SpotygramUI(
                                                                 AcquisitionProvider.DEEZER,
                                                                 targetAlbumId = album.id,
                                                             )
-                                                            sheet = "acquisition"
                                                         }
                                                     },
                                                     onUpdate = { id, title, artist, year, cover, genre ->
