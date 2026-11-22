@@ -103,6 +103,7 @@ data class ChatChoice(
     val title: String,
     val canPost: Boolean = true,
     val groupOrChannel: Boolean = false,
+    val isChannel: Boolean = false,
 ) {
     val displayTitle
         get() = chatTitle(id, title)
