@@ -7,28 +7,31 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.26
+## 0. Estado das versões 0.1.27 e 0.1.28
 
-Verificado em **22-11-2026, 14:05 UTC**.
+Verificado em **22-11-2026, 16:40 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.26** (publicada em 22-11-2026 14:00:24) |
-| Tag `v0.1.26` | **Criada** (`82084d3`) |
-| Release `v0.1.26` | **Publicada**; build `45026161511` com sucesso |
-| Package | `pt.ginjeira.mlib` 0.1.26 / versionCode 1026 |
-| Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` (ambos os APKs) |
-| Publicação automática | **Desativada** após a 0.1.25; exige `MLIB_AUTO_RELEASE=true` ou acordo manual |
-| Próxima versão | **Bloqueada até acordo do owner** |
-| Documentação | Atualizada para 0.1.26, revisão de aquisição, app lock e Wave 8 |
+| Última release pública | **v0.1.27** (publicada em 22-11-2026 16:22:44) |
+| Tag `v0.1.27` | **Criada** (`fda3eb0`) |
+| Release `v0.1.27` | **Publicada**; build `45039489724` com sucesso |
+| Package | `pt.ginjeira.mlib` 0.1.27 / versionCode 1027 |
+| Versão `0.1.28` | **Em publicação** — tag `v0.1.28` em `6ccff1b`, build `45043559683` |
+| Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
+| Publicação automática | **Desativada**; cada versão é acordada com o owner |
+| Próximas versões | **0.1.29** Wave 2 · **0.1.30** Google TV |
 
-**Hashes publicados (0.1.26):**
+**Hashes publicados (0.1.27):**
 
-- `mlib-0.1.26-arm64.apk` — `a087a340eb475564175f55a2bb0d47c60f7858d7a45a71772fc5e72186adbed6`
-- `mlib-0.1.26-x86_64.apk` — `0e9e0b42e140cf657326b5588478dd51394207cff9b5aaf23fbcc248333f9a19`
-- `SHA256SUMS.txt` — `da58e9289f354f31f4465e185531956ab349467f14231d01a38040fea2155c72`
+- `mlib-0.1.27-arm64.apk` — `cff337aaa7eb77da5dc831e4569ab3f06c9abea5331e5bfa8381e56cc5280879`
+- `mlib-0.1.27-x86_64.apk` — `6e388daf030e6fa4969666644a95d4d166226dcc51a00ab90597f192c141a7d9`
+- `SHA256SUMS.txt` — `4eb98fb62b4c4d4b80059abcfca9d96b5d936d3a22ba43ee9d09c258a14ab4ae`
 
-**Limitação da 0.1.26:** a tag inclui o fix de “Completar álbum” e o changelog, mas não a revisão de aquisição, o app lock, a Wave 8 nem a lista de faixas em falta; esses itens estão em `main` e dependem de uma próxima versão acordada.
+**Conteúdo por versão:**
+
+- **0.1.27:** fix de “Completar álbum”, revisão de aquisição antes de escrever na biblioteca, app lock, Wave 8 (conhecimento com fonte e cache), capas personalizadas, anel de completude, temas AMOLED/contraste e reparação de biblioteca.
+- **0.1.28:** Android Auto completo para reprodução (Início, pesquisa por voz na biblioteca, notificações e capas personalizadas).
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
