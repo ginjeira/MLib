@@ -7,38 +7,37 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.19
+## 0. Estado da versão 0.1.21
 
-Verificado em **21-11-2026, 21:25 UTC**.
+Verificado em **22-11-2026, 08:35 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.19** (publicada em 21-11-2026 21:23:03) |
-| Tag `v0.1.19` | **Criada** (`f69e208`) |
-| Release `v0.1.19` | **Publicada**; run `44948048125` concluído com sucesso |
-| Baseline para `main` | **Sucesso** (`44947764825`) |
-| `origin/main` | `f69e208`; versão 0.1.19 |
-| Documentação | **Atualizada para 0.1.19** |
-| Bloqueio actual | Nenhum; falta validação em dispositivo |
+| Última release pública | **v0.1.21** (publicada em 22-11-2026 01:41:21) |
+| Tag `v0.1.21` | **Criada** (`a41cf95`) |
+| Release `v0.1.21` | **Publicada**; run `44969771890` concluído com sucesso |
+| Baseline para `main` | **Sucesso** (`44969525542`) |
+| `origin/main` | `a41cf95`; versão 0.1.21 |
+| Validação | **0.1.20 e 0.1.21 validadas pelo owner** |
+| Documentação | **Atualizada para 0.1.21** |
+| Bloqueio actual | Nenhum |
 
 **Verificação independente da release:**
 
 | Verificação | Resultado |
 |---|---|
-| `mlib-0.1.19-arm64.apk` SHA-256 | `59a6fc73c54a5d9ba6f76ee98c61d68d4218c801b275bca76d5b1945dc6703af` ✅ |
-| `mlib-0.1.19-x86_64.apk` SHA-256 | `584c68a3b86cb02d599e300cbb503bbee23e1fd63a16478bb4ed6ebe9d114698` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `3b46bb85023b41acf67554c66a27e2328a77a8204bbd74275b262b3a57c97c1c` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.19` / `1019` ✅ |
-| ABIs | `arm64-v8a` e `x86_64` ✅ |
-| Assinante (ambos) | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` ✅ |
+| `mlib-0.1.21-arm64.apk` SHA-256 | `342c7798e33b07e923f823df68bdcd1e2b9981372d3fb20b9a3eb197d892fed6` ✅ |
+| `mlib-0.1.21-x86_64.apk` SHA-256 | `e9cb3c66516db75a5c72c6a99a5d98131a0b1d6a755d90115ed2ba3217dc4638` ✅ |
+| `SHA256SUMS.txt` SHA-256 | `09735d623621ed48a082280464c7696f2918c44b81c82749a491966965c22a3e` ✅ |
+| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.21` / `1021` ✅ |
+| ABI / assinante | `arm64-v8a` / `6e8fc1d0…e200` ✅ |
 
-**Conclusão:** a `v0.1.19` inclui o filtro owner/admin no Adicionar origem, cache nativo, Artists no Android Auto, exportação JSON, auto-download de favoritos e enriquecimento de álbuns.
+**Correções 0.1.20/0.1.21:**
 
-Sequência imediata:
+- 0.1.20: update check apenas ao abrir a app, debounce do banner de ligação, canais visíveis no seletor de origens.
+- 0.1.21: `getChatMember` com `messageSenderUser`, filtro owner/admin correto, GinjMusic novamente disponível; pesquisa unificada “Procurar no Telegram”.
 
-1. Validar a 0.1.19 no dispositivo, sobretudo o seletor de origens.
-2. Confirmar que contactos, bots, linhas vazias e grupos sem ownership desaparecem.
-3. Confirmar que o cache nativo acelera as releases seguintes.
+**Conclusão:** o problema do seletor de origens foi resolvido e validado na 0.1.21.
 ## 0.2 Progresso por wave — 21-11-2026
 
 | Wave | Estado | Progresso | Notas |
@@ -46,10 +45,10 @@ Sequência imediata:
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
-| Wave 3 — confiança/biblioteca | **Em curso** | ~70% | Saúde, reparação, merge de duplicados e exportação JSON na 0.1.19. Faltam pesquisa unificada e golden tests. |
+| Wave 3 — confiança/biblioteca | **Em curso** | ~75% | Saúde, reparação, merge de duplicados, exportação JSON e pesquisa unificada. Faltam golden tests de merge e exportação para ficheiro. |
 | Wave 4 — álbuns/capas | **Parcial** | ~55% | Confirmação de completar álbum, capas de playlist e enriquecimento iTunes/Deezer na 0.1.19. Faltam pré-visualização de faixas e upload local. |
 | Wave 5 — setup/jobs | **Parcial** | ~60% | `/start` apenas no setup, canal de arquivo e histórico de jobs na 0.1.19. Faltam retry parcial e testes crash/restart. |
-| Wave 6 — descoberta/poder | **Em curso** | ~35% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download de favoritos. Faltam widgets, import/export completo, privacidade, scrobbling e smart playlists. |
+| Wave 6 — descoberta/poder | **Em curso** | ~40% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento e pesquisa unificada. Faltam widgets, import/export para ficheiro, privacidade, scrobbling e smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.

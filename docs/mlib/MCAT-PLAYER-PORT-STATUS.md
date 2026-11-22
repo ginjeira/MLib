@@ -38,7 +38,7 @@ O núcleo de aquisição já está implementado no MLib e as duas lacunas P0 ant
 - `isMultiTrack()` usa a contagem esperada, não o tipo `artist` isoladamente.
 - Os golden tests de conclusão e protocolo passam em `:desktop:test`.
 
-**Importante:** a `v0.1.19` foi publicada em 21:23:03 e inclui o filtro owner/admin no Adicionar origem, cache nativo, Artists no Android Auto, exportação JSON, auto-download e enriquecimento de álbuns.
+**Importante:** a `v0.1.21` foi publicada em 22-11-2026 01:41:21 e resolveu o seletor de origens (owner/admin via `messageSenderUser`), além de update-check ao abrir, debounce de ligação, pesquisa unificada, cache nativo, Artists, exportação, auto-download e enriquecimento.
 
 **Actualização de 20-11-2026, 23:47:** a branch `fix/playlist-repair` acrescenta (1) revalidação de faixas marcadas como eliminadas ao abrir playlists e álbuns, (2) substituição por uma cópia disponível da mesma gravação em playlists e álbuns, (3) confirmação explícita de destino/contagem antes de adquirir, (4) selecção de qualquer destino Telegram e (5) localização dos estados de job. `:desktop:test` passou com 60 testes; Android compile/resources passaram. A branch foi integrada em `main` e incluída na `v0.1.11`.
 

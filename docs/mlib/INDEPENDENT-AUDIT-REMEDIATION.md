@@ -36,4 +36,4 @@ Automatic publication from `main` is intentional: the owner is the only user and
 - No physical-device, live Telegram acquisition, two-device CloudSync, installation or update test was performed in this remediation pass.
 - Desktop packaging remains intentionally disabled and fails closed.
 - Post-audit branch `fix/playlist-repair` adds stale-message revalidation, playlist/album repair via an available copy, arbitrary destination selection, and a destination confirmation before acquisition; it was merged into main and is included in v0.1.11.
-- `v0.1.19` was published on 21-11-2026 at 21:23:03. Both APK hashes match GitHub digests and the published SHA256SUMS; both are signed by the pinned certificate. It includes owner/admin filtering while adding sources, native build caching, Android Auto Artists, library JSON export, favourite auto-download and album metadata enrichment. Device testing remains pending.
+- `v0.1.21` was published on 22-11-2026 at 01:41:21 and validated by the owner. It fixes owner/admin source filtering with the TDLib MessageSender API, checks updates only on app open, debounces reconnect banners and adds unified Telegram search.
