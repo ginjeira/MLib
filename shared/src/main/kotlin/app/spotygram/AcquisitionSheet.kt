@@ -22,6 +22,7 @@ import kotlinx.coroutines.withContext
 internal fun AcquisitionSheet(
     app: SpotygramApp,
     onClose: () -> Unit,
+    initialQuery: String = "",
 ) {
     val acquisition = app.acquisition
     val state by acquisition.state.collectAsStateWithLifecycle()
@@ -67,6 +68,19 @@ internal fun AcquisitionSheet(
 
     LaunchedEffect(auth.type) {
         if (auth.type == "authorizationStateReady") loadDestinations()
+    }
+    LaunchedEffect(initialQuery, auth.type) {
+        if (
+            initialQuery.trim().length >= 2 &&
+                auth.type == "authorizationStateReady" &&
+                state.search?.query != initialQuery &&
+                !state.searching
+        ) {
+            query = initialQuery
+            withContext(Dispatchers.IO) {
+                runCatching { acquisition.search(query, contentType, provider) }
+            }
+        }
     }
     LaunchedEffect(state.search?.id) {
         selected.clear()
