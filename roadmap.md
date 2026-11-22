@@ -575,6 +575,7 @@ Registadas a **22-11-2026**, por amadurecer. Não estão atribuídas a versão n
 | FR-08 | **Curador de biblioteca** | Médio | Relatório acionável: duplicados, capas em falta, offline desaparecido, álbuns incompletos, metadata em falta. |
 | FR-09 | **Blind A/B de qualidade** | Baixo | Comparar cópias às cegas para decidir upgrades. |
 | FR-10 | **Prateleira por cor/humor** | Baixo | Paleta da capa + tags de humor manuais. |
+| FR-11 | **MLib Server + web UI (perfis independentes)** | Alto | Servidor caseiro para iPhones: um perfil por adulto, conta Telegram própria, biblioteca e consumo de bot isolados; streaming por Range e PWA. Proposta em `docs/mlib/SERVER-PROPOSAL.md`. |
 
 **Excluído por princípio:** recomendação por collaborative filtering ou upload de hábitos; separação de vocais/stems; integrações com serviços de streaming.
 
