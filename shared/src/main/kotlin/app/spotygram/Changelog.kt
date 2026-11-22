@@ -10,11 +10,18 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.26",
+                english =
+                    "Completing an album now closes the album detail, opens the acquisition screen immediately and keeps the correct album context. The version label now opens a natural-language changelog. Automatic releases were disabled after this point.",
+                portuguese =
+                    "Completar um álbum fecha agora o detalhe, abre imediatamente o ecrã de aquisição e mantém o contexto correto do álbum. A etiqueta da versão abre um changelog em linguagem natural. As releases automáticas foram desativadas a partir daqui.",
+            ),
+            ChangelogEntry(
                 version = "0.1.25",
                 english =
-                    "Completing an album now opens the acquisition screen immediately and shows the album's existing tracks in the confirmation. The old empty dialog that appeared after leaving the album is gone. Telegram connection failures now offer Reconnect and stop waiting after ten seconds.",
+                    "Telegram connection failures now offer Reconnect and stop waiting after ten seconds. The album completion action still needs a separate fix.",
                 portuguese =
-                    "Completar um álbum abre imediatamente o ecrã de aquisição e mostra as faixas existentes na confirmação. O diálogo vazio que aparecia depois de sair do álbum foi corrigido. As falhas de ligação ao Telegram passam a oferecer Reconectar e deixam de esperar após dez segundos.",
+                    "As falhas de ligação ao Telegram passam a oferecer Reconectar e deixam de esperar após dez segundos. A ação de completar álbum ainda necessita de uma correção separada.",
             ),
             ChangelogEntry(
                 version = "0.1.24",
