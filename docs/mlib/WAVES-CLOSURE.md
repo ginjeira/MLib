@@ -10,7 +10,7 @@ A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como
 - **App lock:** bloqueio opcional com o mecanismo do dispositivo.
 - **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
 - **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição; anel de completude no detalhe; capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas; placeholder explícito em vez de Unsplash.
-- Validação local: 100 testes, 0 falhas.
+- Validação local: 109 testes, 0 falhas.
 
 ## Fechadas
 
@@ -76,7 +76,7 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 
 ### Wave 2 — Navegação e UI “MLib Signal”
 
-**Em curso.** Entregue nesta fase: 4 destinos (Início, Biblioteca, Procurar, Definições), Início com “Continuar a ouvir”, recentes, favoritos, playlists e álbuns; chips `Faixas | Favoritos | Playlists | Álbuns`, com a gestão de fontes em Definições e o filtro por fonte na Biblioteca; pesquisa local com hand-off para o Telegram; mini-player existente mantido. Faltam: Definições em ecrã completo com secções, gradiente/arte no player, tokens de design, auditoria de acessibilidade e screenshots.
+**Em curso.** Entregue nesta fase: 4 destinos (Início, Biblioteca, Procurar, Definições), Início com “Continuar a ouvir”, recentes, favoritos, playlists e álbuns; chips `Faixas | Favoritos | Playlists | Álbuns | Artistas`, com página de artista (álbuns, faixas, fontes, tocar/aleatório/offline e “Sobre”), gestão de fontes em Definições e filtro por fonte na Biblioteca; pesquisa local com hand-off para o Telegram; mini-player existente mantido. Faltam: Definições em ecrã completo com secções, gradiente/arte no player, tokens de design, auditoria de acessibilidade e screenshots.
 
 ### Wave 6 — Descoberta e poder
 

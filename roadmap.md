@@ -44,7 +44,7 @@ Verificado em **22-11-2026, 16:25 UTC**.
 - Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
 - Temas AMOLED e alto contraste, com validação de sync e testes.
 - Android Auto completo para reprodução: Início, pesquisa por voz (biblioteca), notificações de todas as ramificações e capas personalizadas; aquisição continua fora do carro por política do Android Auto.
-- Validação local: `:desktop:test` com **100 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Validação local: `:desktop:test` com **109 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -52,7 +52,7 @@ Verificado em **22-11-2026, 16:25 UTC**.
 |---|---|---:|---|
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
-| Wave 2 — UI/navegação | **Em curso** | ~40% | 4 destinos (Início, Biblioteca, Procurar, Definições), Home com shelves, chips Faixas/Favoritos/Playlists/Álbuns, gestão de fontes em Definições, pesquisa local com hand-off para o Telegram e mini-player. Faltam Definições em ecrã completo, tokens, acessibilidade e screenshots. |
+| Wave 2 — UI/navegação | **Em curso** | ~60% | 4 destinos (Início, Biblioteca, Procurar, Definições), Home com shelves, chips Faixas/Favoritos/Playlists/Álbuns/Artistas, página de artista com álbuns, faixas, fontes e “Sobre”, gestão de fontes em Definições, pesquisa local com hand-off e mini-player. Faltam Definições em ecrã completo, tokens, acessibilidade e screenshots. |
 | Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
 | Wave 4 — álbuns/capas | **Fechada no âmbito atual** | 100% | Completar álbum com faixas existentes/em falta e anel de completude, enriquecimento, capas personalizadas de álbum e playlist a partir do dispositivo (persistem via `cover_url` e sincronizam), placeholder explícito. Gradiente/artwork grande e faixas ambíguas passam para Wave 4.1. |
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
@@ -275,7 +275,7 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Wave 6.1 — restante do âmbito**
 
-- [ ] Páginas de artista com álbuns, faixas e fontes.
+- [x] Páginas de artista com álbuns, faixas e fontes, tocar/aleatório/offline e “Sobre” com fonte.
 - [ ] Retoma de fila/posição entre dispositivos via CloudSync.
 - [ ] Widgets e quick settings.
 - [ ] Import/export M3U, backup e restore completo.
