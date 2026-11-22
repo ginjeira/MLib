@@ -227,56 +227,6 @@ fun AlbumsScreen(
                 },
                 dismissButton = { TextButton(onClick = { editing = false }) { Text(tr(R.string.cancel)) } },
             )
-        }
-        if (confirmDelete) {
-            AlertDialog(
-                onDismissRequest = { confirmDelete = false },
-                title = { Text(tr(R.string.album_delete)) },
-                text = { Text(current.title) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        confirmDelete = false
-                        onDelete(current.id)
-                        selected = null
-                    }) { Text(tr(R.string.delete)) }
-                },
-                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(tr(R.string.cancel)) } },
-            )
-        }
-    } else {
-        val albums = remember(library.albums, query) {
-            library.albums.filter {
-                query.isBlank() || it.title.contains(query, true) || it.artist.contains(query, true)
-            }
-        }
-        Column(Modifier.fillMaxSize()) {
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                    Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(onClick = onAutoDetect, modifier = Modifier.weight(1f)) {
-                        Text(tr(R.string.album_detect), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                    TextButton(onClick = { confirmDeduplicate = true }, modifier = Modifier.weight(1f)) {
-                        Text(tr(R.string.album_deduplicate), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                    TextButton(onClick = { creating = true }, modifier = Modifier.weight(1f)) {
-                        Text(tr(R.string.album_new), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            }
             if (confirmComplete) {
                 AlertDialog(
                     onDismissRequest = { confirmComplete = false },
@@ -332,6 +282,56 @@ fun AlbumsScreen(
                         }
                     },
                 )
+            }
+        }
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text(tr(R.string.album_delete)) },
+                text = { Text(current.title) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmDelete = false
+                        onDelete(current.id)
+                        selected = null
+                    }) { Text(tr(R.string.delete)) }
+                },
+                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(tr(R.string.cancel)) } },
+            )
+        }
+    } else {
+        val albums = remember(library.albums, query) {
+            library.albums.filter {
+                query.isBlank() || it.title.contains(query, true) || it.artist.contains(query, true)
+            }
+        }
+        Column(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(tr(R.string.albums), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                    Text(albums.size.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onAutoDetect, modifier = Modifier.weight(1f)) {
+                        Text(tr(R.string.album_detect), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    TextButton(onClick = { confirmDeduplicate = true }, modifier = Modifier.weight(1f)) {
+                        Text(tr(R.string.album_deduplicate), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    TextButton(onClick = { creating = true }, modifier = Modifier.weight(1f)) {
+                        Text(tr(R.string.album_new), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
             if (confirmDeduplicate) {
                 AlertDialog(
