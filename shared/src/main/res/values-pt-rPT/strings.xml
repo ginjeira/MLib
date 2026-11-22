@@ -646,6 +646,10 @@
     <string name="acquisition_retry_job">Pesquisar novamente</string>
     <string name="album_complete_existing">%1$d faixas existentes serão reutilizadas:</string>
     <string name="album_complete_more">…e mais %1$d</string>
+    <string name="album_tracklist_loading">A consultar a lista de faixas…</string>
+    <string name="album_complete_missing">Faltam %1$d faixa(s) nesta edição:</string>
+    <string name="album_complete_missing_none">A biblioteca já tem todas as faixas encontradas para esta edição.</string>
+    <string name="album_complete_unknown">Lista de faixas indisponível; são mostradas apenas as faixas existentes.</string>
     <string name="acq_from_history">Resultados reutilizados do chat do bot; não foi enviado um novo pedido.</string>
     <string name="acq_no_connection">O Telegram ainda está a ligar. Aguarda a ligação ou reconecta.</string>
     <string name="reconnect">Reconectar</string>
@@ -660,4 +664,14 @@
     <string name="acq_review_pending">Conclui ou rejeita a revisão da aquisição atual primeiro.</string>
     <string name="acq_review_rejected">A aquisição foi rejeitada; as mensagens de teste encaminhadas foram removidas.</string>
     <string name="acq_review_existing">já está na biblioteca</string>
+    <string name="app_lock_title">Desbloquear o MLib</string>
+    <string name="app_lock_prompt">Usa o bloqueio do dispositivo para abrir o MLib.</string>
+    <string name="app_lock">Bloquear o MLib com o bloqueio do dispositivo</string>
+    <string name="app_lock_help">O MLib pede o PIN, padrão, palavra-passe ou biometria do dispositivo sempre que abre.</string>
+    <string name="album_knowledge">Informação do álbum</string>
+    <string name="album_knowledge_title">Sobre este álbum</string>
+    <string name="album_knowledge_loading">A consultar fontes…</string>
+    <string name="album_knowledge_failed">Não foi possível obter informação do álbum.</string>
+    <string name="album_knowledge_source">Fonte: %1$s</string>
+    <string name="album_knowledge_open_source">Abrir fonte</string>
 </resources>

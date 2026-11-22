@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.app.Activity
+import android.app.KeyguardManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -19,6 +21,17 @@ class MainActivity : ComponentActivity() {
         get() = (application as AndroidApplication).model
 
     private val playerConnection by lazy { PlayerConnection(this, app) }
+    private var unlocked = false
+    private var unlockInProgress = false
+    private val unlockLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            unlockInProgress = false
+            if (result.resultCode == Activity.RESULT_OK) {
+                unlocked = true
+            } else {
+                finish()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +88,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        if (app.prefs.getBoolean("app_lock", false) && !unlocked && !unlockInProgress) {
+            val manager = getSystemService(KeyguardManager::class.java)
+            if (manager?.isDeviceSecure == true) {
+                val intent =
+                    manager.createConfirmDeviceCredentialIntent(
+                        tr(R.string.app_lock_title),
+                        tr(R.string.app_lock_prompt),
+                    )
+                if (intent != null) {
+                    unlockInProgress = true
+                    unlockLauncher.launch(intent)
+                }
+            }
+        }
         app.headerSticker.visibility(true)
         playerConnection.start()
         // Automatic checks happen only when the app is opened, never in the background.
@@ -82,6 +109,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        unlocked = false
         app.headerSticker.visibility(false)
         app.playback?.cancelPendingStart()
         app.playback?.savePosition()

@@ -1007,8 +1007,79 @@ class SpotygramApp(val platform: Platform) {
                 }
             }
         }
-        result.takeUnless { it.isEmpty }
+                result.takeUnless { it.isEmpty }
     }
+
+    suspend fun albumTracklist(album: Album): List<String> = withContext(Dispatchers.IO) {
+        val term =
+            listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" ").trim()
+        if (term.isBlank()) return@withContext emptyList()
+        fun fetch(url: String): JSONObject? =
+            try {
+                val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                try {
+                    connection.connectTimeout = 8_000
+                    connection.readTimeout = 8_000
+                    connection.setRequestProperty("User-Agent", "MLib/1.0")
+                    if (connection.responseCode !in 200..299) {
+                        null
+                    } else {
+                        val body = connection.inputStream.bufferedReader().use { it.readText() }
+                        if (body.length > 1_000_000) null else JSONObject(body)
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            } catch (_: Exception) {
+                null
+            }
+        val encoded = java.net.URLEncoder.encode(term, Charsets.UTF_8.name())
+        val deezer =
+            try {
+                val albumId =
+                    fetch("https://api.deezer.com/search/album?q=$encoded&limit=1")
+                        ?.optJSONArray("data")?.optJSONObject(0)?.optString("id").orEmpty()
+                val tracks =
+                    if (albumId.isBlank()) {
+                        JSONArray()
+                    } else {
+                        fetch("https://api.deezer.com/album/$albumId/tracks?limit=100")
+                            ?.optJSONArray("data") ?: JSONArray()
+                    }
+                buildList {
+                    for (i in 0 until tracks.length()) {
+                        tracks.optJSONObject(i)?.optString("title")
+                            ?.takeIf(String::isNotBlank)?.let(::add)
+                    }
+                }
+            } catch (_: Exception) {
+                emptyList()
+            }
+        if (deezer.isNotEmpty()) return@withContext deezer
+        try {
+            val collectionId =
+                fetch("https://itunes.apple.com/search?term=$encoded&entity=album&limit=1")
+                    ?.optJSONArray("results")?.optJSONObject(0)?.optString("collectionId").orEmpty()
+            val results =
+                if (collectionId.isBlank()) {
+                    JSONArray()
+                } else {
+                    fetch("https://itunes.apple.com/lookup?id=$collectionId&entity=song&limit=200")
+                        ?.optJSONArray("results") ?: JSONArray()
+                }
+            buildList {
+                for (i in 0 until results.length()) {
+                    val item = results.optJSONObject(i) ?: continue
+                    if (item.optString("wrapperType") != "track") continue
+                    item.optString("trackName").takeIf(String::isNotBlank)?.let(::add)
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+
     suspend fun autoDetectAlbums(): Int = withContext(Dispatchers.IO) {
         awaitLibrary()
         val candidates = library.state.value.tracks.filter { it.path.isNotBlank() && File(it.path).isFile }

@@ -79,6 +79,7 @@ fun SettingsSheet(
     var autoDownloadFavorites by remember {
         mutableStateOf(app.prefs.getBoolean("auto_download_favorites", false))
     }
+    var appLock by remember { mutableStateOf(app.prefs.getBoolean("app_lock", false)) }
     val resumeLongAudio by app.resumeLongAudio.collectAsStateWithLifecycle()
     val resumeMinutes by app.resumeMinutes.collectAsStateWithLifecycle()
     var editingResume by rememberSaveable { mutableStateOf(false) }
@@ -160,6 +161,22 @@ fun SettingsSheet(
                     file.writeText(json)
                     app.platform.shareFile(file, "application/json")
                     app.action { app.notices.emit(tr(R.string.export_library_done)) }
+                }
+                if (app.platform.supportsAppLock) {
+                    ListItem(
+                        headlineContent = { Text(tr(R.string.app_lock)) },
+                        supportingContent = { Text(tr(R.string.app_lock_help)) },
+                        trailingContent = {
+                            GlassSwitch(
+                                checked = appLock,
+                                onCheckedChange = {
+                                    appLock = it
+                                    app.prefs.edit().putBoolean("app_lock", it).apply()
+                                },
+                            )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
                 }
                 ListItem(
                     headlineContent = { Text(tr(R.string.auto_download_favorites)) },
@@ -451,6 +468,15 @@ fun SettingsSheet(
                     )
                 }
 
+                ActionRow(Icons.Rounded.Build, tr(R.string.repair_library)) {
+                    app.action {
+                        val repaired = app.repairUnavailableLibrary()
+                        app.notices.emit(
+                            if (repaired == 0) tr(R.string.library_repair_none)
+                            else tr(R.string.library_repaired, repaired)
+                        )
+                    }
+                }
                 HorizontalDivider(
                     Modifier.padding(vertical = 16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,

@@ -957,6 +957,12 @@ fun SpotygramUI(
                                                         }
                                                     },
                                                     onEnrich = { album -> app.enrichAlbum(album) },
+                                                    onKnowledge = { album ->
+                                                        Knowledge.album(album.artist, album.title)
+                                                    },
+                                                    onTracklist = { album ->
+                                                        app.albumTracklist(album)
+                                                    },
                                                 )
                                             else ->
                                                 SourcesScreen(

@@ -206,6 +206,8 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
         )
     }
 
+    override val supportsAppLock: Boolean get() = true
+
     override fun openUrl(url: String) {
         val uri = Uri.parse(url)
         if (uri.scheme?.lowercase() !in setOf("http", "https", "tg")) return

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -45,6 +47,8 @@ fun AlbumsScreen(
     onSuggestCovers: suspend (String, String) -> List<String>,
     onRepairUnavailable: suspend (Album) -> Unit,
     onEnrich: suspend (Album) -> AlbumEnrichment?,
+    onKnowledge: suspend (Album) -> KnowledgeInfo?,
+    onTracklist: suspend (Album) -> List<String>,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -58,6 +62,12 @@ fun AlbumsScreen(
     var editing by remember { mutableStateOf(false) }
     var enriching by remember { mutableStateOf(false) }
     var enrichError by remember { mutableStateOf("") }
+    var knowledgeOpen by remember { mutableStateOf(false) }
+    var knowledgeBusy by remember { mutableStateOf(false) }
+    var knowledgeInfo by remember { mutableStateOf<KnowledgeInfo?>(null) }
+    var knowledgeError by remember { mutableStateOf("") }
+    var tracklist by remember { mutableStateOf<List<String>?>(null) }
+    var tracklistBusy by remember { mutableStateOf(false) }
     var editTitle by remember { mutableStateOf("") }
     var editArtist by remember { mutableStateOf("") }
     var editYear by remember { mutableStateOf("") }
@@ -67,6 +77,7 @@ fun AlbumsScreen(
     var coverSearchBusy by remember { mutableStateOf(false) }
     var coverSearchError by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
     val current = selected?.let { album -> library.albums.firstOrNull { it.id == album.id } }
     LaunchedEffect(current?.id, library.albums) {
         if (selected != null && current == null) selected = null
@@ -75,6 +86,13 @@ fun AlbumsScreen(
         val tracks = current.tracks.mapNotNull { library.byId[it] }
         LaunchedEffect(current.id, current.tracks.size) {
             onRepairUnavailable(current)
+        }
+        LaunchedEffect(confirmComplete, current.id) {
+            if (!confirmComplete) return@LaunchedEffect
+            tracklist = null
+            tracklistBusy = true
+            tracklist = runCatching { onTracklist(current) }.getOrDefault(emptyList())
+            tracklistBusy = false
         }
         Column(Modifier.fillMaxSize()) {
             Column(
@@ -111,6 +129,23 @@ fun AlbumsScreen(
                         editTitle = current.title; editArtist = current.artist; editYear = current.year
                         editCover = current.coverUrl; editGenre = current.genre; coverSuggestions = emptyList(); coverSearchError = ""; editing = true
                     }) { Text(tr(R.string.edit)) }
+                    IconButton(onClick = {
+                        knowledgeInfo = null
+                        knowledgeError = ""
+                        knowledgeBusy = true
+                        knowledgeOpen = true
+                        val album = current
+                        scope.launch {
+                            knowledgeInfo = runCatching { onKnowledge(album) }
+                                .getOrElse {
+                                    knowledgeError = it.message ?: tr(R.string.album_knowledge_failed)
+                                    null
+                                }
+                            knowledgeBusy = false
+                        }
+                    }) {
+                        Icon(Icons.Rounded.Info, contentDescription = tr(R.string.album_knowledge))
+                    }
                     IconButton(onClick = { confirmDelete = true }) {
                         Icon(Icons.Rounded.Delete, contentDescription = tr(R.string.album_delete))
                     }
@@ -227,7 +262,8 @@ fun AlbumsScreen(
                 },
                 dismissButton = { TextButton(onClick = { editing = false }) { Text(tr(R.string.cancel)) } },
             )
-            if (confirmComplete) {
+        }
+        if (confirmComplete) {
                 AlertDialog(
                     onDismissRequest = { confirmComplete = false },
                     title = { Text(tr(R.string.album_complete_title)) },
@@ -242,15 +278,16 @@ fun AlbumsScreen(
                                     existing.size,
                                 )
                             )
-                            if (existing.isNotEmpty()) {
-                                Text(
-                                    tr(R.string.album_complete_existing, existing.size),
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                                Column(
-                                    Modifier.heightIn(max = 180.dp)
-                                        .verticalScroll(rememberScrollState())
-                                ) {
+                            Column(
+                                Modifier.heightIn(max = 260.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                if (existing.isNotEmpty()) {
+                                    Text(
+                                        tr(R.string.album_complete_existing, existing.size),
+                                        style = MaterialTheme.typography.labelLarge,
+                                    )
                                     existing.take(30).forEach { track ->
                                         Text(
                                             "• ${track.title}",
@@ -265,6 +302,55 @@ fun AlbumsScreen(
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
+                                    }
+                                }
+                                val expected = tracklist
+                                when {
+                                    tracklistBusy ->
+                                        Text(
+                                            tr(R.string.album_tracklist_loading),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    expected == null -> Unit
+                                    expected.isEmpty() ->
+                                        Text(
+                                            tr(R.string.album_complete_unknown),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    else -> {
+                                        val missing =
+                                            missingTracks(expected, existing.map { it.title })
+                                        Text(
+                                            tr(R.string.album_complete_missing, missing.size),
+                                            style = MaterialTheme.typography.labelLarge,
+                                        )
+                                        if (missing.isEmpty()) {
+                                            Text(
+                                                tr(R.string.album_complete_missing_none),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        } else {
+                                            missing.take(30).forEach { title ->
+                                                Text(
+                                                    "• $title",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                            if (missing.size > 30) {
+                                                Text(
+                                                    tr(
+                                                        R.string.album_complete_more,
+                                                        missing.size - 30,
+                                                    ),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -285,6 +371,54 @@ fun AlbumsScreen(
                     },
                 )
             }
+        if (knowledgeOpen) {
+            AlertDialog(
+                onDismissRequest = { knowledgeOpen = false },
+                title = { Text(tr(R.string.album_knowledge_title)) },
+                text = {
+                    Column(
+                        Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (knowledgeBusy) Text(tr(R.string.album_knowledge_loading))
+                        knowledgeError.takeIf { it.isNotBlank() }?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error)
+                        }
+                        val info = knowledgeInfo
+                        if (info != null) {
+                            if (info.releaseDate.isNotBlank() || info.kind.isNotBlank()) {
+                                Text(
+                                    listOf(info.releaseDate, info.kind).filter(String::isNotBlank)
+                                        .joinToString(" · "),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
+                            if (info.genres.isNotBlank()) {
+                                Text(info.genres, style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (info.summary.isNotBlank()) {
+                                Text(info.summary, style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Text(
+                                tr(R.string.album_knowledge_source, info.sourceNames),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    val url = knowledgeInfo?.sourceUrl.orEmpty()
+                    if (url.isNotBlank()) {
+                        TextButton(onClick = { uriHandler.openUri(url) }) {
+                            Text(tr(R.string.album_knowledge_open_source))
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { knowledgeOpen = false }) { Text(tr(R.string.close)) }
+                },
+            )
         }
         if (confirmDelete) {
             AlertDialog(
@@ -433,8 +567,7 @@ fun AlbumsScreen(
 
 
 @Composable
-private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.ui.unit.Dp) {
-    val url = album.coverUrl.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.ui.unit.Dp) {    val url = album.coverUrl.takeIf { it.startsWith("https://") || it.startsWith("http://") }
     if (url != null) {
         AsyncImage(
             model = url,
@@ -444,5 +577,20 @@ private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.
         )
     } else {
         Artwork(fallback, size)
+    }
+}
+
+private fun normalizeTrackTitle(value: String): String =
+    value.substringBefore(" (")
+        .substringBefore(" [")
+        .lowercase()
+        .filter(Char::isLetterOrDigit)
+
+private fun missingTracks(expected: List<String>, existing: List<String>): List<String> {
+    val have = existing.mapTo(mutableSetOf()) { normalizeTrackTitle(it) }
+    val seen = mutableSetOf<String>()
+    return expected.filter { title ->
+        val key = normalizeTrackTitle(title)
+        key.isNotBlank() && seen.add(key) && key !in have
     }
 }
