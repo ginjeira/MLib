@@ -641,6 +641,10 @@
     <string name="acquisition_retry_job">Search again</string>
     <string name="album_complete_existing">%1$d existing tracks will be reused:</string>
     <string name="album_complete_more">…and %1$d more</string>
+    <string name="album_tracklist_loading">Checking the album track list…</string>
+    <string name="album_complete_missing">%1$d track(s) missing from this edition:</string>
+    <string name="album_complete_missing_none">The library already has every track found for this edition.</string>
+    <string name="album_complete_unknown">Track list unavailable; only the existing tracks are shown.</string>
     <string name="acq_from_history">Results reused from the existing bot chat; no new bot request was sent.</string>
     <string name="acq_no_connection">Telegram is still connecting. Wait for the connection or reconnect.</string>
     <string name="reconnect">Reconnect</string>
@@ -659,4 +663,10 @@
     <string name="app_lock_prompt">Use your device screen lock to open MLib.</string>
     <string name="app_lock">Lock MLib with the device screen lock</string>
     <string name="app_lock_help">MLib asks for your device PIN, pattern, password or biometrics whenever the app opens.</string>
+    <string name="album_knowledge">Album information</string>
+    <string name="album_knowledge_title">About this album</string>
+    <string name="album_knowledge_loading">Looking up sources…</string>
+    <string name="album_knowledge_failed">Could not fetch album information.</string>
+    <string name="album_knowledge_source">Source: %1$s</string>
+    <string name="album_knowledge_open_source">Open source</string>
 </resources>
