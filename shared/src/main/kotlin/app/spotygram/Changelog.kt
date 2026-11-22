@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.27",
+                english =
+                    "Completing an album now opens the dialog and lists the tracks you already have and the ones missing, with a completion bar. Acquired tracks can be reviewed before they are written to the library. MLib can be locked with the device screen lock. Album details show sourced information from MusicBrainz and Wikipedia. Album and playlist covers can be picked from the device, and AMOLED and high-contrast themes were added.",
+                portuguese =
+                    "Completar um álbum abre agora o diálogo e lista as faixas que já tens e as que faltam, com uma barra de completude. As faixas adquiridas podem ser revistas antes de entrarem na biblioteca. O MLib pode ser bloqueado com o bloqueio do dispositivo. O detalhe do álbum mostra informação com fonte do MusicBrainz e da Wikipédia. As capas de álbum e playlist podem ser escolhidas do dispositivo, e foram adicionados temas AMOLED e de alto contraste.",
+            ),
+            ChangelogEntry(
                 version = "0.1.26",
                 english =
                     "Completing an album now closes the album detail, opens the acquisition screen immediately and keeps the correct album context. The version label now opens a natural-language changelog. Automatic releases were disabled after this point.",
