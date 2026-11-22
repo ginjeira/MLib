@@ -20,8 +20,11 @@ concurrency:
 jobs:
   bump-version-and-tag:
     name: Bump patch version and create release tag
+    # Automatic releases are disabled until explicitly enabled with the repository
+    # variable MLIB_AUTO_RELEASE=true. A manual release still requires an agreed tag.
     if: >-
-      ${{ github.event.workflow_run.conclusion == 'success' &&
+      ${{ vars.MLIB_AUTO_RELEASE == 'true' &&
+          github.event.workflow_run.conclusion == 'success' &&
           github.event.workflow_run.event == 'push' &&
           github.event.workflow_run.head_branch == 'main' &&
           !startsWith(github.event.workflow_run.head_commit.message, 'chore(release): bump version to ') }}

@@ -3,7 +3,7 @@
 **MLib is an independent music library for Telegram.** It is being developed from the Spotygram codebase, with native Telegram-bot music acquisition inspired by the MCat and MCat Player projects.
 
 <blockquote>
-<strong>Development status:</strong> MLib is not yet ready for general use. Public <em>evaluation releases</em> are produced automatically from <code>main</code> so the owner can obtain test builds quickly; they are not a stable production channel. The Android application has a separate package identity and private storage from Spotygram.
+<strong>Development status:</strong> MLib is not yet ready for general use. Automatic evaluation releases were used through <code>v0.1.25</code> only. New versions now require explicit owner agreement; automatic publication is disabled unless the repository variable <code>MLIB_AUTO_RELEASE=true</code> is set. These builds are not a stable production channel. The Android application has a separate package identity and private storage from Spotygram.
 </blockquote>
 
 ## Product

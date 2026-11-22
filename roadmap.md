@@ -62,7 +62,7 @@ Verificado em **22-11-2026, 08:35 UTC**.
 - Alterações destrutivas exigem pré-visualização, confirmação e undo.
 - Não se misturam refactors amplos com correcções de release.
 - Android é a prioridade; desktop continua congelado e fail-closed.
-- A publicação automática de releases de avaliação mantém-se.
+- A publicação automática de releases de avaliação foi usada até `v0.1.25` e fica **desativada por omissão**; novas versões exigem concordância do owner (`MLIB_AUTO_RELEASE=true` ou release manual).
 - Cada release tem notas com: objectivo, alterações, limitações, testes e riscos.
 
 ## 2. Waves
