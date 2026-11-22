@@ -70,6 +70,8 @@ fun AlbumsScreen(
     var knowledgeError by remember { mutableStateOf("") }
     var tracklist by remember { mutableStateOf<List<String>?>(null) }
     var tracklistBusy by remember { mutableStateOf(false) }
+    var expectedTracks by remember { mutableStateOf<List<String>>(emptyList()) }
+    var expectedBusy by remember { mutableStateOf(false) }
     var editTitle by remember { mutableStateOf("") }
     var editArtist by remember { mutableStateOf("") }
     var editYear by remember { mutableStateOf("") }
@@ -89,6 +91,12 @@ fun AlbumsScreen(
         val tracks = current.tracks.mapNotNull { library.byId[it] }
         LaunchedEffect(current.id, current.tracks.size) {
             onRepairUnavailable(current)
+        }
+        LaunchedEffect(current.id) {
+            expectedTracks = emptyList()
+            expectedBusy = true
+            expectedTracks = runCatching { onTracklist(current) }.getOrDefault(emptyList())
+            expectedBusy = false
         }
         LaunchedEffect(confirmComplete, current.id) {
             if (!confirmComplete) return@LaunchedEffect
@@ -114,6 +122,43 @@ fun AlbumsScreen(
                         Text(current.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(listOf(current.artist, current.year, current.genre).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
+                }
+                val missingOnPage =
+                    remember(expectedTracks, current.tracks, library.tracks) {
+                        AlbumCompletion.missing(expectedTracks, tracks.map { it.title })
+                    }
+                if (expectedTracks.isNotEmpty()) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        LinearProgressIndicator(
+                            progress = {
+                                (expectedTracks.size - missingOnPage.size).toFloat() /
+                                    expectedTracks.size
+                            },
+                            modifier =
+                                Modifier.fillMaxWidth().height(4.dp)
+                                    .clip(RoundedCornerShape(2.dp)),
+                        )
+                        Text(
+                            tr(
+                                R.string.album_completion_status,
+                                expectedTracks.size - missingOnPage.size,
+                                expectedTracks.size,
+                                missingOnPage.size,
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else if (expectedBusy) {
+                    Text(
+                        tr(R.string.album_tracklist_loading),
+                        Modifier.padding(horizontal = 16.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 Row(
                     Modifier.fillMaxWidth(),
@@ -368,7 +413,7 @@ fun AlbumsScreen(
                                         )
                                     else -> {
                                         val missing =
-                                            missingTracks(expected, existing.map { it.title })
+                                            AlbumCompletion.missing(expected, existing.map { it.title })
                                         Text(
                                             tr(R.string.album_complete_missing, missing.size),
                                             style = MaterialTheme.typography.labelLarge,
@@ -631,17 +676,4 @@ private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.
     }
 }
 
-private fun normalizeTrackTitle(value: String): String =
-    value.substringBefore(" (")
-        .substringBefore(" [")
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
 
-private fun missingTracks(expected: List<String>, existing: List<String>): List<String> {
-    val have = existing.mapTo(mutableSetOf()) { normalizeTrackTitle(it) }
-    val seen = mutableSetOf<String>()
-    return expected.filter { title ->
-        val key = normalizeTrackTitle(title)
-        key.isNotBlank() && seen.add(key) && key !in have
-    }
-}

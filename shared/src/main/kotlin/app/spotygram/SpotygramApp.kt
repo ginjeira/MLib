@@ -1017,10 +1017,20 @@ class SpotygramApp(val platform: Platform) {
         "data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(prepared)
     }
 
-    suspend fun albumTracklist(album: Album): List<String> = withContext(Dispatchers.IO) {
+    private val tracklistCache = java.util.concurrent.ConcurrentHashMap<String, List<String>>()
+
+    suspend fun albumTracklist(album: Album): List<String> {
+        val key = "${album.artist.trim().lowercase()}|${album.title.trim().lowercase()}"
+        tracklistCache[key]?.let { return it }
+        val tracklist = withContext(Dispatchers.IO) { fetchAlbumTracklist(album) }
+        if (tracklist.isNotEmpty()) tracklistCache[key] = tracklist
+        return tracklist
+    }
+
+    private fun fetchAlbumTracklist(album: Album): List<String> {
         val term =
             listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" ").trim()
-        if (term.isBlank()) return@withContext emptyList()
+        if (term.isBlank()) return emptyList()
         fun fetch(url: String): JSONObject? =
             try {
                 val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
@@ -1062,8 +1072,8 @@ class SpotygramApp(val platform: Platform) {
             } catch (_: Exception) {
                 emptyList()
             }
-        if (deezer.isNotEmpty()) return@withContext deezer
-        try {
+        if (deezer.isNotEmpty()) return deezer
+        return try {
             val collectionId =
                 fetch("https://itunes.apple.com/search?term=$encoded&entity=album&limit=1")
                     ?.optJSONArray("results")?.optJSONObject(0)?.optString("collectionId").orEmpty()

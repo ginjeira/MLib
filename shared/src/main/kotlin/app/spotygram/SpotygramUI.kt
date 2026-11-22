@@ -508,6 +508,7 @@ fun SpotygramUI(
                                 navigate(2)
                                 playlistId = id
                             },
+                            onPickCover = onPickCover,
                         )
                     fullPlayer && current != null ->
                         PlayerScreen(

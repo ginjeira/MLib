@@ -197,6 +197,7 @@ fun PlaylistEditor(
     addingTo: Long?,
     onClose: () -> Unit,
     onSaved: (Long) -> Unit,
+    onPickCover: ((ByteArray?) -> Unit) -> Unit = { callback -> callback(null) },
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
@@ -292,12 +293,51 @@ fun PlaylistEditor(
                         )
                     OutlinedTextField(
                         value = coverUrl,
-                        onValueChange = { coverUrl = it.take(4096) },
+                        onValueChange = { coverUrl = it.take(400_000) },
                         label = { Text(tr(R.string.playlist_cover_optional)) },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         singleLine = true,
                         enabled = !saving,
                     )
+                    Row(
+                        Modifier.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                onPickCover { bytes ->
+                                    if (bytes != null) {
+                                        coverBusy = true
+                                        coverError = ""
+                                        scope.launch {
+                                            val prepared =
+                                                runCatching { app.prepareCover(bytes) }.getOrNull()
+                                            if (prepared != null) {
+                                                coverUrl = prepared
+                                            } else {
+                                                coverError = tr(R.string.album_cover_failed)
+                                            }
+                                            coverBusy = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !saving && !coverBusy,
+                        ) {
+                            Text(
+                                tr(
+                                    if (coverBusy) R.string.album_cover_preparing
+                                    else R.string.album_cover_pick
+                                )
+                            )
+                        }
+                        if (coverUrl.isNotBlank()) {
+                            TextButton(
+                                onClick = { coverUrl = "" },
+                                enabled = !saving,
+                            ) { Text(tr(R.string.album_cover_remove)) }
+                        }
+                    }
                     TextButton(
                         onClick = {
                             scope.launch {

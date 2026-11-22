@@ -705,7 +705,7 @@ class Library(private val platform: Platform) : AutoCloseable {
                         Values().apply {
                             put("name", name.trim().take(80))
                             put("description", description.trim().take(512))
-                            put("cover_url", coverUrl.trim().take(4096))
+                            put("cover_url", coverUrl.trim().take(400_000))
                             put("account", sync.account)
                         },
                     )
@@ -719,7 +719,7 @@ class Library(private val platform: Platform) : AutoCloseable {
                 val values =
                     linkedMapOf<String, Any?>(
                         "playlist/$uid/name" to name.trim().take(80),
-                        "playlist/$uid/metadata" to JSONObject().put("description", description.trim().take(512)).put("cover", coverUrl.trim().take(4096)),
+                        "playlist/$uid/metadata" to JSONObject().put("description", description.trim().take(512)).put("cover", coverUrl.trim().take(400_000)),
                         "playlist/$uid/order" to JSONArray(ids),
                     )
                 for (track in ids) values["playlist/$uid/member/$track"] = true
@@ -1364,7 +1364,7 @@ class Library(private val platform: Platform) : AutoCloseable {
         coverUrl: String,
     ) = withContext(Dispatchers.IO) {
         require(description.length <= 512) { tr(R.string.playlist_description_too_long) }
-        require(coverUrl.length <= 4096) { tr(R.string.playlist_cover_too_long) }
+        require(coverUrl.length <= 400_000) { tr(R.string.playlist_cover_too_long) }
         writableDatabase.transaction {
             val uid = sync.playlistId(this, id)
             update(

@@ -581,6 +581,7 @@
     <string name="album_cover_remove">Remove cover</string>
     <string name="album_cover_preparing">Preparing image…</string>
     <string name="album_cover_failed">Could not use that image.</string>
+    <string name="album_completion_status">%1$d of %2$d tracks · %3$d missing</string>
     <string name="sync_key_unavailable">The MLib sync key is unavailable. Use Repair sync storage to reset this device\'s sync key.</string>
     <string name="sync_payload_too_large">The library is too large for one sync snapshot. The operation was stopped; reduce the library or wait for a chunked-snapshot protocol update.</string>
     <string name="playlist_repaired">Replaced %1$d unavailable track(s) with an existing copy.</string>
