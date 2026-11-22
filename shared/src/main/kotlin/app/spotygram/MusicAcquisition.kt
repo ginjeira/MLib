@@ -717,6 +717,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     )
                 }
             }
+            // Ask the bot to stop its own download; cancelling locally alone
+            // would let it keep fetching tracks in the bot chat.
+            runCatching { sendText(session.botChatId, "/cancel") }
             clearPendingJob()
             activeSearchId = null
             state.value =

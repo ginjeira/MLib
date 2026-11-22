@@ -12,9 +12,9 @@ object Changelog {
             ChangelogEntry(
                 version = "0.1.30",
                 english =
-                    "Fixed playlist acquisition stopping after a short pause, which could open the review with one track of a 27-track playlist. Cancelling a search no longer shows an error, and an acquisition can now be cancelled from the progress block. The artist page fits all actions, its information follows the app language, search opens the acquisition dialog prefilled instead of searching immediately, and offline downloads ask for confirmation.",
+                    "Fixed playlist acquisition stopping after a short pause, which could open the review with one track of a 27-track playlist. Cancelling a search no longer shows an error, and an acquisition can now be cancelled from the progress block, sending /cancel to the bot to stop its download. The artist page fits all actions, its information follows the app language, search opens the acquisition dialog prefilled instead of searching immediately, and offline downloads ask for confirmation.",
                 portuguese =
-                    "Corrigida a obtenção de playlists que parava após uma pausa curta e podia abrir a revisão com uma faixa de 27. Cancelar uma pesquisa já não mostra erro, e uma obtenção pode agora ser cancelada no bloco de progresso. A página de artista comporta todas as ações, a informação segue a língua da app, a pesquisa abre o diálogo de aquisição pré-preenchido em vez de pesquisar logo, e os downloads offline pedem confirmação.",
+                    "Corrigida a obtenção de playlists que parava após uma pausa curta e podia abrir a revisão com uma faixa de 27. Cancelar uma pesquisa já não mostra erro, e uma obtenção pode agora ser cancelada no bloco de progresso, enviando /cancel ao bot para parar o download. A página de artista comporta todas as ações, a informação segue a língua da app, a pesquisa abre o diálogo de aquisição pré-preenchido em vez de pesquisar logo, e os downloads offline pedem confirmação.",
             ),
             ChangelogEntry(
                 version = "0.1.29",
