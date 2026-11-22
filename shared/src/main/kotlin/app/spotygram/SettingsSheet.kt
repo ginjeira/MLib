@@ -150,12 +150,15 @@ fun SettingsSheet(
                 }
                 ActionRow(Icons.Rounded.ContentCopy, tr(R.string.export_library)) {
                     val json = app.library.exportJson()
-                    if (json.length > 500_000) {
-                        app.action { app.notices.emit(tr(R.string.export_library_too_large)) }
-                    } else {
-                        clipboard.setText(AnnotatedString(json))
-                        app.action { app.notices.emit(tr(R.string.export_library_done)) }
-                    }
+                    val directory = java.io.File(app.platform.cacheDir, "exports").apply { mkdirs() }
+                    val file =
+                        java.io.File(
+                            directory,
+                            "mlib-library-${System.currentTimeMillis()}.json",
+                        )
+                    file.writeText(json)
+                    app.platform.shareFile(file, "application/json")
+                    app.action { app.notices.emit(tr(R.string.export_library_done)) }
                 }
                 ListItem(
                     headlineContent = { Text(tr(R.string.auto_download_favorites)) },

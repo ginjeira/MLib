@@ -14,6 +14,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import java.security.KeyStore
 import java.security.SecureRandom
 import java.util.Locale
@@ -195,6 +196,15 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
     override fun personalMessageLink(user: Long, message: Long, account: Long): String =
         "tg://openmessage?user_id=$user&message_id=$message" +
             if (account > 0) "&account_user_id=$account" else ""
+
+    override fun shareFile(file: java.io.File, mime: String) {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.updates", file)
+        val send = Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, uri)
+        send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        context.startActivity(
+            Intent.createChooser(send, "MLib").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
 
     override fun openUrl(url: String) {
         val uri = Uri.parse(url)
