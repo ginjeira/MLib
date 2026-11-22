@@ -45,6 +45,7 @@ Verificado em **22-11-2026, 13:10 UTC**.
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
 
 **Leitura rápida:** o produto já é utilizável para o ciclo principal (biblioteca + aquisição + update), mas a paridade de produto está sobretudo nas Waves 1, 3, 4 e 5. A Wave 2 é a maior alteração visual e deve entrar depois de fechar a confiabilidade da biblioteca.
+
 ## 1. Regras do roadmap
 
 - Cada wave termina com **código, testes, documentação e evidência de release**.

@@ -468,6 +468,15 @@ fun SettingsSheet(
                     )
                 }
 
+                ActionRow(Icons.Rounded.Build, tr(R.string.repair_library)) {
+                    app.action {
+                        val repaired = app.repairUnavailableLibrary()
+                        app.notices.emit(
+                            if (repaired == 0) tr(R.string.library_repair_none)
+                            else tr(R.string.library_repaired, repaired)
+                        )
+                    }
+                }
                 HorizontalDivider(
                     Modifier.padding(vertical = 16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
