@@ -641,4 +641,5 @@
     <string name="acquisition_retry_job">Search again</string>
     <string name="album_complete_existing">%1$d existing tracks will be reused:</string>
     <string name="album_complete_more">…and %1$d more</string>
+    <string name="acq_from_history">Results reused from the existing bot chat; no new bot request was sent.</string>
 </resources>

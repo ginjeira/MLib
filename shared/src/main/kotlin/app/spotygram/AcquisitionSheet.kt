@@ -269,6 +269,13 @@ internal fun AcquisitionSheet(
                 }
             }
             Text(search.query, style = MaterialTheme.typography.titleMedium)
+            if (search.fromHistory) {
+                Text(
+                    tr(R.string.acq_from_history),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             if (search.results.isEmpty()) {
                 Text(tr(R.string.acquisition_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
