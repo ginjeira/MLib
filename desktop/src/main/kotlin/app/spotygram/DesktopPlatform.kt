@@ -127,6 +127,10 @@ class DesktopPlatform : Platform, AutoCloseable {
     override fun personalMessageLink(user: Long, message: Long, account: Long): String =
         // Telegram Desktop has no openmessage handler; Web K accepts server message IDs for users.
         "https://web.telegram.org/k/#$user?message=$message"
+    override fun shareFile(file: java.io.File, mime: String) {
+        runCatching { java.awt.Desktop.getDesktop().open(file) }
+    }
+
     override fun openUrl(url: String) {
         val uri = URI(url)
         require(uri.scheme in setOf("http", "https", "tg"))

@@ -39,6 +39,7 @@ interface Platform {
     fun observeNetwork(onType: (String) -> Unit): AutoCloseable
     fun metadata(path: String, name: String = ""): AudioMetadata
     fun openUrl(url: String)
+    fun shareFile(file: java.io.File, mime: String) {}
     fun personalMessageLink(user: Long, message: Long, account: Long): String
     fun languageSettings(app: SpotygramApp)
     fun startDownloads(app: SpotygramApp)

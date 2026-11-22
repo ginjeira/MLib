@@ -634,8 +634,8 @@
     <string name="album_complete_action">Completar álbum</string>
     <string name="chat_picker_no_sources">Não foram encontrados grupos ou canais na tua conta Telegram.</string>
     <string name="artists">Artistas</string>
-    <string name="export_library">Copiar JSON da biblioteca</string>
-    <string name="export_library_done">JSON da biblioteca copiado para a área de transferência.</string>
+        <string name="export_library">Exportar JSON da biblioteca</string>
+        <string name="export_library_done">JSON da biblioteca preparado para partilha.</string>
     <string name="export_library_too_large">A biblioteca é demasiado grande para copiar como texto.</string>
     <string name="auto_download_favorites">Transferir favoritos automaticamente</string>
     <string name="auto_download_favorites_help">Transfere um favorito para offline quando não existe cópia local.</string>
