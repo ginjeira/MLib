@@ -631,6 +631,7 @@
     <string name="archive_channel_ready_help">%1$s está disponível como fonte e destino de aquisição.</string>
     <string name="offline_tracks">Offline</string>
     <string name="recently_added">Adicionadas recentemente</string>
+    <string name="auto_home">Início</string>
     <string name="review_duplicates">Rever duplicados</string>
     <string name="no_duplicates">Não foram encontrados grupos duplicados.</string>
     <string name="duplicate_group_count">%1$d cópias</string>

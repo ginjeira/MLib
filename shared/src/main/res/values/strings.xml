@@ -626,6 +626,7 @@
     <string name="archive_channel_ready_help">%1$s is available as a source and acquisition destination.</string>
     <string name="offline_tracks">Offline</string>
     <string name="recently_added">Recently added</string>
+    <string name="auto_home">Home</string>
     <string name="review_duplicates">Review duplicates</string>
     <string name="no_duplicates">No duplicate groups found.</string>
     <string name="duplicate_group_count">%1$d copies</string>

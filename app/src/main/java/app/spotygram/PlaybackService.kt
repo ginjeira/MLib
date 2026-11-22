@@ -32,18 +32,6 @@ class PlaybackService : MediaLibraryService() {
     private val app get() = (application as AndroidApplication).model
 
     companion object {
-        private const val ROOT = "mlib:root"
-        private const val ALL_TRACKS = "mlib:tracks"
-        private const val PLAYLISTS = "mlib:playlists"
-        private const val ALBUMS = "mlib:albums"
-private const val ARTISTS = "mlib:artists"
-        private const val FAVORITES = "mlib:favorites"
-private const val OFFLINE = "mlib:offline"
-private const val RECENT = "mlib:recent"
-        private const val TRACK_PREFIX = "track:"
-        private const val PLAYLIST_PREFIX = "playlist:"
-        private const val ALBUM_PREFIX = "album:"
-private const val ARTIST_PREFIX = "artist:"
 
         /**
          * The service must be exported for Android Auto and Automotive OS. These are the
@@ -106,7 +94,7 @@ private const val ARTIST_PREFIX = "artist:"
                 browser: MediaSession.ControllerInfo,
                 params: LibraryParams?,
             ): ListenableFuture<LibraryResult<androidx.media3.common.MediaItem>> {
-                val root = folder(ROOT, "MLib")
+                val root = toMediaItem(AutoNode(AutoLibrary.ROOT, "MLib"))
                 return Futures.immediateFuture(LibraryResult.ofItem(root, params))
             }
 
@@ -118,94 +106,11 @@ private const val ARTIST_PREFIX = "artist:"
                 pageSize: Int,
                 params: LibraryParams?,
             ): ListenableFuture<LibraryResult<ImmutableList<androidx.media3.common.MediaItem>>> {
-                val library = app.library.state.value
-                val children = when (parentId) {
-                    ROOT -> listOf(
-                        folder(ALL_TRACKS, tr(R.string.all_tracks)),
-                        folder(PLAYLISTS, tr(R.string.playlists)),
-                        folder(ALBUMS, tr(R.string.albums)),
-                        folder(ARTISTS, tr(R.string.artists)),
-                        folder(FAVORITES, tr(R.string.favorites)),
-                        folder(OFFLINE, tr(R.string.offline_tracks)),
-                        folder(RECENT, tr(R.string.recently_added)),
-                    )
-                    ALL_TRACKS -> library.tracks
-                        .asSequence()
-                        .filter { it.local || it.available }
-                        .sortedWith(compareBy<Track> { it.title.lowercase() }.thenBy { it.artist.lowercase() })
-                        .map(::trackItem)
-                        .toList()
-                    FAVORITES -> library.tracks
-                        .asSequence()
-                        .filter { it.liked && (it.local || it.available) }
-                        .sortedWith(compareBy<Track> { it.title.lowercase() }.thenBy { it.artist.lowercase() })
-                        .map(::trackItem)
-                        .toList()
-                    OFFLINE -> library.tracks
-                        .asSequence()
-                        .filter { it.local && !it.temporary }
-                        .sortedWith(compareBy<Track> { it.title.lowercase() }.thenBy { it.artist.lowercase() })
-                        .map(::trackItem)
-                        .toList()
-                    RECENT -> library.tracks
-                        .asSequence()
-                        .filter { it.local || it.available }
-                        .sortedByDescending { it.date }
-                        .take(100)
-                        .map(::trackItem)
-                        .toList()
-                    PLAYLISTS -> library.playlists.map { playlist ->
-                        folder("$PLAYLIST_PREFIX${playlist.id}", playlist.name)
-                    }
-                    ARTISTS -> library.tracks
-                        .asSequence()
-                        .filter { it.local || it.available }
-                        .filter { it.artist.isNotBlank() }
-                        .groupBy { it.artist }
-                        .toList()
-                        .sortedBy { it.first.lowercase() }
-                        .map { (artist, _) -> folder("$ARTIST_PREFIX$artist", artist) }
-                    ALBUMS -> library.albums.map { album ->
-                        folder(
-                            "$ALBUM_PREFIX${album.id}",
-                            album.title,
-                            artist = listOf(album.artist, album.year).filter(String::isNotBlank).joinToString(" · "),
-                            artwork = album.coverUrl,
-                        )
-                    }
-                    else -> when {
-                        parentId.startsWith(PLAYLIST_PREFIX) -> {
-                            val playlistId = parentId.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
-                            val playlist = playlistId?.let { id -> library.playlists.firstOrNull { it.id == id } }
-                            playlist?.tracks.orEmpty().mapNotNull(library.byId::get)
-                                .filter { it.local || it.available }
-                                .map(::trackItem)
-                        }
-                        parentId.startsWith(ARTIST_PREFIX) -> {
-                            val artist = parentId.removePrefix(ARTIST_PREFIX)
-                            library.tracks
-                                .asSequence()
-                                .filter {
-                                    it.artist.equals(artist, ignoreCase = true) &&
-                                        (it.local || it.available)
-                                }
-                                .sortedWith(compareBy<Track> { it.title.lowercase() })
-                                .map(::trackItem)
-                                .toList()
-                        }
-                        parentId.startsWith(ALBUM_PREFIX) -> {
-                            val albumId = parentId.removePrefix(ALBUM_PREFIX)
-                            val album = library.albums.firstOrNull { it.id == albumId }
-                            album?.tracks.orEmpty().mapNotNull(library.byId::get)
-                                .filter { it.local || it.available }
-                                .map(::trackItem)
-                        }
-                        else -> emptyList()
-                    }
-                }
+                val children =
+                    AutoLibrary.children(parentId, app.library.state.value, labels())
                 val start = (page * pageSize).coerceAtMost(children.size)
                 val end = (start + pageSize).coerceAtMost(children.size)
-                val pageItems = children.subList(start, end)
+                val pageItems = children.subList(start, end).map(::toMediaItem)
                 return Futures.immediateFuture(
                     LibraryResult.ofItemList(ImmutableList.copyOf(pageItems), params)
                 )
@@ -216,46 +121,47 @@ private const val ARTIST_PREFIX = "artist:"
                 browser: MediaSession.ControllerInfo,
                 mediaId: String,
             ): ListenableFuture<LibraryResult<androidx.media3.common.MediaItem>> {
-                val library = app.library.state.value
-                val item = when {
-                    mediaId == OFFLINE -> folder(OFFLINE, tr(R.string.offline_tracks))
-                    mediaId == RECENT -> folder(RECENT, tr(R.string.recently_added))
-                    mediaId.startsWith(TRACK_PREFIX) ->
-                        library.byId[mediaId.removePrefix(TRACK_PREFIX)]?.let(::trackItem)
-                    mediaId.startsWith(PLAYLIST_PREFIX) -> {
-                        val id = mediaId.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
-                        library.playlists.firstOrNull { it.id == id }?.let {
-                            folder(mediaId, it.name)
-                        }
-                    }
-                    mediaId.startsWith(ARTIST_PREFIX) ->
-                        folder(mediaId, mediaId.removePrefix(ARTIST_PREFIX))
-                    mediaId.startsWith(ALBUM_PREFIX) -> {
-                        val id = mediaId.removePrefix(ALBUM_PREFIX)
-                        library.albums.firstOrNull { it.id == id }?.let {
-                            folder(
-                                mediaId,
-                                it.title,
-                                artist = listOf(it.artist, it.year).filter(String::isNotBlank).joinToString(" · "),
-                                artwork = it.coverUrl,
-                            )
-                        }
-                    }
-                    else -> null
-                }
+                val node = AutoLibrary.item(mediaId, app.library.state.value, labels())
                 return Futures.immediateFuture(
-                    if (item != null) LibraryResult.ofItem(item, null)
+                    if (node != null) LibraryResult.ofItem(toMediaItem(node), null)
                     else LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
                 )
             }
 
+            override fun onSearch(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                query: String,
+                params: LibraryParams?,
+            ): ListenableFuture<LibraryResult<Void>> {
+                val count = AutoLibrary.search(query, app.library.state.value).size
+                session.notifySearchResultChanged(browser, query, count, params)
+                return Futures.immediateFuture(LibraryResult.ofVoid())
+            }
+
+            override fun onGetSearchResult(
+                session: MediaLibrarySession,
+                browser: MediaSession.ControllerInfo,
+                query: String,
+                page: Int,
+                pageSize: Int,
+                params: LibraryParams?,
+            ): ListenableFuture<LibraryResult<ImmutableList<androidx.media3.common.MediaItem>>> {
+                val results = AutoLibrary.search(query, app.library.state.value)
+                val start = (page * pageSize).coerceAtMost(results.size)
+                val end = (start + pageSize).coerceAtMost(results.size)
+                val pageItems = results.subList(start, end).map(::toMediaItem)
+                return Futures.immediateFuture(
+                    LibraryResult.ofItemList(ImmutableList.copyOf(pageItems), params)
+                )
+            }
             override fun onAddMediaItems(
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo,
                 mediaItems: List<androidx.media3.common.MediaItem>,
             ): ListenableFuture<List<androidx.media3.common.MediaItem>> {
                 val tracks = mediaItems.mapNotNull { item ->
-                    app.library.state.value.byId[item.mediaId.removePrefix(TRACK_PREFIX)]
+                    app.library.state.value.byId[item.mediaId.removePrefix(AutoLibrary.TRACK_PREFIX)]
                 }.filter { it.local || it.available }
                 if (tracks.isNotEmpty()) {
                     // PlaybackQueue owns ordering, persistence, resume and listening history.
@@ -280,54 +186,77 @@ private const val ARTIST_PREFIX = "artist:"
 
         libraryObserver = app.scope.launch {
             app.library.state.collect {
-                session.notifyChildrenChanged(ROOT, Int.MAX_VALUE, null)
-                session.notifyChildrenChanged(ALL_TRACKS, Int.MAX_VALUE, null)
-                session.notifyChildrenChanged(PLAYLISTS, Int.MAX_VALUE, null)
-                session.notifyChildrenChanged(ALBUMS, Int.MAX_VALUE, null)
-                session.notifyChildrenChanged(FAVORITES, Int.MAX_VALUE, null)
-                app.library.state.value.playlists.forEach {
-                    session.notifyChildrenChanged("$PLAYLIST_PREFIX${it.id}", Int.MAX_VALUE, null)
+                val state = app.library.state.value
+                listOf(
+                    AutoLibrary.ROOT,
+                    AutoLibrary.HOME,
+                    AutoLibrary.ALL_TRACKS,
+                    AutoLibrary.PLAYLISTS,
+                    AutoLibrary.ALBUMS,
+                    AutoLibrary.ARTISTS,
+                    AutoLibrary.FAVORITES,
+                    AutoLibrary.OFFLINE,
+                    AutoLibrary.RECENT,
+                ).forEach { session.notifyChildrenChanged(it, Int.MAX_VALUE, null) }
+                state.playlists.forEach {
+                    session.notifyChildrenChanged(
+                        "${AutoLibrary.PLAYLIST_PREFIX}${it.id}", Int.MAX_VALUE, null,
+                    )
                 }
-                app.library.state.value.albums.forEach {
-                    session.notifyChildrenChanged("$ALBUM_PREFIX${it.id}", Int.MAX_VALUE, null)
+                state.albums.forEach {
+                    session.notifyChildrenChanged(
+                        "${AutoLibrary.ALBUM_PREFIX}${it.id}", Int.MAX_VALUE, null,
+                    )
                 }
+                state.tracks
+                    .asSequence()
+                    .map { it.artist }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .take(400)
+                    .forEach {
+                        session.notifyChildrenChanged(
+                            "${AutoLibrary.ARTIST_PREFIX}$it", Int.MAX_VALUE, null,
+                        )
+                    }
             }
         }
     }
 
-    private fun folder(
-        id: String,
-        title: String,
-        artist: String = "",
-        artwork: String = "",
-    ) = androidx.media3.common.MediaItem.Builder()
-        .setMediaId(id)
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setTitle(title)
-                .setArtist(artist)
-                .setArtworkUri(artwork.takeIf { it.startsWith("https://") || it.startsWith("http://") }?.let(Uri::parse))
-                .setIsBrowsable(true)
-                .setIsPlayable(false)
-                .build()
+    private fun labels() =
+        AutoLibrary.Labels(
+            home = tr(R.string.auto_home),
+            allTracks = tr(R.string.all_tracks),
+            playlists = tr(R.string.playlists),
+            albums = tr(R.string.albums),
+            artists = tr(R.string.artists),
+            favorites = tr(R.string.favorites),
+            offline = tr(R.string.offline_tracks),
+            recent = tr(R.string.recently_added),
         )
-        .build()
 
-    private fun trackItem(track: Track) =
-        androidx.media3.common.MediaItem.Builder()
-            .setMediaId("$TRACK_PREFIX${track.id}")
-            .setUri(Uri.parse("mlib://track/${Uri.encode(track.id)}"))
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(track.title)
-                    .setArtist(track.artist)
-                    .setAlbumTitle(app.library.state.value.albums.firstOrNull { album -> track.id in album.tracks }?.title)
-                    .setArtworkUri(track.art.takeIf { it.startsWith("https://") || it.startsWith("http://") }?.let(Uri::parse))
-                    .setIsBrowsable(false)
-                    .setIsPlayable(true)
-                    .build()
-            )
-            .build()
+    private fun toMediaItem(node: AutoNode): androidx.media3.common.MediaItem {
+        val metadata =
+            MediaMetadata.Builder()
+                .setTitle(node.title)
+                .setArtist(node.artist.takeIf { it.isNotBlank() })
+                .setAlbumTitle(node.album.takeIf { it.isNotBlank() })
+                .setIsBrowsable(!node.playable)
+                .setIsPlayable(node.playable)
+        when {
+            node.artworkData != null -> metadata.setArtworkData(node.artworkData)
+            node.artworkUrl.isNotBlank() -> metadata.setArtworkUri(Uri.parse(node.artworkUrl))
+        }
+        val builder =
+            androidx.media3.common.MediaItem.Builder()
+                .setMediaId(node.id)
+                .setMediaMetadata(metadata.build())
+        if (node.playable) {
+            val trackId = node.id.removePrefix(AutoLibrary.TRACK_PREFIX)
+            builder.setUri(Uri.parse("mlib://track/${Uri.encode(trackId)}"))
+        }
+        return builder.build()
+    }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
 
