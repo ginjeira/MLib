@@ -20,7 +20,7 @@ Verificado em **22-11-2026, 17:56 UTC**.
 | Packages | 0.1.27 / 1027, 0.1.28 / 1028 e 0.1.29 / 1029 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
-| Próximas versões | **0.1.30** Google TV (a aguardar acordo do owner) |
+| Próxima versão | **0.1.30** apenas correções; **Google TV congelada** por decisão do owner (22-11-2026) |
 
 **Hashes publicados (0.1.29):**
 
@@ -71,7 +71,7 @@ Verificado em **22-11-2026, 17:56 UTC**.
 | Wave 4 — álbuns/capas | **Fechada no âmbito atual** | 100% | Completar álbum com faixas existentes/em falta e anel de completude, enriquecimento, capas personalizadas de álbum e playlist a partir do dispositivo (persistem via `cover_url` e sincronizam), placeholder explícito. Gradiente/artwork grande e faixas ambíguas passam para Wave 4.1. |
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
 | Wave 6 — descoberta/poder | **Fechada no âmbito atual** | 100% (âmbito) | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock, exportação JSON, temas AMOLED/alto contraste e reparação de biblioteca. Widgets, scrobbling, smart playlists, voz, estatísticas e backup completo passam para Wave 6.1. |
-| Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
+| Wave 7 — plataformas | **Congelada** | 0% | Google TV adiada por decisão do owner (22-11-2026); tablet/TV/perfis e desktop continuam fora de âmbito. |
 | Wave 8 — conhecimento musical | **Fechada no âmbito MVP** | 100% (MVP) | Álbum com MusicBrainz + Wikipédia, data, tipo, géneros, resumo, licença por fonte, link e data de recolha; cache em disco com TTL de 30 dias e limite de 300 entradas; parsers com fixtures. Páginas de artista, discografia, créditos e ETag passam para Wave 8.1. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.

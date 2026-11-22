@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.30",
+                english =
+                    "Fixed playlist acquisition stopping after a short pause, which could open the review with one track of a 27-track playlist. Cancelling a search no longer shows an error, and an acquisition can now be cancelled from the progress block. The artist page fits all actions, its information follows the app language, search opens the acquisition dialog prefilled instead of searching immediately, and offline downloads ask for confirmation.",
+                portuguese =
+                    "Corrigida a obtenção de playlists que parava após uma pausa curta e podia abrir a revisão com uma faixa de 27. Cancelar uma pesquisa já não mostra erro, e uma obtenção pode agora ser cancelada no bloco de progresso. A página de artista comporta todas as ações, a informação segue a língua da app, a pesquisa abre o diálogo de aquisição pré-preenchido em vez de pesquisar logo, e os downloads offline pedem confirmação.",
+            ),
+            ChangelogEntry(
                 version = "0.1.29",
                 english =
                     "New navigation with Home, Library, Search and Settings. Home gathers what you were listening to, recent tracks, favourites, playlists and albums, marking the albums whose missing tracks are already known. Artist pages group the library and show albums, tracks, sources and information from MusicBrainz and Wikipedia. Source management moved to Settings, and the player now has an artwork gradient with solid surfaces on the bar and mini-player.",
