@@ -9,7 +9,7 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado das versões 0.1.27 e 0.1.28
 
-Verificado em **22-11-2026, 16:40 UTC**.
+Verificado em **22-11-2026, 16:25 UTC**.
 
 | Item | Estado |
 |---|---|
