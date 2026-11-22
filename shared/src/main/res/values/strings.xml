@@ -694,4 +694,5 @@
     <string name="home_album_complete">Complete</string>
     <string name="home_album_missing">%1$d missing</string>
     <string name="download_offline">Download offline</string>
+    <string name="artist_download_confirm">Download %1$d tracks to this device?</string>
 </resources>

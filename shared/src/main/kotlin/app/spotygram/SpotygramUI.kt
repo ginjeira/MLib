@@ -95,6 +95,7 @@ fun SpotygramUI(
     var fullPlayer by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf("") }
     var acquisitionSeed by remember { mutableStateOf("") }
+    var acquisitionPrefillOnly by remember { mutableStateOf(false) }
     var selectedTrackId by remember { mutableStateOf<String?>(null) }
     var trackAnchor by remember { mutableStateOf(IntRect.Zero) }
     var playlistId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -853,6 +854,7 @@ fun SpotygramUI(
                                                     },
                                                     onSearchTelegram = { q ->
                                                         acquisitionSeed = q
+                                                        acquisitionPrefillOnly = true
                                                         sheet = "acquisition"
                                                     },
                                                     missingFor = { album ->
@@ -874,6 +876,7 @@ fun SpotygramUI(
                                                     },
                                                     onSearchTelegram = { q ->
                                                         acquisitionSeed = q
+                                                        acquisitionPrefillOnly = true
                                                         sheet = "acquisition"
                                                     },
                                                 )
@@ -957,6 +960,7 @@ fun SpotygramUI(
                                                     },
                                                     onSearchTelegram = { q ->
                                                         acquisitionSeed = q
+                                                        acquisitionPrefillOnly = false
                                                         sheet = "acquisition"
                                                     },
                                                     onAddTracks = { editPlaylist(playlistId) },
@@ -1085,6 +1089,7 @@ fun SpotygramUI(
                                                     onDownload = onDownload,
                                                     onSearchTelegram = { q ->
                                                         acquisitionSeed = q
+                                                        acquisitionPrefillOnly = true
                                                         sheet = "acquisition"
                                                     },
                                                     onKnowledge = { name ->
@@ -1303,7 +1308,13 @@ fun SpotygramUI(
                                     "settings",
                                     "sharingSettings",
                                     "cache" -> settingsContent()
-                                    "acquisition" -> AcquisitionSheet(app, onClose = ::closeSheet, initialQuery = acquisitionSeed)
+                                    "acquisition" ->
+                                        AcquisitionSheet(
+                                            app,
+                                            onClose = ::closeSheet,
+                                            initialQuery = acquisitionSeed,
+                                            autoSearch = !acquisitionPrefillOnly,
+                                        )
                                     "share" -> shareContent(Modifier, null)
                                     "chats" ->
                                         SourcePicker(

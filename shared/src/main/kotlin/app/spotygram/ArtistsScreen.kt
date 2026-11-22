@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -126,6 +127,10 @@ private fun ArtistPage(
     var knowledge by remember(profile.key) { mutableStateOf<KnowledgeInfo?>(null) }
     var knowledgeBusy by remember(profile.key) { mutableStateOf(false) }
     var knowledgeError by remember(profile.key) { mutableStateOf("") }
+    var confirmDownload by remember(profile.key) { mutableStateOf(false) }
+    val pendingOffline = remember(profile) {
+        profile.playable.filter { it.available && !it.local }
+    }
     val uriHandler = LocalUriHandler.current
     LaunchedEffect(profile.key) {
         if (profile.unknown) return@LaunchedEffect
@@ -137,6 +142,24 @@ private fun ArtistPage(
                     null
                 }
         knowledgeBusy = false
+    }
+    if (confirmDownload) {
+        AlertDialog(
+            onDismissRequest = { confirmDownload = false },
+            title = { Text(tr(R.string.download_offline)) },
+            text = { Text(tr(R.string.artist_download_confirm, pendingOffline.size)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmDownload = false
+                        onDownload(pendingOffline.map { it.id })
+                    },
+                ) { Text(tr(R.string.download)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDownload = false }) { Text(tr(R.string.cancel)) }
+            },
+        )
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
         item(key = "header") {
@@ -183,10 +206,11 @@ private fun ArtistPage(
                         onPlay(shuffled.first(), shuffled)
                     },
                 ) { Text(tr(R.string.shuffle)) }
-                TextButton(
-                    enabled = profile.playable.any { it.available && !it.offlineCopyValid },
-                    onClick = { onDownload(profile.playable.map { it.id }) },
-                ) { Text(tr(R.string.download_offline)) }
+                if (pendingOffline.isNotEmpty()) {
+                    TextButton(onClick = { confirmDownload = true }) {
+                        Text(tr(R.string.download_offline))
+                    }
+                }
                 TextButton(
                     enabled = profile.name.isNotBlank(),
                     onClick = { onSearchTelegram(profile.name) },
