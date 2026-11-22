@@ -7,20 +7,27 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado das versões 0.1.27 a 0.1.29
+## 0. Estado das versões 0.1.27 a 0.1.30
 
-Verificado em **22-11-2026, 17:56 UTC**.
+Verificado em **22-11-2026, 20:26 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.29** (publicada em 22-11-2026 17:47:44) |
+| Última release pública | **v0.1.30** (publicada em 22-11-2026 20:13:51) |
 | Tag `v0.1.27` | **Criada** (`fda3eb0`); build `45039489724` |
 | Tag `v0.1.28` | **Criada** (`6ccff1b`); build `45043559683` |
 | Tag `v0.1.29` | **Criada** (`b8c5162`); build `45047965275` |
-| Packages | 0.1.27 / 1027, 0.1.28 / 1028 e 0.1.29 / 1029 |
+| Tag `v0.1.30` | **Criada** (`980d09f`); build `45061552047` |
+| Packages | 0.1.27 / 1027, 0.1.28 / 1028, 0.1.29 / 1029 e 0.1.30 / 1030 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
-| Próxima versão | **0.1.30** apenas correções; **Google TV congelada** por decisão do owner (22-11-2026) |
+| Próxima versão | **A acordar**; **Google TV congelada** por decisão do owner (22-11-2026) |
+
+**Hashes publicados (0.1.30):**
+
+- `mlib-0.1.30-arm64.apk` — `6e9c06cbcc4962de08fdcbbdd5457ce240cbbcc7afe4b33129bbc48f0070fec5`
+- `mlib-0.1.30-x86_64.apk` — `0a0d261e6457d220151cda5c9841dfd534b35740831620a8a2c3ee62ab74f455`
+- `SHA256SUMS.txt` — `76b677ced0e06a66d3b869f3a51b03a8571962f62dd2bdd0fcd5d32ebf459fd6`
 
 **Hashes publicados (0.1.29):**
 
@@ -45,6 +52,7 @@ Verificado em **22-11-2026, 17:56 UTC**.
 - **0.1.27:** fix de “Completar álbum”, revisão de aquisição antes de escrever na biblioteca, app lock, Wave 8 (conhecimento com fonte e cache), capas personalizadas, anel de completude, temas AMOLED/contraste e reparação de biblioteca.
 - **0.1.28:** Android Auto completo para reprodução (Início, pesquisa por voz na biblioteca, notificações e capas personalizadas).
 - **0.1.29:** Wave 2 — navegação de 4 destinos, Início, Biblioteca com chips e artistas, Procurar, Definições em ecrã completo, gradiente da arte no player e superfícies sólidas.
+- **0.1.30:** correções — recolha de playlists espera a contagem anunciada, cancelamento de pesquisa silencioso, cancelamento de obtenção com `/cancel` ao bot, página de artista e conhecimento localizado, aquisição pré-preenchida e confirmação de downloads offline.
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
