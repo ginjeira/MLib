@@ -721,18 +721,28 @@ fun SpotygramUI(
                                     showConnectionBanner &&
                                         auth.type == "authorizationStateReady"
                                 )
-                                    Text(
-                                        when (connection) {
-                                            "connectionStateWaitingForNetwork" ->
-                                                tr(R.string.no_network)
-                                            "connectionStateUpdating" ->
-                                                tr(R.string.telegram_updating)
-                                            else -> tr(R.string.telegram_connecting)
-                                        },
-                                        Modifier.padding(horizontal = 16.dp),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            when (connection) {
+                                                "connectionStateWaitingForNetwork" ->
+                                                    tr(R.string.no_network)
+                                                "connectionStateUpdating" ->
+                                                    tr(R.string.telegram_updating)
+                                                else -> tr(R.string.telegram_connecting)
+                                            },
+                                            Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        TextButton(
+                                            onClick = {
+                                                app.action { app.telegram.reconnect() }
+                                            },
+                                        ) { Text(tr(R.string.reconnect)) }
+                                    }
                                 LaunchedEffect(source?.id, profileId, library.tracks.size) {
                                     if (playlist == null) {
                                         val candidates =
