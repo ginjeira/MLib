@@ -273,7 +273,9 @@ fun AlbumsScreen(
                     confirmButton = {
                         TextButton(onClick = {
                             confirmComplete = false
-                            current?.let(onDownload)
+                            val album = current
+                            selected = null
+                            onDownload(album)
                         }) { Text(tr(R.string.album_complete_action)) }
                     },
                     dismissButton = {
