@@ -84,9 +84,11 @@ fun SpotygramUI(
     val destinationKeys = listOf("music", "favorites", "playlists", "albums", "chats")
     var tab by rememberSaveable {
         mutableIntStateOf(
-            destinationKeys
-                .indexOf(app.prefs.getString("last_destination", "music"))
-                .coerceAtLeast(0)
+            when (val saved = app.prefs.getString("last_destination", "home")) {
+                "home" -> -1
+                "search" -> -2
+                else -> destinationKeys.indexOf(saved).coerceAtLeast(0)
+            }
         )
     }
     var fullPlayer by rememberSaveable { mutableStateOf(false) }
@@ -149,6 +151,12 @@ fun SpotygramUI(
             ?: profileHint?.takeIf { it.id == activeProfileId }
     val source = profile?.source() ?: selectedSource
     val offlineView = tab == 0 && offline
+    val sectionIndex =
+        when (tab) {
+            -1 -> 0
+            -2 -> 2
+            else -> 1
+        }
     val groupedView =
         hideDuplicates &&
             playlist == null &&
@@ -182,7 +190,16 @@ fun SpotygramUI(
         }
     }
     LaunchedEffect(tab) {
-        app.prefs.edit().putString("last_destination", destinationKeys[tab]).apply()
+        val destination =
+            when {
+                tab == -1 -> "home"
+                tab == -2 -> "search"
+                tab in destinationKeys.indices -> destinationKeys[tab]
+                else -> null
+            }
+        if (destination != null) {
+            app.prefs.edit().putString("last_destination", destination).apply()
+        }
     }
     LaunchedEffect(auth.type) { if (auth.type == "authorizationStateReady") connect = false }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -263,6 +280,18 @@ fun SpotygramUI(
         profileHint = null
         playlistId = null
     }
+    fun openSection(index: Int) {
+        when (index) {
+            0 -> navigate(-1)
+            1 ->
+                if (tab !in 0..4) {
+                    navigate(0)
+                }
+            2 -> navigate(-2)
+            else -> sheet = "settings"
+        }
+    }
+
     fun openProfile(value: UserProfile) {
         navigate(3)
         sheet = ""
@@ -577,12 +606,12 @@ fun SpotygramUI(
                                                         .liquidGlass(31.dp, strong = true)
                                                         .padding(horizontal = 5.dp)
                                             ) {
-                                                // Five destinations are rendered below; the selection lens must use the same
-                                                // one-fifth cell width as the weighted navigation buttons.
-                                                val cellWidth = maxWidth / 5
+                                                // Four destinations are rendered below; the selection lens must use the same
+                                                // one-quarter cell width as the weighted navigation buttons.
+                                                val cellWidth = maxWidth / 4
                                                 val offset by
                                                     animateDpAsState(
-                                                        cellWidth * tab,
+                                                        cellWidth * sectionIndex,
                                                         spring(
                                                             dampingRatio = 0.82f,
                                                             stiffness = 550f,
@@ -610,24 +639,22 @@ fun SpotygramUI(
                                                     val destinations =
                                                         listOf(
                                                             0 to
-                                                                (tr(R.string.music) to
-                                                                    Icons.Rounded.MusicNote),
+                                                                (tr(R.string.nav_home) to
+                                                                    Icons.Rounded.Home),
                                                             1 to
-                                                                (tr(R.string.favorites) to
-                                                                    Icons.Rounded.Favorite),
+                                                                (tr(R.string.library) to
+                                                                    Icons.Rounded.LibraryMusic),
                                                             2 to
-                                                                (tr(R.string.playlists) to
-                                                                    Icons.Rounded.PlaylistPlay),
+                                                                (tr(R.string.nav_search) to
+                                                                    Icons.Rounded.Search),
                                                             3 to
-                                                                (tr(R.string.albums) to
-                                                                    Icons.Rounded.Album),
-                                                            4 to
-                                                                (tr(R.string.sources) to
-                                                                    Icons.Rounded.Widgets),
+                                                                (tr(R.string.settings) to
+                                                                    Icons.Rounded.Settings),
                                                         )
                                                     destinations.forEach { (index, destination) ->
                                                         val (label, icon) = destination
-                                                        val selected = tab == index
+                                                        val selected =
+                                                            index == sectionIndex && index != 3
                                                         val accent = spectrumAccent(index)
                                                         Column(
                                                             Modifier.weight(1f)
@@ -637,7 +664,7 @@ fun SpotygramUI(
                                                                     selected,
                                                                     role = Role.Tab,
                                                                 ) {
-                                                                    navigate(index)
+                                                                    openSection(index)
                                                                 },
                                                             horizontalAlignment =
                                                                 Alignment.CenterHorizontally,
@@ -765,11 +792,61 @@ fun SpotygramUI(
                                         }
                                     }
                                 }
+                                if (tab in 0..4) {
+                                    Row(
+                                        Modifier.widthIn(max = 720.dp)
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState())
+                                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        listOf(
+                                            0 to tr(R.string.all_tracks),
+                                            1 to tr(R.string.favorites),
+                                            2 to tr(R.string.playlists),
+                                            3 to tr(R.string.albums),
+                                            4 to tr(R.string.sources),
+                                        ).forEach { (index, label) ->
+                                            FilterChip(
+                                                selected = tab == index,
+                                                onClick = { navigate(index) },
+                                                label = { Text(label) },
+                                            )
+                                        }
+                                    }
+                                }
                                 Box(Modifier.weight(1f).widthIn(max = 720.dp).fillMaxWidth()) {
                                     pages.SaveableStateProvider(
                                         "$tab:$playlistId:$sourceId:$profileId"
                                     ) {
                                         when {
+                                            tab == -1 ->
+                                                HomeScreen(
+                                                    library,
+                                                    playing.id,
+                                                    onPlay = { track, tracks ->
+                                                        play(track, tracks)
+                                                    },
+                                                    onOpenPlaylist = { id ->
+                                                        navigate(2)
+                                                        playlistId = id
+                                                    },
+                                                    onSearchTelegram = { q ->
+                                                        acquisitionSeed = q
+                                                        sheet = "acquisition"
+                                                    },
+                                                )
+                                            tab == -2 ->
+                                                SearchScreen(
+                                                    library,
+                                                    onPlay = { track, tracks ->
+                                                        play(track, tracks)
+                                                    },
+                                                    onSearchTelegram = { q ->
+                                                        acquisitionSeed = q
+                                                        sheet = "acquisition"
+                                                    },
+                                                )
                                             tab == 0 ||
                                                 tab == 1 ||
                                                 tab == 2 && playlist != null ||
@@ -1022,17 +1099,19 @@ fun SpotygramUI(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             listOf(
-                                    R.string.music to Icons.Rounded.MusicNote,
-                                    R.string.favorites to Icons.Rounded.Favorite,
-                                    R.string.playlists to Icons.Rounded.PlaylistPlay,
-                                    R.string.sources to Icons.Rounded.Widgets,
+                                    R.string.nav_home to Icons.Rounded.Home,
+                                    R.string.library to Icons.Rounded.LibraryMusic,
+                                    R.string.nav_search to Icons.Rounded.Search,
+                                    R.string.settings to Icons.Rounded.Settings,
                                 )
                                 .forEachIndexed { index, (label, icon) ->
+                                    val selected =
+                                        index == sectionIndex && index != 3
                                     Column(
                                         Modifier.fillMaxWidth()
                                             .heightIn(min = 68.dp)
                                             .then(
-                                                if (tab == index)
+                                                if (selected)
                                                     Modifier.liquidGlass(
                                                         26.dp,
                                                         tint = spectrumAccent(index),
@@ -1040,8 +1119,8 @@ fun SpotygramUI(
                                                 else Modifier
                                             )
                                             .clip(RoundedCornerShape(26.dp))
-                                            .selectable(tab == index, role = Role.Tab) {
-                                                navigate(index)
+                                            .selectable(selected, role = Role.Tab) {
+                                                openSection(index)
                                             },
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.Center,
@@ -1050,7 +1129,7 @@ fun SpotygramUI(
                                             icon,
                                             null,
                                             tint =
-                                                if (tab == index) spectrumAccent(index)
+                                                if (selected) spectrumAccent(index)
                                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                         Text(tr(label), fontSize = 10.sp, maxLines = 1)

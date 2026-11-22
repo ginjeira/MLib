@@ -678,4 +678,13 @@
     <string name="album_knowledge_source">Source: %1$s</string>
     <string name="album_knowledge_open_source">Open source</string>
     <string name="album_knowledge_updated">Collected on %1$s</string>
+    <string name="home_continue">Continue listening</string>
+    <string name="home_empty_title">Your library is empty</string>
+    <string name="home_empty_help">Acquire music from Telegram or import files to see them here.</string>
+    <string name="home_discover">Find new music</string>
+    <string name="home_track_count">%1$d tracks</string>
+    <string name="search_library">Search your library</string>
+    <string name="search_no_results">No matches in the library.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
 </resources>

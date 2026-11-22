@@ -683,4 +683,13 @@
     <string name="album_knowledge_source">Fonte: %1$s</string>
     <string name="album_knowledge_open_source">Abrir fonte</string>
     <string name="album_knowledge_updated">Recolhido em %1$s</string>
+    <string name="home_continue">Continuar a ouvir</string>
+    <string name="home_empty_title">A biblioteca está vazia</string>
+    <string name="home_empty_help">Adquire música no Telegram ou importa ficheiros para aparecerem aqui.</string>
+    <string name="home_discover">Descobrir música</string>
+    <string name="home_track_count">%1$d faixas</string>
+    <string name="search_library">Procurar na biblioteca</string>
+    <string name="search_no_results">Sem resultados na biblioteca.</string>
+    <string name="nav_home">Início</string>
+    <string name="nav_search">Procurar</string>
 </resources>
