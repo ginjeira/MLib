@@ -511,3 +511,44 @@ Assim que o push for possível:
 3. acompanhar baseline;
 4. confirmar `v0.1.12`;
 5. executar Wave 0 e só depois iniciar Wave 1.
+## 9. Waves 9–11 — acabamento profissional
+
+Registadas por pedido do owner a **22-11-2026**. Não estão atribuídas a nenhuma versão; entram quando acordado.
+
+### Wave 9 — Sincronização transparente
+
+Objectivo: o utilizador sabe sempre o que está sincronizado e resolve conflitos sem medo.
+
+- [ ] Indicador no cabeçalho: “Sincronizado há X” / “N alterações por enviar”.
+- [ ] Ecrã “Estado da sincronização”: último envio/receção por dispositivo, o que mudou, tamanho e hora.
+- [ ] Conflitos com pré-visualização e três opções: manter esta, manter a outra, manter ambas.
+- [ ] “Sincronizar agora” e “Repetir envio” para itens falhados.
+- [ ] Explicitar o que nunca sincroniza: histórico de reprodução, diagnósticos e cache.
+- [ ] Mensagens de falha accionáveis (sem ligação, sessão expirada, etc.).
+
+**Aceitação:** nenhum conflito é resolvido silenciosamente; qualquer falha tem motivo e próximo passo.
+
+### Wave 10 — Reprodução de nível produto
+
+Objectivo: controlo e continuidade ao nível das apps comerciais.
+
+- [ ] Secção “Qualidade de reprodução”: gapless, crossfade com duração, normalização de volume (ReplayGain), equalizador com presets e reset.
+- [ ] Sleep timer com fade-out e “terminar faixa atual”.
+- [ ] Fila editável: tocar a seguir, reordenar, remover, tudo com Desfazer.
+- [ ] Continuidade: “Continuar de onde parou?”, comportamento ao desligar Bluetooth e foco de áudio.
+- [ ] Controlos consistentes em notificação, lockscreen e Android Auto.
+
+**Aceitação:** toggles persistem, têm valores por defeito seguros e nenhuma alteração de som acontece sem indicação visível.
+
+### Wave 11 — Primeira impressão e acessibilidade
+
+Objectivo: a app parecer madura desde a instalação e ser usável por todos.
+
+- [ ] Onboarding curto: Telegram, destino, fontes e importação, com “Saltar”.
+- [ ] Estados vazios com ações (Adquirir, Importar) e carregamento com skeletons.
+- [ ] Erros com motivo, ação recomendada e “Tentar novamente”.
+- [ ] Pesquisa nas Definições e microcopy PT-PT consistente.
+- [ ] Auditoria TalkBack, dynamic type, contraste nos quatro temas, alvos ≥48 dp.
+- [ ] Haptics leves, animações curtas e ícones coerentes.
+
+**Aceitação:** nenhum ecrã fica sem saída; critérios de acessibilidade verificados em dispositivo.
