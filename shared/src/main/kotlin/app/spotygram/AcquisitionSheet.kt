@@ -365,6 +365,21 @@ internal fun AcquisitionSheet(
                             color = if (job.status == AcquisitionJobStatus.FAILED)
                                 MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                         )
+                        if (job.query.isNotBlank() && !state.searching && !state.acquiring) {
+                            TextButton(onClick = {
+                                query = job.query
+                                contentType = job.contentType
+                                provider = job.provider
+                                destinationId = job.destinationChatId
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            acquisition.search(query, contentType, provider)
+                                        }
+                                    }
+                                }
+                            }) { Text(tr(R.string.acquisition_retry_job)) }
+                        }
                         job.items.forEach { item ->
                             Text(
                                 "${item.optionNumber}. ${item.title} — ${tr(acquisitionStatusLabel(item.status))}",

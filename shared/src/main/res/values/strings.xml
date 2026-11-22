@@ -638,4 +638,5 @@
     <string name="album_enriching">Filling metadata…</string>
     <string name="album_enrich_failed">Could not fill metadata.</string>
     <string name="search_telegram">Search Telegram</string>
+    <string name="acquisition_retry_job">Search again</string>
 </resources>
