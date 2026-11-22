@@ -31,6 +31,8 @@ data class AcquisitionSearch(
     val provider: AcquisitionProvider,
     val results: List<AcquisitionOption>,
     val expiresAt: Long,
+    val cachedMessages: Map<Int, List<Long>> = emptyMap(),
+    val fromHistory: Boolean = false,
 )
 
 data class AcquisitionOutcome(
@@ -178,6 +180,16 @@ class MusicAcquisition(private val app: SpotygramApp) {
             checkSearchNotCancelled()
             val bot = resolveBot()
             checkSearchNotCancelled()
+            searchHistory(bot.getLong("id"), query, contentType, provider)?.let { historical ->
+                state.value =
+                    state.value.copy(
+                        searching = false,
+                        progress = "",
+                        search = historical,
+                        error = "",
+                    )
+                return@withLock historical
+            }
             val sent = sendText(bot.getLong("id"), query)
             checkSearchNotCancelled()
             state.value = state.value.copy(progress = tr(R.string.acq_awaiting_bot))
@@ -1065,6 +1077,49 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
     }
 
+    private suspend fun searchHistory(
+        botChatId: Long,
+        query: String,
+        contentType: AcquisitionContentType,
+        provider: AcquisitionProvider,
+    ): AcquisitionSearch? {
+        val page = history(botChatId, 100)
+        if (page.isEmpty()) return null
+        val typeMarker = "in '${contentType.wireValue}'"
+        val providerMarker = "from '${provider.wireValue}'"
+        val echo =
+            page.firstOrNull { message ->
+                val text = messageText(message)
+                text.contains("Searching for", ignoreCase = true) &&
+                    text.contains(query, ignoreCase = true) &&
+                    text.contains(typeMarker, ignoreCase = true) &&
+                    text.contains(providerMarker, ignoreCase = true)
+            } ?: return null
+        val options = parseResults(messageText(echo))
+        // Only reuse a batch when the result is unambiguous. Multiple options can
+        // produce several audio batches and there is no reliable option marker.
+        if (options.size != 1) return null
+        val option = options.single()
+        val expected =
+            Regex("""\((\d+)\s*🎵\)""").find(option.title)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                ?: return null
+        val after = historyAfter(botChatId, echo.optLong("id"))
+        val audio =
+            after
+                .takeWhile { !messageText(it).contains("Searching for", ignoreCase = true) }
+                .filter(::isAudioMessage)
+        if (audio.isEmpty() || (expected > 0 && audio.size != expected)) return null
+        return AcquisitionSearch(
+            id = UUID.randomUUID().toString(),
+            query = query,
+            contentType = contentType,
+            provider = provider,
+            results = options,
+            expiresAt = System.currentTimeMillis() + 5 * 60_000L,
+            cachedMessages = mapOf(option.number to audio.map { it.getLong("id") }),
+            fromHistory = true,
+        )
+    }
     private suspend fun resolveBot(): JSONObject {
         val bot = request(json("searchPublicChat", "username" to "MusicsHuntersbot"))
         val account = request(json("getMe"))
