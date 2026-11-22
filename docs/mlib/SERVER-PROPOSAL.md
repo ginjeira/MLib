@@ -42,18 +42,51 @@ Uma BD SQLite partilhada. `profile_id` em:
 
 - `sources`, `playlists`, `playlist_tracks` (via playlist), `downloads`, `settings`, `jobs`.
 - `tracks`: confirmar `profile_user`/`profile_position`; criar `likes(profile_id, track_id)`.
-- Globais: `profiles`, `sessions`, `accounts`.
+- Globais: `accounts(status, invite_token_hash, invite_expires_at, totp_secret)`, `profiles(setup_state, telegram_linked_at, ready_at)`, `sessions`.
 
 Sem tabela de media, sem refcount, sem pasta de biblioteca no servidor.
 Ficheiros importados localmente ficam fora do MVP web.
 
-## 4. Autenticação e administração
+## 4. Acesso, autenticação e onboarding
 
-- Contas criadas pelo admin; Argon2id; sem auto-registo.
-- Sessão: token 256-bit com hash na BD; cookie `HttpOnly; Secure; SameSite=Lax`, 30 dias, rotação.
-- CSRF em escritas; rate limit; log de tentativas; papéis `admin`/`listener`.
+**Modelo:** o admin cria apenas o **acesso ao MLib**. O utilizador faz o resto, no seu próprio contexto autenticado. Se não completar o onboarding, o perfil não tem biblioteca, não fala com o Telegram e não consome recursos de sessão.
+
+### 4.1 Criação de acesso (admin)
+
+- Admin define `username`, nome visível e papel `listener`; gera um **convite de uso único** (token 32 bytes, hash na BD, validade 48 h) entregue por link/QR em mão.
+- O utilizador define a sua própria password (Argon2id); o admin nunca a conhece. Convite invalidado após uso.
+- Estados da conta: `invited` → `active` → `disabled`. Sem auto-registo.
+
+### 4.2 Login
+
+- Sessão: token 256-bit com hash na BD; cookie `HttpOnly; Secure; SameSite=Lax`, 30 dias, rotação no login e no TOTP.
+- CSRF em escritas; rate limit por IP/conta; sem revelar se a conta existe.
+- TOTP opcional para `listener`, obrigatório para `admin`.
 - `/admin` também atrás de Cloudflare Access (email OTP).
-- Estado TDLib cifrado no servidor; nunca exposto ao browser.
+
+### 4.3 Onboarding (utilizador, contexto protegido)
+
+Estados persistidos no perfil: `pending_telegram` → `pending_destination` → `pending_sources` → `ready`.
+
+1. **Boas-vindas e password** (se veio de convite).
+2. **Telegram**: telefone → código → 2FA, ou QR. O utilizador introduz os seus próprios dados; a sessão fica **cifrada no servidor** e nunca é mostrada a ninguém.
+3. **Bot**: confirmar o bot configurado; `getMe`/presença; opcional `/start`.
+4. **Destino**: escolher chat onde pode publicar (validar `can_post`); opção de criar canal de arquivo.
+5. **Origens**: escolher chats com música; indexação inicial em background com progresso.
+6. **Privacidade e confirmação**: explicar o que é guardado; concluir.
+
+Regras:
+- Antes de `telegram_linked`, todos os endpoints de biblioteca/stream/aquisição devolvem `403 setup_required`.
+- O onboarding é retomável; o perfil pode ficar incompleto e mostra um aviso persistente.
+- Aquisição exige destino; biblioteca pode existir só com origens.
+- Códigos, telefones e tokens **nunca** entram em logs nem no painel de admin.
+
+### 4.4 Painel de administração
+
+- Criar conta e convite; ver estado (`invited`, passo do onboarding, `ready`), último login, Telegram ligado (sim/não), espaço usado e jobs.
+- Desactivar conta, emitir novo convite/reset, revogar sessão Telegram (`logOut`), terminar sessões web.
+- **Não** mostra códigos, sessões ou passwords. Não tem ecrã para navegar a biblioteca de outros perfis, embora tecnicamente o dono da instância tenha acesso à BD — declarado no aviso de privacidade.
+- Eliminação de conta: desactivar por defeito; apagar dados exige confirmação explícita.
 
 ## 5. Streaming e prefetch
 
@@ -85,15 +118,15 @@ Dias de trabalho focado, com reutilização.
 | Fase | Entrega | Dias |
 |---|---|---|
 | P0 | `ServerPlatform`, arranque de um perfil, biblioteca, stream com cache temporário | 2–3 |
-| P1 | Auth, sessões, admin, `profiles`, `profile_id` na BD | 2–3 |
+| P1 | Auth, sessões, convites, admin, `profiles`, `profile_id` na BD | 3–4 |
 | P2 | Multi-perfil, dispatcher TDLib partilhado, login Telegram por API, jobs por perfil, cache e prefetch | 4–5 |
-| P3 | SPA MVP (login, biblioteca, procura, playlist, player, jobs, admin) | 4–6 |
+| P3 | SPA MVP (convite, onboarding, biblioteca, procura, playlist, player, jobs, admin) | 5–7 |
 | P4 | Deploy, Tunnel, backups, testes de autorização, documentação | 1–2 |
-| **Total** | MVP familiar | **13–19 dias** |
+| **Total** | MVP familiar | **14–21 dias** |
 
 - **Focado**: 2–3 semanas de calendário.
 - **Noites/fins de semana**: 3–5 semanas.
-- **Núcleo sem UI polida** (stream + auth + biblioteca numa página simples): **7–10 dias**.
+- **Núcleo sem UI polida** (login + onboarding Telegram + biblioteca numa página simples): **9–12 dias**.
 
 O que pode esticar: streaming com seek sem cache completa (opção B), áudio em background no iOS e scoping na BD partilhada.
 
@@ -111,7 +144,9 @@ Três perfis: **1,1–1,5 GB RAM**, 2 GB recomendados, 8–12 GB de CT.
 
 ## 10. Aceitação
 
-- Admin cria/desactiva contas; sem auto-registo; sessão sobrevive a reinício.
+- Admin cria/desactiva contas e emite convites de uso único; sem auto-registo; sessão sobrevive a reinício.
+- Sem Telegram ligado, o perfil não vê biblioteca nem stream (403 `setup_required`); onboarding é retomável.
+- Convite expira, é de uso único e o admin nunca conhece a password nem os códigos do utilizador.
 - Cada perfil vê apenas as suas origens e playlists; acesso cruzado devolve 403/404.
 - Reprodução com seek em Safari/PWA; áudio em background.
 - Cancelar obtenção envia `/cancel` e não afecta outros perfis.
@@ -132,10 +167,13 @@ Três perfis: **1,1–1,5 GB RAM**, 2 GB recomendados, 8–12 GB de CT.
 Fechar antes de começar a codificar; as marcadas **BLOQUEIA** alteram a arquitetura.
 
 1. **BLOQUEIA — dispatcher TDLib.** `td_receive` é global por biblioteca. Não pode existir um loop por perfil: é preciso **um único receptor** por processo que leia `@client_id` e encaminhe para o `TdClient` certo. Custo estimado: 1–2 dias.
-2. **Quem autentica o Telegram de cada perfil.** Recomendação: o próprio utilizador introduz telefone/código/2FA; o admin só inicia e pode terminar a sessão. O admin nunca deve conhecer códigos de terceiros.
+2. **Fechado — quem autentica o Telegram.** O admin cria apenas o acesso e o convite; o utilizador faz o login Telegram no onboarding, no seu contexto autenticado. O admin nunca vê códigos nem sessões.
 3. **Credenciais `api_id`/`api_hash`.** Uma por instância (recomendado) ou uma por perfil; guardar fora do repositório; no JVM vir de ambiente, não de `BuildConfig`.
-4. **Política de sessões web.** Duração (30 dias), “lembrar-me”, rotação, TOTP obrigatório para `admin`, recuperação de password por reset do admin.
-5. **Política de passwords.** Parâmetros Argon2id, comprimento mínimo, bloqueio após N tentativas, mensagens sem revelar existência de conta.
+4. **Fechado — política de sessões.** 30 dias, rotação, TOTP obrigatório para `admin` e opcional para `listener`; reset por novo convite; sessões web revogáveis.
+5. **Política de passwords (implementação).** Parâmetros Argon2id, comprimento mínimo, bloqueio após N tentativas, mensagens sem revelar existência de conta.
+5.1 **Entrega do convite (fechado).** Link/QR de uso único com validade de 48 h, entregue em mão; sem email no MVP.
+5.2 **Visibilidade do admin (declarada).** Vê estado, uso e jobs; não navega bibliotecas de outros perfis, embora a BD partilhada lhe dê acesso técnico — consta no aviso de privacidade.
+5.3 **Eliminação de conta (fechado).** Desactivar por defeito; apagar dados exige confirmação explícita.
 6. **Números do cache.** Teto (5 GB), TTL (10 min), profundidade de prefetch (2), limpeza no arranque e comportamento com disco cheio (rejeitar prefetch, servir faixa atual).
 7. **Ciclo de vida do TDLib.** Arranque lazy no primeiro acesso e paragem após inatividade (ex. 30 min) para poupar RAM, ou todas as sessões sempre ligadas. Recomendação: lazy + paragem com estado persistido.
 8. **Importação de ficheiros locais no servidor.** Fora do MVP? Confirmar; caso contrário, precisa de upload, pasta e indexação próprios.
