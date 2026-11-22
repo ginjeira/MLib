@@ -8,8 +8,12 @@ The previous `docs/screenshots/*.png` images were inherited from Spotygram and s
 
 Use the release APK (`pt.ginjeira.mlib`) on an arm64 device or an x86_64 emulator.
 
-- Settings, light and dark
-- Library / tracks
+- Home shelves (0.1.29 navigation), light, dark, AMOLED and high contrast
+- Library with the `Faixas | Favoritos | Playlists | Álbuns | Artistas` chips
+- Artist page with the About panel
+- Settings as a full screen, including Sources management
+- Player with the artwork gradient
+- Mini-player and the four-destination bar
 - Album detail with completion state
 - Playlist detail after repair
 - Acquisition search and confirmation

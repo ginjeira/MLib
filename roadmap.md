@@ -9,18 +9,23 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado das versões 0.1.27 e 0.1.28
 
-Verificado em **22-11-2026, 16:25 UTC**.
+Verificado em **22-11-2026, 17:05 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.27** (publicada em 22-11-2026 16:22:44) |
-| Tag `v0.1.27` | **Criada** (`fda3eb0`) |
-| Release `v0.1.27` | **Publicada**; build `45039489724` com sucesso |
-| Package | `pt.ginjeira.mlib` 0.1.27 / versionCode 1027 |
-| Versão `0.1.28` | **Em publicação** — tag `v0.1.28` em `6ccff1b`, build `45043559683` |
+| Última release pública | **v0.1.28** (publicada em 22-11-2026 17:00:42) |
+| Tag `v0.1.27` | **Criada** (`fda3eb0`); build `45039489724` |
+| Tag `v0.1.28` | **Criada** (`6ccff1b`); build `45043559683` |
+| Packages | 0.1.27 / 1027 e 0.1.28 / 1028 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
 | Próximas versões | **0.1.29** Wave 2 · **0.1.30** Google TV |
+
+**Hashes publicados (0.1.28):**
+
+- `mlib-0.1.28-arm64.apk` — `efab5104a5feffe24fb2e8126ba8e4f27d3c146ab0180ad83ee3242883f1584c`
+- `mlib-0.1.28-x86_64.apk` — `5da8eb4bf25f7b3f00d2dbb45ca8a90fa77ea001e83b0b55495de0f4d46efe47`
+- `SHA256SUMS.txt` — `cf66a27baa03d0e4194951e4b88cc0681ecbe8e402896733f05803d18836b6e7`
 
 **Hashes publicados (0.1.27):**
 
@@ -52,7 +57,7 @@ Verificado em **22-11-2026, 16:25 UTC**.
 |---|---|---:|---|
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
-| Wave 2 — UI/navegação | **Em curso** | ~60% | 4 destinos (Início, Biblioteca, Procurar, Definições), Home com shelves, chips Faixas/Favoritos/Playlists/Álbuns/Artistas, página de artista com álbuns, faixas, fontes e “Sobre”, gestão de fontes em Definições, pesquisa local com hand-off e mini-player. Faltam Definições em ecrã completo, tokens, acessibilidade e screenshots. |
+| Wave 2 — UI/navegação | **Fechada no âmbito atual** | 100% (âmbito) | 4 destinos (Início, Biblioteca, Procurar, Definições), Home com shelves, chips Faixas/Favoritos/Playlists/Álbuns/Artistas, página de artista com álbuns, faixas, fontes e “Sobre”, gestão de fontes em Definições, pesquisa local com hand-off e mini-player. Definições em ecrã completo, gradiente ambiente no player e superfícies sólidas. Falta apenas validação de acessibilidade e captura de screenshots em dispositivo. |
 | Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
 | Wave 4 — álbuns/capas | **Fechada no âmbito atual** | 100% | Completar álbum com faixas existentes/em falta e anel de completude, enriquecimento, capas personalizadas de álbum e playlist a partir do dispositivo (persistem via `cover_url` e sincronizam), placeholder explícito. Gradiente/artwork grande e faixas ambíguas passam para Wave 4.1. |
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
@@ -152,16 +157,16 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Tarefas**
 
-- [ ] Navegação principal com 4 destinos: Início, Procurar, Biblioteca, Definições.
-- [ ] Mini-player persistente com progresso, play/pause e next.
-- [ ] Início com “Continuar a ouvir”, recentes, favoritos e álbuns por completar.
-- [ ] Biblioteca com chips `Faixas | Álbuns | Playlists | Artistas | Fontes`.
-- [ ] Definições em ecrã completo com secções.
-- [ ] Player full-screen com capa, gradiente da artwork, fila e controlos.
-- [ ] Tokens: cores, tipografia, raios, espaçamento, elevação.
-- [ ] Reduzir vidro/blur a navegação e mini-player; listas sólidas.
-- [ ] Dynamic type, TalkBack, contraste, alvos ≥48 dp.
-- [ ] Actualizar screenshots oficiais.
+- [x] Navegação principal com 4 destinos: Início, Procurar, Biblioteca, Definições.
+- [x] Mini-player persistente com progresso, play/pause e next.
+- [x] Início com “Continuar a ouvir”, recentes, favoritos, playlists e álbuns, com contagem de faixas em falta quando conhecida.
+- [x] Biblioteca com chips `Faixas | Favoritos | Playlists | Álbuns | Artistas`; gestão de fontes em Definições (decisão do owner).
+- [x] Definições em ecrã completo com back, alcançável pela barra, rail largo e cabeçalho.
+- [x] Player full-screen com capa, gradiente ambiente da artwork, fila e controlos.
+- [x] Tokens partilhados (`MlTokens`) e uso nas superfícies revistas.
+- [x] Navegação e mini-player sem vidro forte: superfícies sólidas com contorno.
+- [ ] Dynamic type, TalkBack, contraste e alvos ≥48 dp: verificação automática parcial; falta teste em dispositivo.
+- [ ] Actualizar screenshots oficiais (requer captura em dispositivo).
 
 **Aceitação**
 

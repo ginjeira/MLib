@@ -76,7 +76,19 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 
 ### Wave 2 — Navegação e UI “MLib Signal”
 
-**Em curso.** Entregue nesta fase: 4 destinos (Início, Biblioteca, Procurar, Definições), Início com “Continuar a ouvir”, recentes, favoritos, playlists e álbuns; chips `Faixas | Favoritos | Playlists | Álbuns | Artistas`, com página de artista (álbuns, faixas, fontes, tocar/aleatório/offline e “Sobre”), gestão de fontes em Definições e filtro por fonte na Biblioteca; pesquisa local com hand-off para o Telegram; mini-player existente mantido. Faltam: Definições em ecrã completo com secções, gradiente/arte no player, tokens de design, auditoria de acessibilidade e screenshots.
+**Fechada no âmbito atual.**
+
+Inclui:
+
+- 4 destinos: Início, Biblioteca, Procurar e Definições;
+- Início com “Continuar a ouvir”, recentes, favoritos, playlists e álbuns, com contagem de faixas em falta quando conhecida;
+- chips `Faixas | Favoritos | Playlists | Álbuns | Artistas`, com página de artista completa e painel “Sobre”;
+- gestão de fontes em Definições e filtro por fonte na Biblioteca;
+- Definições em ecrã completo, com back e acesso pela barra, rail largo e cabeçalho;
+- player com gradiente ambiente derivado da artwork;
+- tokens partilhados e superfícies sólidas na navegação e mini-player.
+
+Limitações aceites: verificação de acessibilidade em dispositivo, captura de screenshots oficiais e testes de performance em dispositivo médio.
 
 ### Wave 6 — Descoberta e poder
 
