@@ -644,4 +644,6 @@
     <string name="album_enrich_failed">Não foi possível preencher os metadados.</string>
     <string name="search_telegram">Procurar no Telegram</string>
     <string name="acquisition_retry_job">Pesquisar novamente</string>
+    <string name="album_complete_existing">%1$d faixas existentes serão reutilizadas:</string>
+    <string name="album_complete_more">…e mais %1$d</string>
 </resources>

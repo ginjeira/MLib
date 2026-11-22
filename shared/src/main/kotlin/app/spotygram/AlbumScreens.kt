@@ -2,6 +2,8 @@ package app.spotygram
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -280,13 +282,43 @@ fun AlbumsScreen(
                     onDismissRequest = { confirmComplete = false },
                     title = { Text(tr(R.string.album_complete_title)) },
                     text = {
-                        Text(
-                            tr(
-                                R.string.album_complete_help,
-                                current?.title.orEmpty(),
-                                current?.tracks?.size ?: 0,
+                        val existing =
+                            current?.tracks.orEmpty().mapNotNull { library.byId[it] }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                tr(
+                                    R.string.album_complete_help,
+                                    current?.title.orEmpty(),
+                                    existing.size,
+                                )
                             )
-                        )
+                            if (existing.isNotEmpty()) {
+                                Text(
+                                    tr(R.string.album_complete_existing, existing.size),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                                Column(
+                                    Modifier.heightIn(max = 180.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    existing.take(30).forEach { track ->
+                                        Text(
+                                            "• ${track.title}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    if (existing.size > 30) {
+                                        Text(
+                                            tr(R.string.album_complete_more, existing.size - 30),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     },
                     confirmButton = {
                         TextButton(onClick = {
