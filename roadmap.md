@@ -37,7 +37,8 @@ Verificado em **22-11-2026, 14:05 UTC**.
 - Reparação global de faixas indisponíveis em Definições (branch `feat/library-repair`).
 - Wave 8 (MVP): `Knowledge.album()` com MusicBrainz + Wikipédia, dialog “Sobre este álbum” com fonte, data, tipo e géneros.
 - Wave 4: “Completar álbum” passou a mostrar a lista de faixas existentes e em falta (Deezer, fallback iTunes) e deixou de ficar aninhado no dialog de edição.
-- Validação local: `:desktop:test` com **61 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Wave 4: capas personalizadas de álbum e playlist a partir do dispositivo, guardadas como data URI em `cover_url` (persistem e sincronizam); presets Unsplash substituídos por placeholder explícito; anel de completude no detalhe do álbum.
+- Validação local: `:desktop:test` com **66 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -47,7 +48,7 @@ Verificado em **22-11-2026, 14:05 UTC**.
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
 | Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
-| Wave 4 — álbuns/capas | **Parcial** | ~80% | Confirmação de completar álbum, lista de faixas existentes/em falta (Deezer + iTunes), enriquecimento e capas de playlist. Faltam upload de capas e persistência/CloudSync das capas personalizadas. |
+| Wave 4 — álbuns/capas | **Fechada no âmbito atual** | 100% | Completar álbum com faixas existentes/em falta e anel de completude, enriquecimento, capas personalizadas de álbum e playlist a partir do dispositivo (persistem via `cover_url` e sincronizam), placeholder explícito. Gradiente/artwork grande e faixas ambíguas passam para Wave 4.1. |
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
 | Wave 6 — descoberta/poder | **Em curso** | ~45% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock e exportação JSON. Faltam widgets, scrobbling, smart playlists, temas e estatísticas. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
@@ -200,14 +201,20 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Tarefas**
 
-- [x] Página de álbum com capa grande, gradiente e anel de completude. (capa grande; anel pendente)
-- [x] “Completar álbum” com lista de faixas existentes, em falta e ambíguas. (existentes e em falta; ambíguas pendentes)
-- [ ] Aprovação por faixa/edição antes de adquirir.
+- [x] Página de álbum com anel de completude (“X de Y faixas · Z em falta”). Arte grande e gradiente em Wave 4.1.
+- [x] “Completar álbum” com lista de faixas existentes e em falta. Faixas ambíguas em Wave 4.1.
+- [x] Aprovação por faixa antes de escrever na biblioteca (revisão de aquisição com checkboxes).
 - [x] Enriquecimento iTunes → Deezer com cache e timeouts.
-- [ ] Capas: upload local, online, URL, primeira faixa e presets.
-- [x] Capas de playlist: upload, online, primeira faixa e presets.
-- [ ] Placeholder explícito em vez de Unsplash como capa real.
-- [ ] Persistência e CloudSync das capas personalizadas.
+- [x] Capas: imagem local do dispositivo (JPEG 512 px), URL e pesquisa online. Presets de primeira faixa em Wave 4.1.
+- [x] Capas de playlist: imagem local, URL e pesquisa online.
+- [x] Placeholder explícito em vez de Unsplash como capa real.
+- [x] Persistência e sincronização das capas personalizadas (guardadas em `cover_url` como data URI e sincronizadas com a metadata).
+
+### Wave 4.1 — refinamento visual
+
+- [ ] Capa grande com gradiente no detalhe do álbum.
+- [ ] Marcar faixas ambíguas (título igual, duração muito diferente).
+- [ ] Presets de capa pela primeira faixa e por género, sem URLs externas fixas.
 
 **Aceitação**
 

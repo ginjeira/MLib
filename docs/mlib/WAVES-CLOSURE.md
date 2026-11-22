@@ -9,8 +9,8 @@ A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como
 - **Revisão de aquisição:** as faixas encaminhadas são revistas antes de entrarem na biblioteca; rejeitar remove as mensagens de teste.
 - **App lock:** bloqueio opcional com o mecanismo do dispositivo.
 - **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
-- **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição.
-- Validação local: 61 testes, 0 falhas.
+- **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição; anel de completude no detalhe; capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas; placeholder explícito em vez de Unsplash.
+- Validação local: 66 testes, 0 falhas.
 
 ## Fechadas
 
@@ -59,21 +59,24 @@ Limitações aceites:
 - retry por item/faixa fica para Wave 5.1;
 - testes de crash/restart ficam para Wave 5.1.
 
+### Wave 4 — Álbuns e capas
+
+**Fechada no âmbito atual.**
+
+Inclui:
+
+- fluxo **recolher → rever → confirmar** por faixa (revisão de aquisição);
+- lista real de faixas existentes e em falta, com anel de completude;
+- capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas;
+- enriquecimento iTunes/Deezer e placeholder explícito.
+
+Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e presets de capa.
+
 ## Não fechadas
 
 ### Wave 2 — Navegação e UI “MLib Signal”
 
 **Não iniciada.** Requer refactor de navegação, mini-player/Home e novos ecrãs. Não é admissível declarar fechada.
-
-### Wave 4 — Álbuns e capas
-
-**Em curso, não fechada.** Já tem dedup exata, confirmação de completar álbum, lista de faixas existentes, capas de playlist e enriquecimento iTunes/Deezer. Falta o essencial:
-
-- fluxo **recolher → rever → confirmar** por faixa;
-- lista real de faixas em falta;
-- gestão completa de capas/upload local.
-
-O fix que faz o diálogo de completar álbum fechar o detalhe e abrir a aquisição está em `main`, mas não na 0.1.25.
 
 ### Wave 6 — Descoberta e poder
 
@@ -90,9 +93,9 @@ O fix que faz o diálogo de completar álbum fechar o detalhe e abrir a aquisiç
 ## Critério de fecho das restantes
 
 - Wave 2: navegação e UI implementadas, testadas e com screenshots atuais.
-- Wave 4: revisão/confirmação por faixa e lista de faixas em falta validadas.
+- Wave 4.1: capa grande/gradiente, faixas ambíguas e presets de capa.
 - Wave 6: funcionalidades escolhidas implementadas e testadas.
 - Wave 7: só após Android estável e com decisão de descongelar desktop.
-- Wave 8: fontes, licenças, cache e páginas de artista implementadas.
+- Wave 8: fontes, licenças, cache e páginas de artista implementadas (MVP de álbum já entregue).
 
 Enquanto estes critérios não estiverem cumpridos, as waves permanecem abertas.
