@@ -552,3 +552,21 @@ Objectivo: a app parecer madura desde a instalação e ser usável por todos.
 - [ ] Haptics leves, animações curtas e ícones coerentes.
 
 **Aceitação:** nenhum ecrã fica sem saída; critérios de acessibilidade verificados em dispositivo.
+## 10. Future release — candidatas
+
+Registadas a **22-11-2026**, por amadurecer. Não estão atribuídas a versão nem avaliadas em esforço.
+
+| ID | Ideia | Valor | Notas |
+|---|---|---|---|
+| FR-02 | **Dedup e upgrade por fingerprint de áudio** | Alto | Chromaprint local; agrupar gravações reais, escolher a melhor cópia, substituir com undo. Não depende de títulos. |
+| FR-03 | **Detetive de edições** | Alto | Fingerprint + MusicBrainz para identificar a edição exata e listar o que falta; complementa “Completar álbum”. |
+| FR-04 | **Sala de escuta LAN / handoff por QR** | Médio-alto | Reprodução sincronizada entre dispositivos na mesma rede, sem servidor; transferir fila e posição por QR. |
+| FR-05 | **Letras sincronizadas offline** | Médio | Fonte aberta (ex. LRCLIB), cache local, salto por linha e atribuição. |
+| FR-06 | **Wrapped local** | Médio | Retrospectiva anual gerada no dispositivo, imagem partilhável, sem servidor. |
+| FR-07 | **Watchlist de lançamentos** | Médio | Seguir artistas via MusicBrainz e avisar de releases; apenas informa. |
+| FR-08 | **Curador de biblioteca** | Médio | Relatório acionável: duplicados, capas em falta, offline desaparecido, álbuns incompletos, metadata em falta. |
+| FR-09 | **Blind A/B de qualidade** | Baixo | Comparar cópias às cegas para decidir upgrades. |
+| FR-10 | **Prateleira por cor/humor** | Baixo | Paleta da capa + tags de humor manuais. |
+
+**Excluído por princípio:** recomendação por collaborative filtering ou upload de hábitos; separação de vocais/stems; integrações com serviços de streaming.
+
