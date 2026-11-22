@@ -164,7 +164,7 @@ class LibrarySync(
                         "metadata" -> {
                             require(parts.size == 3 && value is JSONObject)
                             require(value.optString("description").length <= 512)
-                            require(value.optString("cover").length <= 4096)
+                            require(value.optString("cover").length <= 400_000)
                         }
                         "deleted" -> require(parts.size == 3 && value is Boolean)
                         "member" ->
@@ -186,7 +186,7 @@ class LibrarySync(
                             require(value.getString("title").isNotBlank() && value.getString("title").length <= 256)
                             require(value.getString("artist").length <= 256)
                             require(value.optString("year").length <= 16)
-                            require(value.optString("cover").length <= 4096)
+                            require(value.optString("cover").length <= 400_000)
                             require(value.optString("genre").length <= 128)
                             require(value.get("auto") is Boolean)
                             require(value.getLong("created") > 0 && value.getLong("updated") > 0)

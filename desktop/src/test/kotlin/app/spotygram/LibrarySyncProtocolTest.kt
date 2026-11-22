@@ -61,6 +61,45 @@ class LibrarySyncProtocolTest {
     }
 
     @Test
+    fun albumMetadataAcceptsCustomCoverDataUrl() {
+        val cover = "data:image/jpeg;base64," + "A".repeat(120_000)
+        val metadata =
+            JSONObject()
+                .put("title", "Discovery")
+                .put("artist", "Daft Punk")
+                .put("year", "2001")
+                .put("cover", cover)
+                .put("genre", "French house")
+                .put("auto", false)
+                .put("created", 1L)
+                .put("updated", 2L)
+        val packet = JSONArray().put(row("album/$writerA/metadata", 1, writerA, metadata))
+        assertEquals(1, LibrarySync.decode(packet).size)
+    }
+
+    @Test
+    fun albumMetadataRejectsOversizedCover() {
+        val metadata =
+            JSONObject()
+                .put("title", "Discovery")
+                .put("artist", "Daft Punk")
+                .put("cover", "x".repeat(400_001))
+                .put("auto", false)
+                .put("created", 1L)
+                .put("updated", 2L)
+        val packet = JSONArray().put(row("album/$writerB/metadata", 1, writerB, metadata))
+        assertTrue(runCatching { LibrarySync.decode(packet) }.isFailure)
+    }
+
+    @Test
+    fun themeValidationAcceptsAmoledAndContrast() {
+        val amoled = JSONArray().put(row("setting/theme", 1, writerA, "amoled"))
+        val contrast = JSONArray().put(row("setting/theme", 2, writerB, "contrast"))
+        assertEquals(1, LibrarySync.decode(amoled).size)
+        assertEquals(1, LibrarySync.decode(contrast).size)
+    }
+
+    @Test
     fun decodeRejectsDuplicateKeys() {
         val packet = JSONArray()
             .put(row("setting/theme", 1, writerA, "dark"))

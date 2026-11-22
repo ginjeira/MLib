@@ -40,7 +40,7 @@ Verificado em **22-11-2026, 14:05 UTC**.
 - Wave 4: capas personalizadas de álbum e playlist a partir do dispositivo, guardadas como data URI em `cover_url` (persistem e sincronizam); presets Unsplash substituídos por placeholder explícito; anel de completude no detalhe do álbum.
 - Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
 - Temas AMOLED e alto contraste, com validação de sync e testes.
-- Validação local: `:desktop:test` com **83 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Validação local: `:desktop:test` com **86 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
