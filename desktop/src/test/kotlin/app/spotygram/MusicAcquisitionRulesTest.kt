@@ -412,6 +412,38 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
+    fun knownCountIgnoresQuietPeriodUntilTheCountArrives() {
+        assertEquals(
+            null,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 27, 8, false, 12_000, 40_000,
+            ),
+        )
+        assertEquals(
+            AcquisitionCompletionReason.DEADLINE_PARTIAL,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 27, 8, false, 12_000, 240_000,
+            ),
+        )
+        assertEquals(
+            AcquisitionCompletionReason.EXPECTED_COUNT,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 27, 27, false, 1_000, 90_000,
+            ),
+        )
+    }
+
+    @Test
+    fun unknownCountStillFinishesAfterSilence() {
+        assertEquals(
+            AcquisitionCompletionReason.QUIET_PERIOD,
+            AcquisitionCompletionRules.completionReason(
+                AcquisitionContentType.PLAYLIST, 0, 4, false, 9_000, 30_000,
+            ),
+        )
+    }
+
+    @Test
     fun partialDeadlineIsNotReportedAsFullCompletion() {
         assertEquals(AcquisitionCompletionReason.DEADLINE_PARTIAL,
             AcquisitionCompletionRules.completionReason(
@@ -456,13 +488,13 @@ class MusicAcquisitionRulesTest {
     }
 
     @Test
-    fun missingFinishSignalLeavesShortCollectionPartialButReleasesBotTurn() {
-        // A short collection ends after 9s without new audio, before deadline.
-        assertEquals(AcquisitionCompletionReason.QUIET_PERIOD,
+    fun knownCountWaitsForTheRemainingTracksInsteadOfTheQuietPeriod() {
+        // The bot can pause while fetching the next tracks; a known count must
+        // not end the collection early (this produced 1-of-27 reviews).
+        assertEquals(null,
             AcquisitionCompletionRules.completionReason(
                 AcquisitionContentType.PLAYLIST, 20, 18, false, 9_000, 30_000,
             ))
-        // Partial deadline applies only if the MCat quiet window did not expire.
         assertEquals(AcquisitionCompletionReason.DEADLINE_PARTIAL,
             AcquisitionCompletionRules.completionReason(
                 AcquisitionContentType.PLAYLIST, 20, 18, false, 8_000, 240_000,

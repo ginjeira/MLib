@@ -321,7 +321,10 @@ internal object AcquisitionCompletionRules {
         if (!multiTrack && audioCount >= 1) {
             return AcquisitionCompletionReason.SINGLE_TRACK
         }
-        if (multiTrack && audioCount > 0 && silenceMillis >= 9_000L) {
+        // Silence is only a finish signal when the bot did not announce a track
+        // count. With a known count the bot can pause while fetching the next
+        // tracks, so wait for the count, an explicit signal or the deadline.
+        if (multiTrack && expectedCount <= 0 && audioCount > 0 && silenceMillis >= 9_000L) {
             return AcquisitionCompletionReason.QUIET_PERIOD
         }
         if (elapsedMillis >= maxWaitMillis(contentType, expectedCount)) {
