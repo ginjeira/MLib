@@ -699,6 +699,24 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
         state.value = state.value.copy(acquiring = true, progress = "", error = "")
         try {
+            val rejected =
+                review.completed.flatMap { item ->
+                    item.tracks.filter { it.id in item.importedIds && it.id !in selectedIds }
+                }
+            rejected.groupBy { it.chatId }.forEach { (chatId, tracks) ->
+                tracks.chunked(100).forEach { chunk ->
+                    runCatching {
+                        request(
+                            json(
+                                "deleteMessages",
+                                "chat_id" to chatId,
+                                "message_ids" to JSONArray(chunk.map { it.messageId }),
+                                "revoke" to true,
+                            )
+                        )
+                    }
+                }
+            }
             val newlyImported =
                 selectedCompleted.flatMap { item ->
                     item.tracks.filter { it.id in item.importedIds }
