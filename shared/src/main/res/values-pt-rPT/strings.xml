@@ -57,6 +57,8 @@
     <string name="continue_without_telegram">Continuar sem Telegram</string>
     <string name="create_playlist">Criar lista de reprodução</string>
     <string name="dark_theme">Escuro</string>
+    <string name="amoled_theme">AMOLED</string>
+    <string name="contrast_theme">Contraste</string>
     <string name="delete">Eliminar</string>
     <string name="delete_playlist">Eliminar lista de reprodução</string>
     <string name="done">Concluído</string>

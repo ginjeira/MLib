@@ -200,7 +200,7 @@ class LibrarySync(
                 "setting" -> {
                     require(parts.size == 2 && parts[1] in settings)
                     when (parts[1]) {
-                        "theme" -> require(value in listOf("system", "light", "dark"))
+                        "theme" -> require(value in listOf("system", "light", "dark", "amoled", "contrast"))
                         "language" -> require(value in listOf("system", "en", "pt"))
                         "resume_minutes" -> require(value is Number && value.toInt() > 0)
                         else -> require(value is Boolean)

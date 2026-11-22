@@ -112,6 +112,46 @@ private val Light =
         onSecondaryContainer = Color(0xFF193F42),
         outline = Color(0xFF789394),
     )
+private val Amoled =
+    darkColorScheme(
+        primary = Color(0xFFF3F6F4),
+        onPrimary = Color.Black,
+        secondary = Color(0xFF8ADDE6),
+        tertiary = Color(0xFFFFA2A2),
+        background = Color.Black,
+        onBackground = Color(0xFFF1F6F3),
+        surface = Color(0xFF0A0B0D),
+        onSurface = Color(0xFFF1F6F3),
+        surfaceVariant = Color(0xFF1A1C20),
+        onSurfaceVariant = Color(0xFFAFB7C2),
+        secondaryContainer = Color(0xFF10393D),
+        onSecondaryContainer = Color(0xFFEAF7F2),
+        outline = Color(0xFF6C8181),
+    )
+private val Contrast =
+    darkColorScheme(
+        primary = Color.White,
+        onPrimary = Color.Black,
+        secondary = Color(0xFF9BE8F1),
+        tertiary = Color(0xFFFFB3B3),
+        background = Color.Black,
+        onBackground = Color.White,
+        surface = Color(0xFF101116),
+        onSurface = Color.White,
+        surfaceVariant = Color(0xFF23262C),
+        onSurfaceVariant = Color(0xFFD6DEE7),
+        secondaryContainer = Color(0xFF144A50),
+        onSecondaryContainer = Color.White,
+        outline = Color(0xFFB9C6C6),
+    )
+
+/** Resolves a stored theme preference to the scheme that should be shown. */
+fun resolvedTheme(mode: String, systemDark: Boolean): String =
+    when (mode) {
+        "light", "dark", "amoled", "contrast" -> mode
+        else -> if (systemDark) "dark" else "light"
+    }
+
 
 /** Shared captures contain only the environment and content, never their glass consumers. */
 val LocalGlassState = staticCompositionLocalOf<HazeState?> { null }
@@ -482,9 +522,15 @@ fun GlassSnackbarHost(state: SnackbarHostState) {
 
 @Composable
 fun SpotygramTheme(mode: String, content: @Composable () -> Unit) {
-    val dark = mode == "dark" || (mode == "system" && isSystemInDarkTheme())
+    val scheme =
+        when (resolvedTheme(mode, isSystemInDarkTheme())) {
+            "amoled" -> Amoled
+            "contrast" -> Contrast
+            "dark" -> Dark
+            else -> Light
+        }
     MaterialTheme(
-        colorScheme = if (dark) Dark else Light,
+        colorScheme = scheme,
         shapes =
             Shapes(
                 extraSmall = RoundedCornerShape(12.dp),

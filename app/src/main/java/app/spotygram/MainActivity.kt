@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) receiveShared(intent)
         setContent {
             val mode by app.theme.collectAsStateWithLifecycle()
-            val dark = mode == "dark" || (mode == "system" && isSystemInDarkTheme())
+            val dark = resolvedTheme(mode, isSystemInDarkTheme()) != "light"
             SideEffect {
                 WindowCompat.getInsetsController(window, window.decorView).apply {
                     isAppearanceLightStatusBars = !dark

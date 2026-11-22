@@ -156,6 +156,8 @@
     <string name="create_playlist">"Create playlist"</string>
     <string name="create_tracks">"Create · %1$s"</string>
     <string name="dark_theme">"Dark"</string>
+    <string name="amoled_theme">"AMOLED"</string>
+    <string name="contrast_theme">"Contrast"</string>
     <string name="database_key_error">"Could not access the session encryption key. Check your device’s secure storage and free space."</string>
     <string name="delete">"Delete"</string>
     <string name="delete_playlist">"Delete playlist"</string>

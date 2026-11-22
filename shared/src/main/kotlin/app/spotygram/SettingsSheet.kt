@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -219,12 +220,14 @@ fun SettingsSheet(
                     Modifier.padding(top = 8.dp, bottom = 8.dp),
                     style = MaterialTheme.typography.titleMedium,
                 )
-                val selectedTheme =
-                    if (theme == "system") {
-                        if (isSystemInDarkTheme()) "dark" else "light"
-                    } else theme
+                val selectedTheme = resolvedTheme(theme, isSystemInDarkTheme())
                 Row(Modifier.fillMaxWidth().liquidGlass(22.dp).padding(4.dp)) {
-                    listOf("light" to tr(R.string.light_theme), "dark" to tr(R.string.dark_theme))
+                    listOf(
+                        "light" to tr(R.string.light_theme),
+                        "dark" to tr(R.string.dark_theme),
+                        "amoled" to tr(R.string.amoled_theme),
+                        "contrast" to tr(R.string.contrast_theme),
+                    )
                         .forEach { (key, label) ->
                             Box(
                                 Modifier.weight(1f)
@@ -240,6 +243,9 @@ fun SettingsSheet(
                             ) {
                                 Text(
                                     label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     color =
                                         if (selectedTheme == key) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
