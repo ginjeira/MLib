@@ -1,172 +1,156 @@
 # MLib Server — proposta de implementação (FR-11)
 
-Proposta registada a **22-11-2026**. Não comprometida a versão. Objectivo: permitir que três adultos usem os iPhones para ouvir a biblioteca servida por um servidor caseiro, cada um com **conta Telegram própria**, biblioteca própria e consumo de bot próprio.
+Actualizada a **22-11-2026** com as decisões do owner. Substitui a estimativa anterior.
 
-Inspiração: o modelo do MCat Player (sessão Telegram por utilizador, config por conta), corrigindo as fragilidades de autenticação, isolamento de media e persistência.
+## 0. Decisões fixadas
 
-## 1. Âmbito
+- **Um CT Proxmox**, um único processo de servidor.
+- **BD partilhada** (um SQLite com `profile_id`), não uma base por perfil.
+- **Contas criadas apenas pelo administrador** numa página de gestão; sem registo público.
+- **Sem transcode** no MVP.
+- Publicação por **Cloudflare Tunnel** em domínio próprio (`mlib.ginjeira.com`).
+- Um perfil por adulto, **com conta Telegram própria**, biblioteca e consumo de bot isolados.
+- iOS por **PWA** (Safari + ecrã inicial). Sem offline, sem App Store, sem sideload.
 
-**Incluído**
+## 1. O que já existe e é reutilizável (com evidência)
 
-- Servidor HTTP com API e UI web (PWA), servido a partir de um CT Proxmox.
-- Um perfil por pessoa; cada perfil com login próprio e **sessão TDLib própria** (conta Telegram própria).
-- Biblioteca, origens, destino, playlists, favoritas, fila e jobs isolados por perfil.
-- Streaming por HTTP Range a partir dos ficheiros locais; sem transcode no MVP.
-- Aquisição pelo bot por perfil, com fila, progresso, cancelamento (`/cancel`) e retoma.
-- Acesso em casa por LAN; fora por Tailscale ou Cloudflare Tunnel + Access.
+| Peça | Estado | Onde |
+|---|---|---|
+| Abstracção de plataforma (ficheiros, prefs, locale, DB, TDLib) | Pronta | `shared/.../Platform.kt` |
+| Cliente TDLib por JSON, multi-instância | Pronto | `desktop/.../DesktopNative.kt` (`td_create_client_id` por cliente), `Telegram.kt` |
+| Base de dados abstracta (`SqlDatabase`, `SqlCursor`) | Pronta | `Platform.kt`; implementações Android e desktop |
+| Modelo de biblioteca sem Android | Pronto | `Library.kt` importa apenas `java.*`, `kotlinx`, `org.json` |
+| Autenticação Telegram (estado, código, 2FA, QR) | Lógica pronta | `Telegram.kt` |
+| Aquisição, revisão, commit, jobs persistidos, `/cancel` | Pronto | `MusicAcquisition.kt` |
+| Conhecimento, completude, artistas, capas | Pronto | `Knowledge.kt`, `AlbumCompletion.kt`, `ArtistCatalog.kt` |
+| Texto/localização em JVM | Pronto | `DesktopPlatform.text` |
 
-**Excluído (por agora)**
+**Só a UI Compose, serviços Android, notificações, playback service e app lock são específicos de Android** e não entram no servidor. O cliente web substitui-os.
 
-- Offline nos iPhones e app nativa iOS/App Store.
-- Multi-tenant com uma só conta Telegram partilhada.
-- Transcode, gapless/crossfade, Android Auto na web.
-- Sync entre instâncias; o histórico de reprodução fica sempre local.
+## 2. Trabalho genuinamente novo
 
-## 2. Arquitectura
+1. **`ServerPlatform`** (JVM): `filesDir` por perfil, preferências em ficheiro, `openDatabase` via JDBC, `tdlib` via `DesktopTdClient`, `downloadFile` para a pasta do perfil.
+2. **Gestor de downloads do servidor**: substituir o serviço Android por uma fila no processo que usa `downloadFile` do TDLib e move para `data/profiles/{id}/music`.
+3. **Multi-perfil num só processo**: remover singletons globais (`AppText`, `Knowledge`, notificações) ou passá-los a instância; adicionar `profile_id` a playlists, sources, settings, downloads e jobs (tracks já tem `profile_user`/`profile_position`).
+4. **API HTTP** (Ktor): auth, biblioteca, pesquisa, playlists, jobs (SSE), media, administração.
+5. **SPA web** (TypeScript; React ou Svelte): login, Início, Biblioteca, Procurar, Álbum, Artista, Playlist, Player, Jobs, Administração.
+6. **Operação**: imagem/systemd, healthcheck, backups, documentação de instalação.
+
+## 3. Arquitectura
 
 ```mermaid
 flowchart LR
-  Phone[iPhone Safari / PWA] -->|HTTPS + cookie de sessão| Web[Ktor: API + SPA]
-  Web --> Auth[Sessões e perfis]
-  Web --> P1[Perfil A: DB + TDLib]
-  Web --> P2[Perfil B: DB + TDLib]
-  Web --> P3[Perfil C: DB + TDLib]
-  P1 --> Media[(Media store por hash)]
-  P2 --> Media
-  P3 --> Media
-  P1 --> TG[Telegram A + bot]
-  P2 --> TG2[Telegram B + bot]
-  P3 --> TG3[Telegram C + bot]
+  iOS[iPhone PWA] -->|HTTPS cookie| CF[Cloudflare Tunnel]
+  CF --> Srv[MLib Server: Ktor]
+  Srv --> Auth[Contas, sessões, admin]
+  Srv --> App[SpotygramApp partilhado, 1 por perfil]
+  App --> DB[(SQLite partilhada: profile_id)]
+  App --> TD1[TDLib perfil A]
+  App --> TD2[TDLib perfil B]
+  App --> TD3[TDLib perfil C]
+  DB --> Media[(Media por SHA-256 + refcount)]
 ```
 
-### Componentes
+- Um processo JVM; um `SpotygramApp` por perfil (contextos isolados), uma BD partilhada.
+- Um cliente TDLib por perfil, com `database_directory` e `files_directory` próprios e chave de cifra por perfil.
+- Mídia partilhada por hash; visibilidade por perfil e autorização em cada pedido.
+- Fallback se a refactor dos singletons crescer: **um JVM por perfil** atrás de um pequeno gateway (custa +700–900 MB de RAM).
 
-1. **`mlib-core`** (novo módulo JVM): lógica sem Android/Compose — modelo, regras de aquisição, `Library` SQLite, conhecimento, conclusão de álbuns. Extraído de `shared` por camadas, sem reescrever regras.
-2. **`mlib-server`** (Ktor): API JSON, autenticação, perfis, media, jobs, SSE para progresso.
-3. **`mlib-web`** (SPA TypeScript; React ou Svelte): PWA, player por `<audio>`, Media Session API, manifest.
-4. **`libtdjson` + JNA**: cliente TDLib por perfil, com directório e chave de cifra próprios. Evita depender do JNI Android e permite Linux.
-5. **Media store**: ficheiros guardados por SHA-256, partilhados entre perfis com contagem de referências.
+## 4. Modelo de dados (BD partilhada)
 
-### Porque não reutilizar a UI Compose
+Acrescentar `profile_id` a:
 
-A UI actual é Compose Android com dependências de plataforma. O ganho de a reutilizar não compensa o acoplamento; a web deve ser uma SPA própria. O que se reutiliza é **domínio e regras**, não ecrãs.
+- `tracks` — já tem `profile_user`/`profile_position`; confirmar semântica e indexar.
+- `playlists` e `playlist_tracks` (via playlist).
+- `sources`, `downloads`, `settings` (chave composta `profile_id, key`).
+- `jobs` e itens de job.
+- `liked` — hoje coluna em `tracks`; passar a `likes(profile_id, track_id)`.
 
-## 3. Modelo de dados
-
-Uma base SQLite **por perfil** (isolamento simples, backup e quota triviais) e uma base global de media/refcount.
-
-Perfil:
-
-- `accounts(id, username, password_hash, role, created_at, disabled)`
-- `sessions(token_hash, account_id, created_at, last_seen, expires_at, ip, user_agent)`
-- `telegram(id, account_id, tdlib_dir, encryption_key_ref, phone, user_id, username, state)`
-- `settings(key, value)`
-- `sources(chat_id, title, can_post, active, added_at)`
-- `tracks(id, telegram_chat_id, telegram_message_id, media_id, title, artist, album, duration, liked, added_at, …)`
-- `albums(id, title, artist, year, cover, track_ids)`
-- `playlists(id, name, cover, track_ids, created_at)`
-- `jobs(id, kind, query, status, items_json, created_at, updated_at)`
-- `likes(track_id, created_at)`
-- `play_state(track_id, position_ms, updated_at)`
-
-Global:
-
-- `media(id, sha256, path, size, mime, bitrate, created_at)`
-- `media_refs(media_id, account_id, track_id)` para refcount e limpeza segura.
+Global: `profiles`, `sessions`, `media(id, sha256, path, size, mime)`, `media_refs(media_id, profile_id)`.
 
 Regras:
+- Um `track` só é servido se pertencer ao perfil autenticado.
+- Refcount impede que apagar offline num perfil remova ficheiro usado por outro.
+- Um dump SQLite cobre todos os perfis; restauro selectivo por `profile_id`.
 
-- O `media_id` só é servido se existir um `track` visível do perfil que o referencia.
-- Limpar cache/offline de um perfil só apaga o ficheiro quando `media_refs` fica vazio.
-- `liked` por perfil; o mesmo ficheiro pode ser favorito para um e não para outro.
+## 5. Autenticação e administração
 
-## 4. Autenticação e sessões
-
-- Registo por convite do administrador; `username` + password com **Argon2id** (parâmetros calibrados no servidor).
-- Login: rate limit por IP e por conta, atraso progressivo, log de tentativas.
-- Sessão: token aleatório 256-bit, guardado como hash na BD; cookie `HttpOnly; Secure; SameSite=Lax`, `Max-Age` 30 dias, rotação no login e no uso de TOTP.
-- **CSRF**: token por sessão em pedidos que mudam estado; rotas de escrita exigem `Origin` válido.
-- Opcional: TOTP por perfil; “terminar sessão em todos os dispositivos”.
-- Papéis: `admin` (gere contas, Telegram, quotas, backups) e `listener` (só o seu perfil).
-- **Nunca** expor `StringSession` ao cliente: a sessão TDLib fica cifrada no servidor e é gerida pelo processo.
-
-## 5. Telegram por perfil
-
-- Um cliente `libtdjson` por perfil, com `database_directory = data/profiles/{id}/tdlib` e chave de cifra por perfil (envelope: chave mestra do servidor + chave do perfil).
-- Login web por telefone → código → 2FA, ou QR; o servidor conduz o TDLib e nunca devolve credenciais.
-- Estado por perfil: `authorizationStateReady/Closed/WaitPhoneNumber/...`, apresentado na UI.
-- Logout do Telegram pelo admin/perfil: `logOut` no TDLib e remoção do estado local.
-- Origens: chats onde o bot colocou áudio; destino: chat escolhido pelo perfil; cada perfil pode ter várias origens.
-- Jobs: um por perfil em execução (a conversa do bot é estado único), persistidos na BD do perfil; progresso por SSE; cancelar envia `/cancel` ao bot.
+- Contas criadas pelo admin; `username` + password com **Argon2id**; sem auto-registo.
+- Sessão: token 256-bit, hash na BD, cookie `HttpOnly; Secure; SameSite=Lax`, 30 dias, rotação.
+- CSRF em escritas; rate limit por IP/conta; log de tentativas.
+- Papéis `admin`/`listener`; admin gere contas, Telegram, quotas e backups.
+- `/admin` protegido também por **Cloudflare Access** (email OTP), além do login local.
+- `StringSession`/estado TDLib **nunca** chega ao browser.
 
 ## 6. Media e streaming
 
-- Endpoint `GET /api/media/{trackId}`:
-  1. valida sessão;
-  2. resolve o `track` no perfil;
-  3. confirma que o `media` existe;
-  4. responde com `Accept-Ranges` e `206` quando pedido.
-- Nunca servir por caminho de ficheiro nem por `chatId/messageId` arbitrário.
-- Download do Telegram só quando necessário; gravar por hash; refcount.
-- Limpeza LRU opcional por perfil, respeitando `media_refs`.
-- Sem transcode no MVP: MP3/AAC/FLAC servidos como estão (Safari reproduz FLAC).
-- Limite de concorrência por perfil configurável; o servidor faz apenas I/O.
+- `GET /api/media/{trackId}`: valida sessão → resolve track do perfil → confirma media → `206` com `Range`.
+- Nunca servir por caminho nem por `chatId/messageId` arbitrário.
+- Download do Telegram apenas quando necessário; gravar por hash; refcount; sem transcode.
+- MP3/AAC/FLAC servidos como estão; Safari reproduz os três.
 
-## 7. UI web (PWA)
+## 7. UI web (MVP)
 
-- Ecrãs: Entrar, Início, Biblioteca (faixas/álbuns/artistas/playlists), Procurar, Álbum, Artista, Playlist, Jobs, Definições, Administração.
-- Player fixo no fundo: capa, título, progresso, play/pause, seguinte, volume; Media Session para lockscreen.
-- “Adicionar ao ecrã inicial” com manifest, ícones e `display: standalone`.
-- Estados: esqueletos, vazios com ação, erros com “Tentar novamente”.
-- Acessibilidade: foco visível, alvos ≥44 px, contraste AA nos temas claro/escuro/AMOLED/alto contraste.
+- Entrar; Início; Biblioteca (Faixas/Álbuns/Artistas/Playlists); Procurar; Álbum; Artista; Playlist; Jobs; Definições; Administração.
+- Player fixo: capa, título, progresso, play/pause, seguinte; Media Session.
+- PWA: manifest, ícones, `standalone`; “Adicionar ao ecrã inicial”.
+- Skeletons, estados vazios com ação, erros com retry; foco visível, alvos ≥44 px.
 
 ## 8. Operação
 
-- **Empacotamento**: imagem Docker `mlib-server` e pacote systemd para CT; volumes `library/`, `data/`, `cache/`.
-- **CT recomendado (3 perfis)**: 2 vCPU, **2 GB RAM**, 16 GB de disco do CT + bind mount da biblioteca; `nesting=1` só se usares Docker dentro do LXC.
-- **Alternativa**: um CT por perfil (1 vCPU, 1 GB), se quiseres isolamento físico e quotas independentes.
-- **Proxy**: Caddy no CT com TLS interno/Let’s Encrypt; exposição pública via Cloudflare Tunnel + Access, ou privada via Tailscale.
-- **Backups**: snapshot do CT (pequeno) + dump SQLite cifrado por perfil; media no dataset do host com snapshots próprios.
-- **Observabilidade**: log estruturado, endpoint `/healthz`, métricas simples (RAM, streams activos, pedidos ao bot, FloodWait).
+- **CT**: 2 vCPU, **2 GB RAM**, 12–16 GB de disco + bind mount da biblioteca.
+- **Sem transcode**: CPU em repouso quase nula; picos só em sync/download.
+- **Tunnel**: `cloudflared` no CT, `mlib.ginjeira.com`; TLS na Cloudflare; sem portas abertas.
+- **Backups**: snapshot do CT + dump SQLite; media no dataset do host.
+- **Logs** estruturados, `/healthz`, métricas de streams activos e FloodWait.
 
-## 9. Segurança
+## 9. Fases e previsão realista
 
-- TLS obrigatório; HSTS; CSP restritiva; `X-Content-Type-Options`, `Referrer-Policy`.
-- Sem segredos no repositório; `TG_API_ID`/`TG_API_HASH` por ambiente.
-- Autorização em cada endpoint (nunca confiar em IDs do cliente).
-- Cifra das bases TDLib; chave mestra fora do CT (env/ficheiro com permissões restritas).
-- Rate limiting em login, pesquisa e jobs; limite de streams concorrentes.
-- Logs sem tokens, telefones ou caminhos de media.
+Dias de trabalho **focados** (não semanas de calendário). Reutilização agressiva; UI sem “polish” de produto.
 
-## 10. Fases e estimativas
-
-| Fase | Entrega | Estimativa |
+| Fase | Entrega | Dias |
 |---|---|---|
-| P0 | Extrair `mlib-core`, esqueleto Ktor, um perfil, streaming por Range, PWA mínima | 2–3 semanas |
-| P1 | Auth, sessões, perfis, DB por perfil, administração | 1–2 semanas |
-| P2 | TDLib por perfil, login web, origens/destino, jobs persistidos, `/cancel` | 2–3 semanas |
-| P3 | UI completa (início, biblioteca, álbuns/artistas, playlists, jobs), PWA iOS | 2 semanas |
-| P4 | Docker/systemd, backups, quotas, monitorização, documentação de instalação | 1 semana |
+| P0 | `ServerPlatform`, arranque do `SpotygramApp`, um perfil, biblioteca, streaming Range | 3–4 |
+| P1 | Auth, sessões, admin, tabela `profiles`, BD partilhada com `profile_id` | 2–3 |
+| P2 | Multi-perfil num processo, singletons por instância, TDLib por perfil, downloads do servidor, login Telegram via API | 4–6 |
+| P3 | SPA MVP (ecrãs acima, player, jobs, admin) | 5–8 |
+| P4 | Deploy, Tunnel, backups, testes de autorização, documentação | 2–3 |
+| **Total** | MVP familiar funcional | **16–24 dias** |
 
-Total: **8–12 semanas** a tempo parcial, sem contar dedup por fingerprint (FR-02) nem sync.
+- **Focado, a tempo inteiro**: 3–5 semanas de calendário.
+- **Noites/fins de semana (~15 h/semana)**: 5–7 semanas.
+- **MVP mínimo** (Início/Biblioteca/Procurar/Player/Jobs, sem Álbum/Artista/administração polida): **10–14 dias**.
+
+O que pode esticar: build e empacotamento do `libtdjson` em Linux, áudio em background no iOS, bugs de scoping na BD partilhada, e o player web (seek/Media Session). O que **não** estica: aquisição, conhecimento, biblioteca e jobs — já existem.
+
+## 10. Custo em recursos (3 perfis, 1 CT)
+
+| Recurso | Valor |
+|---|---|
+| RAM base (JVM + Ktor + SQLite) | 350–500 MB |
+| Por sessão TDLib | +120–200 MB em repouso; +300–400 MB no 1.º sync |
+| Total 3 perfis | **1,1–1,6 GB** (2 GB com margem) |
+| vCPU | 2 (repouso <5%) |
+| Disco do CT | 10–16 GB |
+| Biblioteca | bind mount (tamanho real) |
+| Rede | 0,3–1 Mbps por stream; Tunnel sem custo |
+| Dinheiro | 0 €/mês (domínio já existente, Tunnel e TLS gratuitos; só eletricidade) |
 
 ## 11. Critérios de aceitação
 
-- Três contas com sessões Telegram distintas; derrubar uma não afecta as outras.
-- Um perfil só vê e reproduz as suas origens; tentar acessos cruzados devolve 403/404.
-- Streaming com seek em iOS Safari e PWA instalada; áudio continua em background.
-- Reinício do servidor preserva perfis, jobs e posições; sessões web continuam válidas.
-- Cancelar uma obtenção envia `/cancel` e marca o job como cancelado, sem afectar outros perfis.
-- Nenhum endpoint serve media sem sessão e visibilidade.
-- Snapshot + restauro de um perfil produzem o mesmo estado.
+- Contas criadas só pelo admin; login por cookie; sessão sobrevive a reinício do servidor.
+- Cada perfil tem a sua conta Telegram, origens, destino, playlists, favoritas e jobs.
+- Acesso cruzado a track/media devolve 403/404, mesmo com IDs válidos.
+- Streaming com seek em iOS Safari e na PWA; áudio continua em background.
+- Cancelar obtenção envia `/cancel` e não afecta outros perfis.
+- Um dump SQLite restaura todos os perfis; mídia referenciada continua reproduzível.
 
 ## 12. Riscos
 
 | Risco | Mitigação |
 |---|---|
-| Memória de múltiplas sessões TDLib | Medir; começar com 2 GB; separar CTs se necessário |
-| Regressões de autorização | Testes de integração por perfil; revisão dedicada |
-| Fuga de media em cache | Autorização por `trackId`; nunca por caminho |
-| Limites do Telegram por conta | Cada conta tem a sua quota; backoff e FloodWait visível |
-| iOS suspender áudio em background | Validar cedo em dispositivo real; fallback “manter ecrã ligado” |
-| Scope creep | Fases fechadas com critérios; sem transcode nem offline no MVP |
+| Singletons globais (AppText, Knowledge) | Passar a instância; fallback: um JVM por perfil |
+| `libtdjson` em Linux | Reutilizar o carregamento JNA do desktop; validar cedo |
+| Isolamento na BD partilhada | Testes de integração por perfil antes da UI |
+| iOS suspender áudio | Validar na P3, em dispositivo real |
+| Scope creep | Sem transcode, sync, offline ou App Store no MVP |
