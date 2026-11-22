@@ -483,6 +483,25 @@ Uma wave só está concluída quando:
 | Desktop | Distracção | Congelado até decisão explícita |
 | MCat Player inacessível | Paridade desactualizada | Reauditar quando houver acesso; baseline `a41cf5c` |
 
+## 7.1 Pedidos futuros
+
+Ideias registadas, por amadurecer; não estão comprometidas em nenhuma versão.
+
+### FR-01 — Mixes automáticos (“Feito para si”, “Mix do artista A”)
+
+**Data:** 22-11-2026. **Estado:** ideia em maturação; não implementar sem revisão.
+
+**Objectivo:** gerar mixes virtuais a partir da biblioteca, no estilo “Made for you”, sem alterar ficheiros nem tags.
+
+**MVP sem histórico (regras):**
+- Mix do artista: ≥8 faixas tocáveis e ≥2 álbuns; 25–30 faixas proporcionais aos álbuns (máx. 2–3 por álbum), favoritas primeiro e deep cuts.
+- Essenciais do artista: 1–2 faixas por álbum + favoritas.
+- Mais como A: artistas relacionados por género/época/partilha, com diversidade.
+- Novidades, favoritos escondidos e “Feito para si” em cold start (favoritos + recentes + álbuns variados).
+
+**Fase com sinais locais:** `play_count`, `last_played`, `skip_count` por faixa, guardados só no dispositivo; alimentam redescobertas, anti-repetição (48 h) e “Feito para si” diário com seed determinístico.
+
+**Decisões em aberto:** onde vivem os mixes (virtuais vs playlist materializada); regras de diversidade; limiares por artista; explicabilidade do cartão; opt-out por tipo; se o histórico pode ou não entrar no CloudSync (recomendação: nunca).
 ## 8. Próxima acção
 
 Assim que o push for possível:
