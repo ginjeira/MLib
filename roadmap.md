@@ -9,24 +9,26 @@ Este é o plano de execução corrente. O histórico detalhado permanece em `doc
 
 ## 0. Estado da versão 0.1.26
 
-Verificado em **22-11-2026, 14:10 UTC**.
+Verificado em **22-11-2026, 14:05 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.25** (publicada em 22-11-2026 12:45:02) |
-| Versão 0.1.26 | **Preparada** — commit `82084d3`, tag `v0.1.26`; build `45026161511` ainda em execução |
-| Release `v0.1.26` | **Ainda não publicada** |
+| Última release pública | **v0.1.26** (publicada em 22-11-2026 14:00:24) |
+| Tag `v0.1.26` | **Criada** (`82084d3`) |
+| Release `v0.1.26` | **Publicada**; build `45026161511` com sucesso |
+| Package | `pt.ginjeira.mlib` 0.1.26 / versionCode 1026 |
+| Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` (ambos os APKs) |
 | Publicação automática | **Desativada** após a 0.1.25; exige `MLIB_AUTO_RELEASE=true` ou acordo manual |
 | Próxima versão | **Bloqueada até acordo do owner** |
 | Documentação | Atualizada para 0.1.26, revisão de aquisição, app lock e Wave 8 |
 
-**Hashes publicados (0.1.25):**
+**Hashes publicados (0.1.26):**
 
-- `mlib-0.1.25-arm64.apk` — `8d49452e225a79234d1fed740988956990eb77bd12c79042d383bbaf0b5427af`
-- `mlib-0.1.25-x86_64.apk` — `d63a2418ae693689d53f70b0e18600c7cde9966654e8827683d08d14369cb4cc`
-- `SHA256SUMS.txt` — `05392a91f3240cd23687f007160dd2c1b09237ee3de3fc811f223737b5a423fb`
+- `mlib-0.1.26-arm64.apk` — `a087a340eb475564175f55a2bb0d47c60f7858d7a45a71772fc5e72186adbed6`
+- `mlib-0.1.26-x86_64.apk` — `0e9e0b42e140cf657326b5588478dd51394207cff9b5aaf23fbcc248333f9a19`
+- `SHA256SUMS.txt` — `da58e9289f354f31f4465e185531956ab349467f14231d01a38040fea2155c72`
 
-**Pendente na 0.1.26:** confirmação de assets/hashes/fingerprint após o build `45026161511`; o commit inclui o fix de “Completar álbum” e o changelog, mas não a revisão de aquisição, o app lock nem a Wave 8.
+**Limitação da 0.1.26:** a tag inclui o fix de “Completar álbum” e o changelog, mas não a revisão de aquisição, o app lock, a Wave 8 nem a lista de faixas em falta; esses itens estão em `main` e dependem de uma próxima versão acordada.
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 

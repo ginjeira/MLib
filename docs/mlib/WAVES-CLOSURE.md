@@ -2,7 +2,7 @@
 
 Este documento fixa o **máximo que considero admissível fechar** sem declarar concluído o que ainda não está implementado e validado.
 
-A **v0.1.25** é a última release automática. As releases seguintes exigem acordo do owner.
+A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como release candidate após verificação manual de package, hashes e assinatura; as releases seguintes exigem acordo do owner.
 
 ## Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
