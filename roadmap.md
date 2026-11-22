@@ -288,7 +288,7 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Wave 6.1 — restante do âmbito**
 
-- [x] Páginas de artista com álbuns, faixas e fontes, tocar/aleatório/offline e “Sobre” com fonte.
+- [x] Páginas de artista com álbuns, faixas e fontes, tocar/aleatório/offline e “Sobre” com fonte na língua da app (Wikipédia PT com fallback EN; tipos do MusicBrainz traduzidos; géneros mantêm o texto original da comunidade).
 - [ ] Retoma de fila/posição entre dispositivos via CloudSync.
 - [ ] Widgets e quick settings.
 - [ ] Import/export M3U, backup e restore completo.
