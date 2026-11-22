@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -78,7 +79,26 @@ fun PlayerScreen(
                     ),
                 340.dp,
             )
-        // A real artwork reflection provides context-dependent incident colour for the controls.
+        // Ambient artwork gradient: a heavily blurred copy of the cover tinted by the theme.
+        val ambientSize = (maxWidth * 1.4f).coerceAtLeast(240.dp)
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Artwork(
+                track,
+                ambientSize,
+                Modifier.blur(80.dp, BlurredEdgeTreatment.Unbounded).alpha(0.3f),
+            )
+        }
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.92f),
+                    )
+                )
+            )
+        )        // A real artwork reflection provides context-dependent incident colour for the controls.
         Box(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(180.dp).glassContent(0.5f),
             contentAlignment = Alignment.Center,

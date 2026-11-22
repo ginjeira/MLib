@@ -1031,6 +1031,8 @@ class SpotygramApp(val platform: Platform) {
         return tracklist
     }
 
+    fun knownTracklist(album: Album): List<String>? = tracklistCache["${album.artist.trim().lowercase()}|${album.title.trim().lowercase()}"]
+
     private fun fetchAlbumTracklist(album: Album): List<String> {
         val term =
             listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" ").trim()

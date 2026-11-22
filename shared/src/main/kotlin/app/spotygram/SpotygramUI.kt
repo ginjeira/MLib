@@ -156,6 +156,7 @@ fun SpotygramUI(
         when (tab) {
             -1 -> 0
             -2 -> 2
+            -3 -> 3
             else -> 1
         }
     val groupedView =
@@ -195,6 +196,7 @@ fun SpotygramUI(
             when {
                 tab == -1 -> "home"
                 tab == -2 -> "search"
+                tab == -3 -> null
                 tab in destinationKeys.indices -> destinationKeys[tab]
                 else -> null
             }
@@ -289,7 +291,7 @@ fun SpotygramUI(
                     navigate(0)
                 }
             2 -> navigate(-2)
-            else -> sheet = "settings"
+            else -> navigate(-3)
         }
     }
 
@@ -394,47 +396,51 @@ fun SpotygramUI(
             )
         }
     }
+    val settingsPane: @Composable (onClose: () -> Unit, onBack: (() -> Unit)?) -> Unit =
+        { onClose, onBack ->
+            SettingsSheet(
+                app,
+                library,
+                auth.type == "authorizationStateReady",
+                onConnect = {
+                    sheet = ""
+                    connect = true
+                    app.telegram.start()
+                },
+                onLogout = {
+                    sheet = ""
+                    confirmLogout = true
+                },
+                onImport = {
+                    sheet = ""
+                    onImport()
+                },
+                onLocal = {
+                    navigate(0)
+                    offline = true
+                    sheet = ""
+                },
+                onResume = {
+                    app.action {
+                        val ids = app.library.pending()
+                        if (ids.isEmpty()) app.notices.emit(tr(R.string.no_pending_downloads))
+                        else onDownload(ids)
+                    }
+                },
+                onCache = { sheet = "cache" },
+                onSharing = { sheet = "sharingSettings" },
+                onAcquisition = { sheet = "acquisition" },
+                onSources = {
+                    sheet = ""
+                    navigate(4)
+                },
+                onClose = onClose,
+                onBack = onBack,
+            )
+        }
     val settingsContent: @Composable () -> Unit = {
         when (sheet) {
-            "settings" ->
-                SettingsSheet(
-                    app,
-                    library,
-                    auth.type == "authorizationStateReady",
-                    onConnect = {
-                        sheet = ""
-                        connect = true
-                        app.telegram.start()
-                    },
-                    onLogout = {
-                        sheet = ""
-                        confirmLogout = true
-                    },
-                    onImport = {
-                        sheet = ""
-                        onImport()
-                    },
-                    onLocal = {
-                        navigate(0)
-                        offline = true
-                        sheet = ""
-                    },
-                    onResume = {
-                        app.action {
-                            val ids = app.library.pending()
-                            if (ids.isEmpty()) app.notices.emit(tr(R.string.no_pending_downloads))
-                            else onDownload(ids)
-                        }
-                    },
-                    onCache = { sheet = "cache" },
-                    onSharing = { sheet = "sharingSettings" },
-                    onAcquisition = { sheet = "acquisition" },
-                    onSources = {
-                        sheet = ""
-                        navigate(4)
-                    },
-                    onClose = ::closeSheet,
-                )
+            "settings" -> settingsPane(::closeSheet, null)
             "sharingSettings" ->
                 SharingSettings(
                     app,
@@ -461,6 +467,7 @@ fun SpotygramUI(
                 !editor &&
                 !authVisible &&
                 (fullPlayer ||
+                    tab == -3 ||
                     sourceId != null ||
                     profileId != null ||
                     playlistId != null ||
@@ -468,6 +475,7 @@ fun SpotygramUI(
     ) {
         when {
             fullPlayer -> fullPlayer = false
+            tab == -3 -> navigate(-1)
             connect -> connect = false
             else -> {
                 sourceId = null
@@ -608,7 +616,8 @@ fun SpotygramUI(
                                                             vertical = 5.dp,
                                                         )
                                                         .height(62.dp)
-                                                        .liquidGlass(31.dp, strong = true)
+                                                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(31.dp))
+                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(31.dp))
                                                         .padding(horizontal = 5.dp)
                                             ) {
                                                 // Four destinations are rendered below; the selection lens must use the same
@@ -658,8 +667,7 @@ fun SpotygramUI(
                                                         )
                                                     destinations.forEach { (index, destination) ->
                                                         val (label, icon) = destination
-                                                        val selected =
-                                                            index == sectionIndex && index != 3
+                                                        val selected = index == sectionIndex
                                                         val accent = spectrumAccent(index)
                                                         Column(
                                                             Modifier.weight(1f)
@@ -744,7 +752,7 @@ fun SpotygramUI(
                                                 style = MaterialTheme.typography.titleMedium,
                                             )
                                             GlassIconButton(
-                                                onClick = { sheet = "settings" },
+                                                onClick = { navigate(-3) },
                                                 modifier = Modifier.padding(end = 8.dp),
                                             ) {
                                                 Icon(Icons.Rounded.Settings, tr(R.string.settings))
@@ -825,6 +833,13 @@ fun SpotygramUI(
                                         "$tab:$playlistId:$sourceId:$profileId"
                                     ) {
                                         when {
+                                            tab == -3 ->
+                                                Column(Modifier.fillMaxSize()) {
+                                                    settingsPane(
+                                                        { navigate(-1) },
+                                                        { navigate(-1) },
+                                                    )
+                                                }
                                             tab == -1 ->
                                                 HomeScreen(
                                                     library,
@@ -839,6 +854,16 @@ fun SpotygramUI(
                                                     onSearchTelegram = { q ->
                                                         acquisitionSeed = q
                                                         sheet = "acquisition"
+                                                    },
+                                                    missingFor = { album ->
+                                                        app.knownTracklist(album)?.let { expected ->
+                                                            AlbumCompletion.missing(
+                                                                expected,
+                                                                album.tracks
+                                                                    .mapNotNull(library.byId::get)
+                                                                    .map { it.title },
+                                                            ).size
+                                                        }
                                                     },
                                                 )
                                             tab == -2 ->
@@ -1140,8 +1165,7 @@ fun SpotygramUI(
                                     R.string.settings to Icons.Rounded.Settings,
                                 )
                                 .forEachIndexed { index, (label, icon) ->
-                                    val selected =
-                                        index == sectionIndex && index != 3
+                                    val selected = index == sectionIndex
                                     Column(
                                         Modifier.fillMaxWidth()
                                             .heightIn(min = 68.dp)
@@ -1641,7 +1665,8 @@ private fun MiniPlayer(
         Modifier.widthIn(max = 720.dp)
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .liquidGlass(26.dp, strong = true)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(26.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(26.dp))
             .clip(RoundedCornerShape(26.dp))
             .clickable(onClick = onOpen)
     ) {

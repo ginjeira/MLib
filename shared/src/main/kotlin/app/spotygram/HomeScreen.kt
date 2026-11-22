@@ -44,6 +44,7 @@ fun HomeScreen(
     onPlay: (Track, List<Track>) -> Unit,
     onOpenPlaylist: (Long) -> Unit,
     onSearchTelegram: (String) -> Unit,
+    missingFor: (Album) -> Int? = { null },
 ) {
     val playable = remember(library.tracks) {
         library.tracks.filter { it.inLibrary && (it.local || it.available) }
@@ -136,8 +137,14 @@ fun HomeScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        items(library.albums, key = { "al:${it.id}" }) { album ->
-                            AlbumTile(album, library) {
+                        items(
+                            library.albums.sortedWith(
+                                compareBy<Album> { missingFor(it) == null }
+                                    .thenByDescending { missingFor(it) ?: 0 }
+                            ),
+                            key = { "al:${it.id}" },
+                        ) { album ->
+                            AlbumTile(album, library, missingFor(album)) {
                                 val tracks =
                                     album.tracks.mapNotNull(library.byId::get)
                                         .filter { it.local || it.available }
@@ -246,7 +253,12 @@ private fun PlaylistTile(playlist: Playlist, onClick: () -> Unit) {
 }
 
 @Composable
-private fun AlbumTile(album: Album, library: LibraryState, onClick: () -> Unit) {
+private fun AlbumTile(
+    album: Album,
+    library: LibraryState,
+    missing: Int?,
+    onClick: () -> Unit,
+) {
     Column(
         Modifier.width(124.dp).clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick),
     ) {
@@ -277,6 +289,17 @@ private fun AlbumTile(album: Album, library: LibraryState, onClick: () -> Unit) 
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (missing != null) {
+            Text(
+                if (missing == 0) tr(R.string.home_album_complete)
+                else tr(R.string.home_album_missing, missing),
+                Modifier.padding(horizontal = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color =
+                    if (missing == 0) MaterialTheme.colorScheme.secondary
+                    else MaterialTheme.colorScheme.tertiary,
+            )
+        }
     }
 }
 

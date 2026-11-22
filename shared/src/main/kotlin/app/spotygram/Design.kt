@@ -145,6 +145,18 @@ private val Contrast =
         outline = Color(0xFFB9C6C6),
     )
 
+/** Shared design tokens for new and revised surfaces. */
+object MlTokens {
+    val gapXs = 4.dp
+    val gapSm = 8.dp
+    val gapMd = 12.dp
+    val gapLg = 16.dp
+    val gapXl = 24.dp
+    val radiusSm = 8.dp
+    val radiusMd = 14.dp
+    val radiusLg = 26.dp
+    const val touchTarget = 48
+}
 /** Resolves a stored theme preference to the scheme that should be shown. */
 fun resolvedTheme(mode: String, systemDark: Boolean): String =
     when (mode) {

@@ -72,6 +72,7 @@ fun SettingsSheet(
     onAcquisition: () -> Unit,
     onSources: () -> Unit,
     onClose: () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
     val hideDuplicates by app.hideDuplicates.collectAsStateWithLifecycle()
@@ -96,7 +97,7 @@ fun SettingsSheet(
     var syncKeyError by rememberSaveable { mutableStateOf("") }
     val clipboard = LocalClipboardManager.current
     Column(Modifier.fillMaxWidth()) {
-        SettingsHeader(R.string.settings, onClose)
+        SettingsHeader(R.string.settings, onClose, onBack)
         LazyColumn(
             Modifier.fillMaxWidth().weight(1f, fill = false).navigationBarsPadding(),
             state =
