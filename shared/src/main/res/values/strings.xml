@@ -331,7 +331,7 @@
     </plurals>
     <string name="updates">Updates</string>
     <string name="update_automatic">Check automatically</string>
-        <string name="update_automatic_help">Checks hourly while the app is open after a successful check. Pending work is not interrupted.</string>
+            <string name="update_automatic_help">Checks when the app is opened. No background checks or automatic transfers.</string>
     <string name="update_check">Check for updates</string>
     <string name="update_checking">Checking…</string>
     <string name="update_current">You have the latest version.</string>

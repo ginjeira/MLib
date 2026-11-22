@@ -64,7 +64,7 @@ class AppUpdates(private val app: SpotygramApp) {
             if (manual) state.value = state.value.copy(result = R.string.update_rate_limited)
             return
         }
-        if (!manual && (now - lastSuccess < 3_600_000L || now - lastFailure < 600_000L)) return
+        if (!manual && now - lastFailure < 600_000L) return
         state.value = state.value.copy(checking = true, result = 0)
         app.scope.launch {
             try {

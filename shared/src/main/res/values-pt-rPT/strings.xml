@@ -364,7 +364,7 @@
         <item quantity="one">%d faixa</item>
         <item quantity="other">%d faixas</item>
     </plurals>
-        <string name="update_automatic_help">Verifica de hora a hora enquanto a app está aberta, após uma consulta bem-sucedida. Não interrompe trabalho pendente.</string>
+            <string name="update_automatic_help">Verifica ao abrir a aplicação. Sem verificações em segundo plano nem transferências automáticas.</string>
     <string name="update_wait">Verificação recente. Tente novamente mais tarde.</string>
     <string name="update_dismiss">Não voltar a lembrar esta versão</string>
     <string name="update_no_browser">Não existe nenhuma aplicação disponível para abrir a página da versão.</string>
