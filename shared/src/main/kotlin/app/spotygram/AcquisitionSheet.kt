@@ -318,21 +318,59 @@ internal fun AcquisitionSheet(
                 ) {
                     Text(tr(R.string.acquisition_start))
                 }
+                TextButton(
+                    onClick = {
+                        val searchId = state.search?.id ?: return@TextButton
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                runCatching {
+                                    acquisition.acquire(
+                                        searchId,
+                                        selected.toList(),
+                                        destinationId,
+                                        simulate = true,
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    enabled = selected.isNotEmpty() && destinationId != 0L &&
+                        !state.acquiring && !hasPendingJob,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(tr(R.string.acquisition_simulate)) }
             }
         }
 
         state.outcome?.let { outcome ->
             HorizontalDivider()
-            Text(
-                tr(R.string.acquisition_complete, outcome.imported, outcome.reused, outcome.failed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            if (outcome.playlistId != null) {
+            if (outcome.simulated) {
                 Text(
-                    tr(R.string.acquisition_playlist_created, outcome.collectionTitle),
-                    style = MaterialTheme.typography.bodySmall,
+                    tr(R.string.acquisition_simulation_title, outcome.preview.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
+                if (outcome.preview.isNotEmpty()) {
+                    Column(
+                        Modifier.heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        outcome.preview.take(50).forEach { title ->
+                            Text("• $title", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    tr(R.string.acquisition_complete, outcome.imported, outcome.reused, outcome.failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (outcome.playlistId != null) {
+                    Text(
+                        tr(R.string.acquisition_playlist_created, outcome.collectionTitle),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
             if (outcome.note.isNotBlank()) {
                 Text(outcome.note, style = MaterialTheme.typography.bodySmall)

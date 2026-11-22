@@ -641,4 +641,8 @@
     <string name="acquisition_retry_job">Search again</string>
     <string name="album_complete_existing">%1$d existing tracks will be reused:</string>
     <string name="album_complete_more">…and %1$d more</string>
+    <string name="acquisition_simulate">Simulate</string>
+    <string name="acquisition_simulation_title">Simulation: %1$d track(s)</string>
+    <string name="acq_simulating">Simulating…</string>
+    <string name="acq_simulation_note">No tracks were forwarded.</string>
 </resources>

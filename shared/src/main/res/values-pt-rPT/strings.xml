@@ -646,4 +646,8 @@
     <string name="acquisition_retry_job">Pesquisar novamente</string>
     <string name="album_complete_existing">%1$d faixas existentes serão reutilizadas:</string>
     <string name="album_complete_more">…e mais %1$d</string>
+    <string name="acquisition_simulate">Simular</string>
+    <string name="acquisition_simulation_title">Simulação: %1$d faixa(s)</string>
+    <string name="acq_simulating">A simular…</string>
+    <string name="acq_simulation_note">Nenhuma faixa foi encaminhada.</string>
 </resources>

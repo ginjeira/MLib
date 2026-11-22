@@ -40,6 +40,8 @@ data class AcquisitionOutcome(
     val playlistId: Long? = null,
     val collectionTitle: String = "",
     val note: String = "",
+    val simulated: Boolean = false,
+    val preview: List<String> = emptyList(),
 )
 
 enum class AcquisitionJobStatus(val wireValue: String) {
@@ -86,6 +88,7 @@ data class PendingAcquisitionJob(
     val awaitingBotCompletion: Boolean = false,
     val botChatId: Long = 0,
     val botMessageCursor: Long = 0,
+    val preview: List<String> = emptyList(),
 )
 
 data class AcquisitionState(
@@ -116,6 +119,7 @@ private data class AcquiredItem(
     val botFinished: Boolean = true,
     val botChatId: Long = 0,
     val botMessageCursor: Long = 0,
+    val preview: List<String> = emptyList(),
 )
 
 private data class AudioCollection(
@@ -292,6 +296,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         searchId: String,
         selectedNumbers: List<Int>,
         destinationChatId: Long,
+        simulate: Boolean = false,
     ): AcquisitionOutcome = botLane.withLock {
         checkTelegramReady()
         check(activeSearchId == null || activeSearchId == searchId) {
@@ -312,6 +317,55 @@ class MusicAcquisition(private val app: SpotygramApp) {
             tr(R.string.acq_one_edition)
         }
         val telegramUserId = request(json("getMe")).getLong("id")
+        if (simulate) {
+            state.value =
+                state.value.copy(
+                    acquiring = true,
+                    searching = false,
+                    progress = tr(R.string.acq_simulating),
+                    error = "",
+                    outcome = null,
+                )
+            try {
+                val destination = request(json("getChat", "chat_id" to destinationChatId))
+                val destinationTitle = destination.optString("title").ifBlank { "Telegram" }
+                val preview = mutableListOf<String>()
+                for (option in selected) {
+                    val item =
+                        acquireOption(
+                            session = session,
+                            option = option,
+                            destinationChatId = destinationChatId,
+                            destinationTitle = destinationTitle,
+                            batchTracks = emptyList(),
+                            simulate = true,
+                        )
+                    preview += item.preview
+                    if (item.error.isNotBlank()) preview += item.error
+                }
+                val outcome =
+                    AcquisitionOutcome(
+                        imported = 0,
+                        reused = 0,
+                        failed = 0,
+                        simulated = true,
+                        preview = preview,
+                        note = tr(R.string.acq_simulation_note, preview.size),
+                    )
+                state.value =
+                    state.value.copy(acquiring = false, progress = "", outcome = outcome)
+                return@withLock outcome
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                state.value =
+                    state.value.copy(
+                        acquiring = false,
+                        progress = "",
+                        error = e.message ?: tr(R.string.acq_failed),
+                    )
+                throw e
+            }
+        }
         val currentPending = state.value.pendingJob
         require(currentPending == null ||
             (currentPending.query == session.search.query &&
@@ -830,6 +884,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         destinationChatId: Long,
         destinationTitle: String,
         batchTracks: List<Track>,
+        simulate: Boolean = false,
     ): AcquiredItem {
         val botChatId = session.botChatId
         // Do not skip an entire collection because its first track already exists.
@@ -891,6 +946,23 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 tr(R.string.acq_bot_unfinished_some, audioMessages.size)
             }
         } else ""
+        if (simulate) {
+            val preview =
+                audioMessages.mapNotNull { message ->
+                    val track = parseAcquiredTrack(message, destinationTitle) ?: return@mapNotNull null
+                    if (track.artist.isBlank()) track.title
+                    else "${track.title} — ${track.artist}"
+                }
+            return AcquiredItem(
+                option = option,
+                tracks = emptyList(),
+                partial = collection.partial,
+                botFinished = collection.botFinished,
+                botChatId = botChatId,
+                botMessageCursor = collection.lastObservedMessageId,
+                preview = preview,
+            )
+        }
         val deliveryErrors = mutableListOf<String>()
 
         val importedTracks = mutableListOf<Track>()
