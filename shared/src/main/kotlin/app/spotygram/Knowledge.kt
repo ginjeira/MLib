@@ -72,6 +72,35 @@ fun parseWikipediaSummary(
     return extract to url
 }
 
+/** Parses a MusicBrainz artist search response into dates, type and genres. */
+fun parseArtist(json: JSONObject): KnowledgeRelease? {
+    val artist = json.optJSONArray("artists")?.optJSONObject(0) ?: return null
+    val lifeSpan = artist.optJSONObject("life-span")
+    val begin = lifeSpan?.optString("begin").orEmpty().take(10)
+    val end = lifeSpan?.optString("end").orEmpty().take(10)
+    val date = listOf(begin, end).filter(String::isNotBlank).joinToString("–")
+    val kind = artist.optString("type")
+    val id = artist.optString("id")
+    val genres =
+        artist.optJSONArray("tags")
+            ?.let { tags ->
+                buildList {
+                    for (i in 0 until minOf(tags.length(), 4)) {
+                        tags.optJSONObject(i)?.optString("name")?.takeIf(String::isNotBlank)
+                            ?.let(::add)
+                    }
+                }.joinToString(", ")
+            }
+            .orEmpty()
+    if (date.isBlank() && kind.isBlank() && genres.isBlank()) return null
+    return KnowledgeRelease(
+        date = date,
+        kind = kind,
+        url = if (id.isBlank()) "" else "https://musicbrainz.org/artist/$id",
+        genres = genres,
+    )
+}
+
 object Knowledge {
     private const val MB_SOURCE = "MusicBrainz (CC0)"
     private const val WIKI_SOURCE = "Wikipédia (CC BY-SA)"
@@ -105,6 +134,39 @@ object Knowledge {
         info
     }
 
+    suspend fun artist(name: String): KnowledgeInfo? = withContext(Dispatchers.IO) {
+        val term = name.trim()
+        if (term.isBlank()) return@withContext null
+        val key = "artist|${term.lowercase()}"
+        cache?.get(key)?.let { return@withContext it }
+        val mb = quietly { musicBrainzArtist(term) }
+        val wiki = quietly { wikipedia(term) }
+        if (mb == null && wiki == null) return@withContext null
+        val info =
+            KnowledgeInfo(
+                summary = wiki?.first.orEmpty(),
+                sourceNames = listOfNotNull(
+                    MB_SOURCE.takeIf { mb != null },
+                    WIKI_SOURCE.takeIf { wiki != null },
+                ).joinToString(" · "),
+                sourceUrl = wiki?.second ?: mb?.url.orEmpty(),
+                releaseDate = mb?.date.orEmpty(),
+                kind = mb?.kind.orEmpty(),
+                genres = mb?.genres.orEmpty(),
+                fetchedAt = System.currentTimeMillis(),
+            )
+        cache?.put(key, info)
+        info
+    }
+
+    private fun musicBrainzArtist(name: String): KnowledgeRelease? {
+        val query = "artist:\"" + name.replace("\"", "") + "\""
+        val json =
+            fetch(
+                "https://musicbrainz.org/ws/2/artist/?query=${encode(query)}&fmt=json&limit=1"
+            )
+        return parseArtist(json)
+    }
     private suspend fun <T> quietly(block: suspend () -> T?): T? =
         try {
             block()

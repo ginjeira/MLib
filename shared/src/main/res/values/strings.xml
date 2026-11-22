@@ -687,4 +687,8 @@
     <string name="search_no_results">No matches in the library.</string>
     <string name="nav_home">Home</string>
     <string name="nav_search">Search</string>
+    <string name="unknown_artist">Unknown artist</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="about_artist">About the artist</string>
+    <string name="artist_summary">%1$d tracks · %2$d albums</string>
 </resources>

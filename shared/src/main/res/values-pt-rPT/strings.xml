@@ -692,4 +692,8 @@
     <string name="search_no_results">Sem resultados na biblioteca.</string>
     <string name="nav_home">Início</string>
     <string name="nav_search">Procurar</string>
+    <string name="unknown_artist">Artista desconhecido</string>
+    <string name="shuffle">Aleatório</string>
+    <string name="about_artist">Sobre o artista</string>
+    <string name="artist_summary">%1$d faixas · %2$d álbuns</string>
 </resources>

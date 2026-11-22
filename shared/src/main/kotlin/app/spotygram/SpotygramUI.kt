@@ -82,7 +82,7 @@ fun SpotygramUI(
     val playing = observePlayer(player).copy(order = mode.order, repeat = mode.repeat)
     var localMode by rememberSaveable { mutableStateOf(app.prefs.getBoolean("local_mode", false)) }
     var connect by rememberSaveable { mutableStateOf(false) }
-    val destinationKeys = listOf("music", "favorites", "playlists", "albums", "chats")
+    val destinationKeys = listOf("music", "favorites", "playlists", "albums", "chats", "artists")
     var tab by rememberSaveable {
         mutableIntStateOf(
             when (val saved = app.prefs.getString("last_destination", "home")) {
@@ -797,7 +797,7 @@ fun SpotygramUI(
                                         }
                                     }
                                 }
-                                if (tab in 0..3) {
+                                if (tab in 0..5) {
                                     Row(
                                         Modifier.widthIn(max = 720.dp)
                                             .fillMaxWidth()
@@ -810,6 +810,7 @@ fun SpotygramUI(
                                             1 to tr(R.string.favorites),
                                             2 to tr(R.string.playlists),
                                             3 to tr(R.string.albums),
+                                            5 to tr(R.string.artists),
                                         ).forEach { (index, label) ->
                                             FilterChip(
                                                 selected = tab == index,
@@ -1049,7 +1050,22 @@ fun SpotygramUI(
                                                     onPickCover = onPickCover,
                                                     onPrepareCover = { bytes -> app.prepareCover(bytes) },
                                                 )
-                                            else ->
+                                            tab == 5 ->
+                                                ArtistsScreen(
+                                                    library,
+                                                    playing.id,
+                                                    onPlay = { track, tracks ->
+                                                        play(track, tracks)
+                                                    },
+                                                    onDownload = onDownload,
+                                                    onSearchTelegram = { q ->
+                                                        acquisitionSeed = q
+                                                        sheet = "acquisition"
+                                                    },
+                                                    onKnowledge = { name ->
+                                                        Knowledge.artist(name)
+                                                    },
+                                                )                                            else ->
                                                 SourcesScreen(
                                                     app,
                                                     library,
