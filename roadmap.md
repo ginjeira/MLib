@@ -7,27 +7,36 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.25
+## 0. Estado da versão 0.1.26
 
-Verificado em **22-11-2026, 13:10 UTC**.
+Verificado em **22-11-2026, 14:10 UTC**.
 
 | Item | Estado |
 |---|---|
 | Última release pública | **v0.1.25** (publicada em 22-11-2026 12:45:02) |
-| Tag `v0.1.25` | **Criada** |
-| Release `v0.1.25` | **Publicada**; última release automática |
-| Baseline para `main` | **Sucesso** |
+| Versão 0.1.26 | **Preparada** — commit `82084d3`, tag `v0.1.26`; build `45026161511` ainda em execução |
+| Release `v0.1.26` | **Ainda não publicada** |
 | Publicação automática | **Desativada** após a 0.1.25; exige `MLIB_AUTO_RELEASE=true` ou acordo manual |
 | Próxima versão | **Bloqueada até acordo do owner** |
-| Documentação | Atualizada para 0.1.25 e política de releases |
+| Documentação | Atualizada para 0.1.26, revisão de aquisição, app lock e Wave 8 |
 
-**Hashes publicados:**
+**Hashes publicados (0.1.25):**
 
 - `mlib-0.1.25-arm64.apk` — `8d49452e225a79234d1fed740988956990eb77bd12c79042d383bbaf0b5427af`
 - `mlib-0.1.25-x86_64.apk` — `d63a2418ae693689d53f70b0e18600c7cde9966654e8827683d08d14369cb4cc`
 - `SHA256SUMS.txt` — `05392a91f3240cd23687f007160dd2c1b09237ee3de3fc811f223737b5a423fb`
 
-**Pendente na 0.1.25:** o fix do fluxo “Completar álbum” que fecha o detalhe do álbum está em `main`, mas não nesta tag; entra apenas numa próxima versão acordada.
+**Pendente na 0.1.26:** confirmação de assets/hashes/fingerprint após o build `45026161511`; o commit inclui o fix de “Completar álbum” e o changelog, mas não a revisão de aquisição, o app lock nem a Wave 8.
+
+## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
+
+- Revisão antes de escrever na biblioteca: `AcquisitionReview`, `commitReview(selectedIds)` e rejeição com remoção das mensagens encaminhadas.
+- App lock opcional com o bloqueio do dispositivo (`Platform.supportsAppLock`, `app_lock`).
+- Reparação global de faixas indisponíveis em Definições (branch `feat/library-repair`).
+- Wave 8 (MVP): `Knowledge.album()` com MusicBrainz + Wikipédia, dialog “Sobre este álbum” com fonte, data, tipo e géneros.
+- Wave 4: “Completar álbum” passou a mostrar a lista de faixas existentes e em falta (Deezer, fallback iTunes) e deixou de ficar aninhado no dialog de edição.
+- Validação local: `:desktop:test` com **61 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+
 ## 0.2 Progresso por wave — 21-11-2026
 
 | Wave | Estado | Progresso | Notas |
@@ -36,11 +45,11 @@ Verificado em **22-11-2026, 13:10 UTC**.
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
 | Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
-| Wave 4 — álbuns/capas | **Parcial** | ~55% | Confirmação de completar álbum, capas de playlist e enriquecimento iTunes/Deezer na 0.1.19. Faltam pré-visualização de faixas e upload local. |
-| Wave 5 — setup/jobs | **Parcial** | ~60% | `/start` apenas no setup, canal de arquivo e histórico de jobs na 0.1.19. Faltam retry parcial e testes crash/restart. |
-| Wave 6 — descoberta/poder | **Em curso** | ~40% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento e pesquisa unificada. Faltam widgets, import/export para ficheiro, privacidade, scrobbling e smart playlists. |
+| Wave 4 — álbuns/capas | **Parcial** | ~80% | Confirmação de completar álbum, lista de faixas existentes/em falta (Deezer + iTunes), enriquecimento e capas de playlist. Faltam upload de capas e persistência/CloudSync das capas personalizadas. |
+| Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
+| Wave 6 — descoberta/poder | **Em curso** | ~45% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock e exportação JSON. Faltam widgets, scrobbling, smart playlists, temas e estatísticas. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
-| Wave 8 — conhecimento musical | **Não iniciada** | 0% | Biografias, datas, discografia e contexto com fontes abertas e atribuição. Depende das páginas de artista/álbum. |
+| Wave 8 — conhecimento musical | **Em curso (MVP)** | ~25% | Dialog “Sobre este álbum” com MusicBrainz + Wikipédia, data, tipo, géneros, resumo e link para a fonte. Faltam páginas de artista, cache/ETag, faixas e créditos. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
 
@@ -189,12 +198,12 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Tarefas**
 
-- [ ] Página de álbum com capa grande, gradiente e anel de completude.
-- [ ] “Completar álbum” com lista de faixas existentes, em falta e ambíguas.
+- [x] Página de álbum com capa grande, gradiente e anel de completude. (capa grande; anel pendente)
+- [x] “Completar álbum” com lista de faixas existentes, em falta e ambíguas. (existentes e em falta; ambíguas pendentes)
 - [ ] Aprovação por faixa/edição antes de adquirir.
-- [ ] Enriquecimento iTunes → Deezer com cache e timeouts.
+- [x] Enriquecimento iTunes → Deezer com cache e timeouts.
 - [ ] Capas: upload local, online, URL, primeira faixa e presets.
-- [ ] Capas de playlist: upload, online, primeira faixa e presets.
+- [x] Capas de playlist: upload, online, primeira faixa e presets.
 - [ ] Placeholder explícito em vez de Unsplash como capa real.
 - [ ] Persistência e CloudSync das capas personalizadas.
 
@@ -322,8 +331,8 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Fases**
 
-1. **8.1** — MusicBrainz: identidade, datas, lançamentos e créditos.
-2. **8.2** — Wikipédia/Wikidata: resumo e contexto com atribuição.
+1. **8.1** — MusicBrainz: identidade, datas, lançamentos e créditos. (MVP de data/tipo/géneros entregue)
+2. **8.2** — Wikipédia/Wikidata: resumo e contexto com atribuição. (MVP de resumo + link entregue)
 3. **8.3** — páginas de artista e discografia.
 4. **8.4** — fontes opcionais (Last.fm/Discogs), só com termos/keys definidos.
 

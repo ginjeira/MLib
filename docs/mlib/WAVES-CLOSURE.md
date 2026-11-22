@@ -4,6 +4,14 @@ Este documento fixa o **máximo que considero admissível fechar** sem declarar 
 
 A **v0.1.25** é a última release automática. As releases seguintes exigem acordo do owner.
 
+## Entregue em `main` depois da tag `v0.1.26` (não publicado)
+
+- **Revisão de aquisição:** as faixas encaminhadas são revistas antes de entrarem na biblioteca; rejeitar remove as mensagens de teste.
+- **App lock:** bloqueio opcional com o mecanismo do dispositivo.
+- **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
+- **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição.
+- Validação local: 61 testes, 0 falhas.
+
 ## Fechadas
 
 ### Wave 0 — Release e atualização
