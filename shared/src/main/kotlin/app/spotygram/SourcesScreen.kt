@@ -624,7 +624,7 @@ fun ChatPicker(
                     val sourceChoices =
                         if (destinationOnly)
                             library.sources.map {
-                                ChatChoice(it.id, it.title, groupOrChannel = true)
+                                ChatChoice(it.id, it.title, groupOrChannel = true, isChannel = true)
                             }
                         else emptyList()
                     val merged =
@@ -646,7 +646,7 @@ fun ChatPicker(
                         val owned = ArrayList<ChatChoice>()
                         for (choice in merged) {
                             ensureActive()
-                            if (app.telegram.isOwnerOrAdmin(choice.id)) owned += choice
+                            if (choice.isChannel || app.telegram.isOwnerOrAdmin(choice.id)) owned += choice
                         }
                         owned
                     } else {

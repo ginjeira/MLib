@@ -40,6 +40,7 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -61,6 +62,15 @@ fun SpotygramUI(
     val auth by app.telegram.auth.collectAsStateWithLifecycle()
     val busy by app.busy.collectAsStateWithLifecycle()
     val connection by app.telegram.connection.collectAsStateWithLifecycle()
+    val showConnectionBanner by
+        produceState(false, connection) {
+            if (connection.isBlank() || connection == "connectionStateUpdating") {
+                value = false
+            } else {
+                delay(2_000)
+                value = true
+            }
+        }
     val download by app.downloading.collectAsStateWithLifecycle()
     val mode by app.playbackMode.collectAsStateWithLifecycle()
     val hideDuplicates by app.hideDuplicates.collectAsStateWithLifecycle()
@@ -707,7 +717,7 @@ fun SpotygramUI(
                                         }
                                     }
                                 if (
-                                    connection.isNotBlank() &&
+                                    showConnectionBanner &&
                                         auth.type == "authorizationStateReady"
                                 )
                                     Text(
