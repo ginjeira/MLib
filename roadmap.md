@@ -7,19 +7,26 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado das versões 0.1.27 e 0.1.28
+## 0. Estado das versões 0.1.27 a 0.1.29
 
-Verificado em **22-11-2026, 17:05 UTC**.
+Verificado em **22-11-2026, 17:56 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.28** (publicada em 22-11-2026 17:00:42) |
+| Última release pública | **v0.1.29** (publicada em 22-11-2026 17:47:44) |
 | Tag `v0.1.27` | **Criada** (`fda3eb0`); build `45039489724` |
 | Tag `v0.1.28` | **Criada** (`6ccff1b`); build `45043559683` |
-| Packages | 0.1.27 / 1027 e 0.1.28 / 1028 |
+| Tag `v0.1.29` | **Criada** (`b8c5162`); build `45047965275` |
+| Packages | 0.1.27 / 1027, 0.1.28 / 1028 e 0.1.29 / 1029 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
-| Próximas versões | **0.1.29** Wave 2 · **0.1.30** Google TV |
+| Próximas versões | **0.1.30** Google TV (a aguardar acordo do owner) |
+
+**Hashes publicados (0.1.29):**
+
+- `mlib-0.1.29-arm64.apk` — `2c2f74c6dc597d245a60d52d36f683f517c36fd9546784d67e25764c7b563e7b`
+- `mlib-0.1.29-x86_64.apk` — `38fee437d4bddd69e3f325d13dc54e5f878445c51d53b3c625ea1d1ff35d0848`
+- `SHA256SUMS.txt` — `f0f28f722a5ed15711f646b7e1d5317d00812c1f0106492b8acf8c45661c8eea`
 
 **Hashes publicados (0.1.28):**
 
@@ -37,6 +44,7 @@ Verificado em **22-11-2026, 17:05 UTC**.
 
 - **0.1.27:** fix de “Completar álbum”, revisão de aquisição antes de escrever na biblioteca, app lock, Wave 8 (conhecimento com fonte e cache), capas personalizadas, anel de completude, temas AMOLED/contraste e reparação de biblioteca.
 - **0.1.28:** Android Auto completo para reprodução (Início, pesquisa por voz na biblioteca, notificações e capas personalizadas).
+- **0.1.29:** Wave 2 — navegação de 4 destinos, Início, Biblioteca com chips e artistas, Procurar, Definições em ecrã completo, gradiente da arte no player e superfícies sólidas.
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
