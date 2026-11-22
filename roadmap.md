@@ -39,7 +39,8 @@ Verificado em **22-11-2026, 14:05 UTC**.
 - Wave 4: “Completar álbum” passou a mostrar a lista de faixas existentes e em falta (Deezer, fallback iTunes) e deixou de ficar aninhado no dialog de edição.
 - Wave 4: capas personalizadas de álbum e playlist a partir do dispositivo, guardadas como data URI em `cover_url` (persistem e sincronizam); presets Unsplash substituídos por placeholder explícito; anel de completude no detalhe do álbum.
 - Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
-- Validação local: `:desktop:test` com **80 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Temas AMOLED e alto contraste, com validação de sync e testes.
+- Validação local: `:desktop:test` com **83 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -51,7 +52,7 @@ Verificado em **22-11-2026, 14:05 UTC**.
 | Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
 | Wave 4 — álbuns/capas | **Fechada no âmbito atual** | 100% | Completar álbum com faixas existentes/em falta e anel de completude, enriquecimento, capas personalizadas de álbum e playlist a partir do dispositivo (persistem via `cover_url` e sincronizam), placeholder explícito. Gradiente/artwork grande e faixas ambíguas passam para Wave 4.1. |
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
-| Wave 6 — descoberta/poder | **Em curso** | ~45% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock e exportação JSON. Faltam widgets, scrobbling, smart playlists, temas e estatísticas. |
+| Wave 6 — descoberta/poder | **Fechada no âmbito atual** | 100% (âmbito) | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock, exportação JSON, temas AMOLED/alto contraste e reparação de biblioteca. Widgets, scrobbling, smart playlists, voz, estatísticas e backup completo passam para Wave 6.1. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
 | Wave 8 — conhecimento musical | **Fechada no âmbito MVP** | 100% (MVP) | Álbum com MusicBrainz + Wikipédia, data, tipo, géneros, resumo, licença por fonte, link e data de recolha; cache em disco com TTL de 30 dias e limite de 300 entradas; parsers com fixtures. Páginas de artista, discografia, créditos e ETag passam para Wave 8.1. |
 
@@ -258,22 +259,29 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Itens:** ART-01, FD-01 a FD-11.
 
-**Tarefas**
+**Tarefas — entregue no âmbito atual**
+
+- [x] Android Auto: Offline, Recent e Artists.
+- [x] Auto-download de favoritos com limite de storage.
+- [x] Exportação JSON da biblioteca.
+- [x] Bloqueio com o dispositivo (app lock).
+- [x] Sleep timer e velocidade de reprodução.
+- [x] Temas alto contraste e AMOLED.
+- [x] Pesquisa unificada local + bot.
+
+**Wave 6.1 — restante do âmbito**
 
 - [ ] Páginas de artista com álbuns, faixas e fontes.
-- [ ] Smart downloads: favoritos/álbuns/playlists com limites de storage.
-- [ ] Retoma de fila/posição entre dispositivos via CloudSync (metadata).
-- [ ] Widgets e quick settings: now playing, continuar, saúde da biblioteca.
-- [ ] Android Auto melhorado: Início, Álbuns, Playlists, Favoritos, Offline.
-- [ ] Import/export M3U/JSON, backup e restore.
-- [ ] Bloqueio biométrico, fontes ocultas e modo privado.
-- [ ] Scrobbling opcional (ListenBrainz/Last.fm), desligado por defeito.
-- [ ] Sleep timer, velocidade, equalizador, gapless/crossfade conforme Media3.
-- [ ] Pesquisa por voz e comandos simples.
+- [ ] Retoma de fila/posição entre dispositivos via CloudSync.
+- [ ] Widgets e quick settings.
+- [ ] Import/export M3U, backup e restore completo.
+- [ ] Fontes ocultas e modo privado.
+- [ ] Scrobbling opcional (ListenBrainz/Last.fm).
+- [ ] Pesquisa por voz e comandos.
 - [ ] Smart playlists por regras.
 - [ ] Partilha rica de álbum/playlist.
 - [ ] Estatísticas pessoais opt-in.
-- [ ] Temas adicionais: artwork-driven, alto contraste, AMOLED.
+- [ ] Equalizador e gapless/crossfade.
 
 **Aceitação**
 

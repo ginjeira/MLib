@@ -10,7 +10,7 @@ A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como
 - **App lock:** bloqueio opcional com o mecanismo do dispositivo.
 - **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
 - **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição; anel de completude no detalhe; capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas; placeholder explícito em vez de Unsplash.
-- Validação local: 80 testes, 0 falhas.
+- Validação local: 83 testes, 0 falhas.
 
 ## Fechadas
 
@@ -80,7 +80,19 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 
 ### Wave 6 — Descoberta e poder
 
-**Parcial.** Sleep timer, Android Auto Offline/Recent/Artists, auto-download de favoritos e enriquecimento estão feitos. Faltam widgets, import/export completo, privacidade, scrobbling e smart playlists.
+**Fechada no âmbito atual.**
+
+Inclui:
+
+- sleep timer e velocidade de reprodução;
+- Android Auto Offline/Recent/Artists;
+- auto-download de favoritos;
+- enriquecimento e pesquisa unificada;
+- app lock com o bloqueio do dispositivo;
+- exportação JSON da biblioteca;
+- temas AMOLED e alto contraste.
+
+Limitações aceites (Wave 6.1): páginas de artista, widgets, scrobbling, smart playlists, voz, estatísticas, backup completo e retoma de fila entre dispositivos.
 
 ### Wave 7 — Plataformas
 
@@ -104,7 +116,7 @@ Limitações aceites (Wave 8.1): páginas de artista e discografia, créditos de
 
 - Wave 2: navegação e UI implementadas, testadas e com screenshots atuais.
 - Wave 4.1: capa grande/gradiente, faixas ambíguas e presets de capa.
-- Wave 6: funcionalidades escolhidas implementadas e testadas.
+- Wave 6.1: páginas de artista, widgets, scrobbling, smart playlists, voz, estatísticas, backup e retoma de fila.
 - Wave 7: só após Android estável e com decisão de descongelar desktop.
 - Wave 8.1: páginas de artista, discografia, créditos, ETag e testes live.
 
