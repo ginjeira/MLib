@@ -54,6 +54,7 @@ enum class AcquisitionJobStatus(val wireValue: String) {
     PARTIAL("partial"),
     FAILED("failed"),
     SKIPPED_DUPLICATE("skipped_duplicate"),
+    CANCELLED("cancelled"),
 }
 
 data class AcquisitionJobItem(
@@ -170,6 +171,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     // A single lane is intentional: the bot conversation is stateful and its
     // messages/callbacks must not be interleaved by simultaneous MLib requests.
     private val botLane = Mutex()
+    private val acquisitionCancellationRequested = java.util.concurrent.atomic.AtomicBoolean(false)
     private val resumeLane = Mutex()
     private val searches = linkedMapOf<String, SearchSession>()
     private var activeSearchId: String? = null
@@ -192,7 +194,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         provider: AcquisitionProvider,
         targetAlbumId: String? = null,
         allowPendingJob: Boolean = false,
-    ): AcquisitionSearch = botLane.withLock {
+    ): AcquisitionSearch? = botLane.withLock {
         checkTelegramReady()
         waitForTelegramOnline()
         check(state.value.review == null) { tr(R.string.acq_review_pending) }
@@ -301,13 +303,21 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 error = if (options.isEmpty()) tr(R.string.acq_no_results) else "",
             )
             search
+        } catch (error: SearchCancelledException) {
+            state.value =
+                state.value.copy(
+                    searching = false,
+                    progress = "",
+                    error = "",
+                    search = null,
+                )
+            return@withLock null
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             state.value = state.value.copy(
                 searching = false,
                 progress = "",
-                error = if (error is SearchCancelledException) "" else friendly(error),
-                search = if (error is SearchCancelledException) null else state.value.search,
+                error = friendly(error),
             )
             throw error
         } finally {
@@ -319,6 +329,10 @@ class MusicAcquisition(private val app: SpotygramApp) {
         if (state.value.searching) searchCancellationRequested.set(true)
     }
 
+    fun cancelAcquisition() {
+        if (state.value.acquiring) acquisitionCancellationRequested.set(true)
+    }
+
     fun clearSearchResults() {
         if (state.value.searching || state.value.acquiring || state.value.pendingJob != null) return
         activeSearchId = null
@@ -326,6 +340,12 @@ class MusicAcquisition(private val app: SpotygramApp) {
     }
 
     private class SearchCancelledException : RuntimeException("Pesquisa cancelada.")
+
+    private class AcquisitionCancelledException : RuntimeException("Obtenção cancelada.")
+
+    private fun checkAcquisitionNotCancelled() {
+        if (acquisitionCancellationRequested.get()) throw AcquisitionCancelledException()
+    }
 
     private fun checkSearchNotCancelled() {
         if (searchCancellationRequested.get()) throw SearchCancelledException()
@@ -386,6 +406,8 @@ class MusicAcquisition(private val app: SpotygramApp) {
         )
         persistPendingJob(pending)
 
+        acquisitionCancellationRequested.set(false)
+        var cancelledJobId = ""
         state.value = state.value.copy(acquiring = true, searching = false, progress = "", error = "", outcome = null)
         try {
             val destination = request(json("getChat", "chat_id" to destinationChatId))
@@ -394,6 +416,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                 tr(R.string.acquisition_destination_sync_channel)
             }
             val jobId = UUID.randomUUID().toString()
+            cancelledJobId = jobId
             val now = System.currentTimeMillis()
             val job = AcquisitionJob(
                 id = jobId,
@@ -676,10 +699,41 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     .joinToString("\n") { "${it.option.title}: ${it.error}" },
             )
             outcome
+        } catch (error: AcquisitionCancelledException) {
+            if (cancelledJobId.isNotBlank()) {
+                updateJob(cancelledJobId) { job ->
+                    job.copy(
+                        status = AcquisitionJobStatus.CANCELLED,
+                        items = job.items.map { item ->
+                            if (item.status == AcquisitionJobStatus.QUEUED ||
+                                item.status == AcquisitionJobStatus.RUNNING ||
+                                item.status == AcquisitionJobStatus.FORWARDING
+                            ) {
+                                item.copy(status = AcquisitionJobStatus.CANCELLED)
+                            } else {
+                                item
+                            }
+                        },
+                    )
+                }
+            }
+            clearPendingJob()
+            activeSearchId = null
+            state.value =
+                state.value.copy(
+                    acquiring = false,
+                    progress = "",
+                    error = "",
+                    outcome = AcquisitionOutcome(imported = 0, reused = 0, failed = 0, note = tr(R.string.acq_cancelled)),
+                )
+            app.notices.emit(tr(R.string.acq_cancelled))
+            AcquisitionOutcome(imported = 0, reused = 0, failed = 0, note = tr(R.string.acq_cancelled))
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             state.value = state.value.copy(acquiring = false, progress = "", error = friendly(error))
             throw error
+        } finally {
+            acquisitionCancellationRequested.set(false)
         }
     }
 
@@ -919,13 +973,19 @@ class MusicAcquisition(private val app: SpotygramApp) {
             val destination = request(json("getChat", "chat_id" to pending.destinationChatId))
             app.library.source(app.telegram.rememberChat(destination), true)
 
-            val refreshedSearch = search(
-                pending.query,
-                pending.contentType,
-                pending.provider,
-                pending.targetAlbumId,
-                allowPendingJob = true,
-            )
+            val refreshedSearch =
+                search(
+                    pending.query,
+                    pending.contentType,
+                    pending.provider,
+                    pending.targetAlbumId,
+                    allowPendingJob = true,
+                ) ?: return@withLock AcquisitionOutcome(
+                    imported = 0,
+                    reused = 0,
+                    failed = 0,
+                    note = tr(R.string.acq_cancelled),
+                )
             val selectedNumbers = pending.selectedTitles.map { title ->
                 val matches = refreshedSearch.results.filter {
                     MusicAcquisitionRules.cleanCollectionTitle(it.title).equals(
@@ -1319,7 +1379,9 @@ class MusicAcquisition(private val app: SpotygramApp) {
         var completionReason: AcquisitionCompletionReason? = null
 
         while (System.currentTimeMillis() - started < maxWait) {
+            checkAcquisitionNotCancelled()
             delay(2_000)
+            checkAcquisitionNotCancelled()
             val messages = historyAfter(botChatId, lastObservedMessageId)
             for (message in messages) {
                 val id = message.optLong("id")

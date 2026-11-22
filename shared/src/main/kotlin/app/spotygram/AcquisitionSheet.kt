@@ -253,6 +253,11 @@ internal fun AcquisitionSheet(
             if (state.progress.isNotBlank()) {
                 Text(state.progress, style = MaterialTheme.typography.bodySmall)
             }
+            if (state.acquiring) {
+                OutlinedButton(onClick = { acquisition.cancelAcquisition() }) {
+                    Text(tr(R.string.cancel))
+                }
+            }
         }
 
         state.search?.let { search ->
@@ -606,6 +611,7 @@ private fun acquisitionStatusLabel(status: AcquisitionJobStatus): Int =
         AcquisitionJobStatus.PARTIAL -> R.string.acquisition_status_partial
         AcquisitionJobStatus.FAILED -> R.string.acquisition_status_failed
         AcquisitionJobStatus.SKIPPED_DUPLICATE -> R.string.acquisition_status_skipped_duplicate
+        AcquisitionJobStatus.CANCELLED -> R.string.acquisition_status_cancelled
     }
 
 private fun acquisitionTypeLabel(type: AcquisitionContentType): Int =

@@ -695,4 +695,6 @@
     <string name="home_album_missing">%1$d missing</string>
     <string name="download_offline">Download offline</string>
     <string name="artist_download_confirm">Download %1$d tracks to this device?</string>
+    <string name="acq_cancelled">Acquisition cancelled.</string>
+    <string name="acquisition_status_cancelled">Cancelled</string>
 </resources>
