@@ -70,6 +70,7 @@ fun SettingsSheet(
     onCache: () -> Unit,
     onSharing: () -> Unit,
     onAcquisition: () -> Unit,
+    onSources: () -> Unit,
     onClose: () -> Unit,
 ) {
     val theme by app.theme.collectAsStateWithLifecycle()
@@ -444,6 +445,7 @@ fun SettingsSheet(
                         app.platform.stopDownloads(app)
                     }
                 ActionRow(Icons.Rounded.Add, tr(R.string.import_files), onClick = onImport)
+                ActionRow(Icons.Rounded.Widgets, tr(R.string.sources), onClick = onSources)
                 ActionRow(Icons.Rounded.Forum, tr(R.string.music_bot_setup_action)) {
                     app.action {
                         val activated = app.acquisition.activateBot()

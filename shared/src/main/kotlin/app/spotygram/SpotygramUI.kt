@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -428,6 +429,10 @@ fun SpotygramUI(
                     onCache = { sheet = "cache" },
                     onSharing = { sheet = "sharingSettings" },
                     onAcquisition = { sheet = "acquisition" },
+                    onSources = {
+                        sheet = ""
+                        navigate(4)
+                    },
                     onClose = ::closeSheet,
                 )
             "sharingSettings" ->
@@ -792,7 +797,7 @@ fun SpotygramUI(
                                         }
                                     }
                                 }
-                                if (tab in 0..4) {
+                                if (tab in 0..3) {
                                     Row(
                                         Modifier.widthIn(max = 720.dp)
                                             .fillMaxWidth()
@@ -805,7 +810,6 @@ fun SpotygramUI(
                                             1 to tr(R.string.favorites),
                                             2 to tr(R.string.playlists),
                                             3 to tr(R.string.albums),
-                                            4 to tr(R.string.sources),
                                         ).forEach { (index, label) ->
                                             FilterChip(
                                                 selected = tab == index,
@@ -1080,6 +1084,21 @@ fun SpotygramUI(
                                                     },
                                                     onRefresh = { app.action { app.refresh() } },
                                                 )
+                                        }
+                                    }
+                                    if (tab == 4) {
+                                        TextButton(
+                                            onClick = { navigate(0) },
+                                            modifier =
+                                                Modifier.align(Alignment.TopStart)
+                                                    .padding(8.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                                tr(R.string.back),
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(tr(R.string.library))
                                         }
                                     }
                                 }
