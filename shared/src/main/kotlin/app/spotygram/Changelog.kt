@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.28",
+                english =
+                    "Android Auto now has a Home screen with recent, favourites, offline and playlists, and the assistant can play anything already in the library by voice. Covers picked on the phone also appear in the car. Acquisition stays on the phone because Android Auto only allows browsing and playback.",
+                portuguese =
+                    "O Android Auto tem agora um Início com recentes, favoritos, offline e playlists, e o Assistente consegue tocar por voz o que já está na biblioteca. As capas escolhidas no telemóvel também aparecem no carro. A aquisição fica no telemóvel porque o Android Auto só permite navegação e reprodução.",
+            ),
+            ChangelogEntry(
                 version = "0.1.27",
                 english =
                     "Completing an album now opens the dialog and lists the tracks you already have and the ones missing, with a completion bar. Acquired tracks can be reviewed before they are written to the library. MLib can be locked with the device screen lock. Album details show sourced information from MusicBrainz and Wikipedia. Album and playlist covers can be picked from the device, and AMOLED and high-contrast themes were added.",
