@@ -86,6 +86,7 @@ fun SettingsSheet(
     var repairSync by rememberSaveable { mutableStateOf(false) }
     var confirmArchive by remember { mutableStateOf(false) }
     var sleepDialog by remember { mutableStateOf(false) }
+    var changelogOpen by remember { mutableStateOf(false) }
     var duplicateDialog by remember { mutableStateOf(false) }
     var recoveryCode by remember { mutableStateOf("") }
     var syncKeyInput by remember { mutableStateOf("") }
@@ -523,11 +524,16 @@ fun SettingsSheet(
                 UpdateSettings(app)
             }
             item(key = "about") {
-                Text(
-                    "MLib ${BuildConfig.VERSION_NAME}",
-                    Modifier.padding(top = 20.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                TextButton(
+                    onClick = { changelogOpen = true },
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp),
+                ) {
+                    Text(
+                        "MLib ${BuildConfig.VERSION_NAME} · ${tr(R.string.changelog)}",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
                 Text(
                     tr(R.string.app_description),
                     Modifier.padding(vertical = 12.dp),
@@ -585,6 +591,38 @@ fun SettingsSheet(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { duplicateDialog = false }) { Text(tr(R.string.close)) }
+            },
+        )
+    }
+    if (changelogOpen) {
+        AlertDialog(
+            onDismissRequest = { changelogOpen = false },
+            title = { Text(tr(R.string.changelog_title)) },
+            text = {
+                Column(
+                    Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    val language = app.platform.locale.language
+                    Changelog.forLanguage(language).forEach { (version, text) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                "v$version",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(text, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    app.platform.openUrl("https://github.com/ginjeira/MLib/releases")
+                }) { Text(tr(R.string.changelog_all_versions)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { changelogOpen = false }) { Text(tr(R.string.close)) }
             },
         )
     }

@@ -649,4 +649,7 @@
     <string name="acq_from_history">Resultados reutilizados do chat do bot; não foi enviado um novo pedido.</string>
     <string name="acq_no_connection">O Telegram ainda está a ligar. Aguarda a ligação ou reconecta.</string>
     <string name="reconnect">Reconectar</string>
+    <string name="changelog">novidades</string>
+    <string name="changelog_title">O que mudou</string>
+    <string name="changelog_all_versions">Todas as releases no GitHub</string>
 </resources>

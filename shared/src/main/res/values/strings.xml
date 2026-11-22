@@ -644,4 +644,7 @@
     <string name="acq_from_history">Results reused from the existing bot chat; no new bot request was sent.</string>
     <string name="acq_no_connection">Telegram is still connecting. Wait for the connection or reconnect.</string>
     <string name="reconnect">Reconnect</string>
+    <string name="changelog">changelog</string>
+    <string name="changelog_title">What changed</string>
+    <string name="changelog_all_versions">All releases on GitHub</string>
 </resources>
