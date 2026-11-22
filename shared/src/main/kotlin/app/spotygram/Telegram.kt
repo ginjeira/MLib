@@ -210,7 +210,11 @@ class Telegram(
                         json(
                             "getChatMember",
                             "chat_id" to chatId,
-                            "member_id" to me,
+                            "member_id" to
+                                json(
+                                    "messageSenderUser",
+                                    "user_id" to me,
+                                ),
                         )
                     )
                 }

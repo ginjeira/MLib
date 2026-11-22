@@ -646,7 +646,7 @@ fun ChatPicker(
                         val owned = ArrayList<ChatChoice>()
                         for (choice in merged) {
                             ensureActive()
-                            if (choice.isChannel || app.telegram.isOwnerOrAdmin(choice.id)) owned += choice
+                            if (app.telegram.isOwnerOrAdmin(choice.id)) owned += choice
                         }
                         owned
                     } else {
