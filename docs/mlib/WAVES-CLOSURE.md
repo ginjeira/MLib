@@ -10,7 +10,7 @@ A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como
 - **App lock:** bloqueio opcional com o mecanismo do dispositivo.
 - **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
 - **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição; anel de completude no detalhe; capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas; placeholder explícito em vez de Unsplash.
-- Validação local: 86 testes, 0 falhas.
+- Validação local: 100 testes, 0 falhas.
 
 ## Fechadas
 
@@ -85,7 +85,7 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 Inclui:
 
 - sleep timer e velocidade de reprodução;
-- Android Auto Offline/Recent/Artists;
+- Android Auto completo para reprodução: Início, todas as faixas, playlists, álbuns, artistas, favoritos, offline e recentes, com pesquisa por voz do Assistente restrita à biblioteca (a aquisição não é permitida no carro);
 - auto-download de favoritos;
 - enriquecimento e pesquisa unificada;
 - app lock com o bloqueio do dispositivo;

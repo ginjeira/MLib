@@ -40,7 +40,8 @@ Verificado em **22-11-2026, 14:05 UTC**.
 - Wave 4: capas personalizadas de álbum e playlist a partir do dispositivo, guardadas como data URI em `cover_url` (persistem e sincronizam); presets Unsplash substituídos por placeholder explícito; anel de completude no detalhe do álbum.
 - Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
 - Temas AMOLED e alto contraste, com validação de sync e testes.
-- Validação local: `:desktop:test` com **86 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Android Auto completo para reprodução: Início, pesquisa por voz (biblioteca), notificações de todas as ramificações e capas personalizadas; aquisição continua fora do carro por política do Android Auto.
+- Validação local: `:desktop:test` com **100 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -261,7 +262,7 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 
 **Tarefas — entregue no âmbito atual**
 
-- [x] Android Auto: Offline, Recent e Artists.
+- [x] Android Auto: Início, todas as faixas, playlists, álbuns, artistas, favoritos, offline e recentes; pesquisa por voz do Assistente limitada à biblioteca; capas `data:`; testes do browse tree.
 - [x] Auto-download de favoritos com limite de storage.
 - [x] Exportação JSON da biblioteca.
 - [x] Bloqueio com o dispositivo (app lock).
