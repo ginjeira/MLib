@@ -643,4 +643,5 @@
     <string name="album_enriching">A preencher metadados…</string>
     <string name="album_enrich_failed">Não foi possível preencher os metadados.</string>
     <string name="search_telegram">Procurar no Telegram</string>
+    <string name="acquisition_retry_job">Pesquisar novamente</string>
 </resources>
