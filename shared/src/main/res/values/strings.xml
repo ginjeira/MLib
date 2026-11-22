@@ -655,4 +655,8 @@
     <string name="acq_review_pending">Finish or reject the current acquisition review first.</string>
     <string name="acq_review_rejected">The acquisition was rejected; forwarded test messages were removed.</string>
     <string name="acq_review_existing">already in library</string>
+    <string name="app_lock_title">Unlock MLib</string>
+    <string name="app_lock_prompt">Use your device screen lock to open MLib.</string>
+    <string name="app_lock">Lock MLib with the device screen lock</string>
+    <string name="app_lock_help">MLib asks for your device PIN, pattern, password or biometrics whenever the app opens.</string>
 </resources>

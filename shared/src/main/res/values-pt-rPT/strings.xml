@@ -660,4 +660,8 @@
     <string name="acq_review_pending">Conclui ou rejeita a revisão da aquisição atual primeiro.</string>
     <string name="acq_review_rejected">A aquisição foi rejeitada; as mensagens de teste encaminhadas foram removidas.</string>
     <string name="acq_review_existing">já está na biblioteca</string>
+    <string name="app_lock_title">Desbloquear o MLib</string>
+    <string name="app_lock_prompt">Usa o bloqueio do dispositivo para abrir o MLib.</string>
+    <string name="app_lock">Bloquear o MLib com o bloqueio do dispositivo</string>
+    <string name="app_lock_help">O MLib pede o PIN, padrão, palavra-passe ou biometria do dispositivo sempre que abre.</string>
 </resources>
