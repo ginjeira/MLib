@@ -127,6 +127,7 @@ Prioridade **P1**:
 Prioridade **P2**:
 
 5. **Páginas de artista** — discografia, álbuns, faixas, fontes.
+6. **Conhecimento musical com fonte** — biografia, datas, origem, membros, contexto e trivia verificável via MusicBrainz/Wikipédia, com atribuição, cache offline e sem alterar tags locais (Wave 8).
 6. **Smart downloads** — favoritos/álbuns/playlists automáticos; limites de storage.
 7. **Fila e retoma entre dispositivos** — via CloudSync, só metadata/posição.
 8. **Widgets e quick settings** — now playing, continuar a ouvir, saúde da biblioteca.

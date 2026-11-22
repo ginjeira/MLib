@@ -50,6 +50,7 @@ Verificado em **22-11-2026, 08:35 UTC**.
 | Wave 5 — setup/jobs | **Parcial** | ~60% | `/start` apenas no setup, canal de arquivo e histórico de jobs na 0.1.19. Faltam retry parcial e testes crash/restart. |
 | Wave 6 — descoberta/poder | **Em curso** | ~40% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento e pesquisa unificada. Faltam widgets, import/export para ficheiro, privacidade, scrobbling e smart playlists. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
+| Wave 8 — conhecimento musical | **Não iniciada** | 0% | Biografias, datas, discografia e contexto com fontes abertas e atribuição. Depende das páginas de artista/álbum. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
 
@@ -294,6 +295,56 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 - Desktop permanece desactivado/fail-closed até decisão explícita.
 - Perfis não misturam dados nem sincronização.
 
+### Wave 8 — Conhecimento musical (artista, álbum, faixa)
+
+**Objectivo:** enriquecer a biblioteca com informação contextual **com fonte**, sem alterar tags locais nem inventar factos.
+
+**Fontes propostas**
+
+- **MusicBrainz** — identidade canónica (MBID), datas de formação/nascimento, lançamentos, relações e créditos. Dados CC0, limite ~1 pedido/s, User-Agent identificado.
+- **Wikidata / Wikipédia** — biografia, história, origem, membros e contexto; texto com atribuição CC BY-SA e link para a fonte.
+- **Deezer / iTunes** — datas, género e capas já usados; sem chaves novas.
+- **Discogs / Last.fm** — apenas se forem aceites os termos e a gestão de chaves; não são necessários para o MVP.
+
+**Dados e regras**
+
+- Tabelas locais `artist_metadata` e `album_metadata` com MBID, resumo, língua, datas, origem, membros, géneros, fontes, licença, `fetched_at` e ETag.
+- Cache com TTL e revalidação; funcionamento offline com o último resumo válido.
+- Matching por MBID/ISRC; fuzzy apenas para sugerir, nunca para substituir automaticamente.
+- Nunca sobrescrever título/artista/ano locais sem confirmação.
+- Curiosidades/“trivia” apenas quando existir uma secção/fonte verificável; sem texto gerado por IA apresentado como facto.
+- Imagens só com licença compatível e atribuição; nunca incorporar imagens sem licença.
+
+**UI**
+
+- Página de artista: imagem licenciada, resumo, origem, datas, géneros, discografia e link “Ler mais na fonte”.
+- Álbum: data de lançamento, editora, género, créditos e contexto com fonte.
+- Faixa: compositor/letrista quando disponível.
+- Badge “Informação de MusicBrainz/Wikipédia” e data da última atualização.
+- Fallback claro quando não há enriquecimento.
+
+**Privacidade e limites**
+
+- Pedidos a APIs públicas sem dados de conta; divulgar que o nome do artista/álbum é enviado.
+- Respeitar rate limits, backoff e cache; sem chamadas em segundo plano agressivas.
+- Não enviar chaves privadas no APK; evitar Last.fm/Discogs se exigirem segredo embutido.
+
+**Fases**
+
+1. **8.1** — MusicBrainz: identidade, datas, lançamentos e créditos.
+2. **8.2** — Wikipédia/Wikidata: resumo e contexto com atribuição.
+3. **8.3** — páginas de artista e discografia.
+4. **8.4** — fontes opcionais (Last.fm/Discogs), só com termos/keys definidos.
+
+**Aceitação**
+
+- Nenhuma tag local é alterada automaticamente.
+- Toda a informação tem fonte, licença e data de recolha.
+- Cache offline e fallback funcionam.
+- Parser e matching têm fixtures; chamadas live têm limites e erros tratados.
+- A UI distingue claramente “dados locais” de “dados externos”.
+
+**Prioridade:** P2/P3, depois das Waves 4 e 6. Não bloqueia releases atuais.
 ## 3. Backlog completo por wave
 
 | ID | Item | Wave | Prioridade | Depende de |
@@ -361,6 +412,7 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 6. **Wave 5** — setup e jobs.
 7. **Wave 6** — descoberta e poder.
 8. **Wave 7** — plataformas.
+9. **Wave 8** — conhecimento musical com fontes abertas.
 
 ## 6. Critérios globais de conclusão
 
