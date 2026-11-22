@@ -17,6 +17,10 @@ import org.json.JSONObject
 private const val MAX_IMPORT_BYTES = 1L * 1024 * 1024 * 1024
 
 class SpotygramApp(val platform: Platform) {
+    init {
+        Knowledge.cache = KnowledgeCache(File(platform.filesDir, "knowledge-cache.json"))
+    }
+
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     val filesDir
         get() = platform.filesDir

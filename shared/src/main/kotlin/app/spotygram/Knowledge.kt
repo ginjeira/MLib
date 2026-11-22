@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-private data class KnowledgeRelease(
+data class KnowledgeRelease(
     val date: String,
     val kind: String,
     val url: String,
@@ -22,26 +22,87 @@ data class KnowledgeInfo(
     val releaseDate: String = "",
     val kind: String = "",
     val genres: String = "",
+    val fetchedAt: Long = 0,
 )
 
+/** Parses a MusicBrainz release-group search response. */
+fun parseReleaseGroup(json: JSONObject): KnowledgeRelease? {
+    val group = json.optJSONArray("release-groups")?.optJSONObject(0) ?: return null
+    val date = group.optString("first-release-date").take(10)
+    val kind = group.optString("primary-type")
+    val id = group.optString("id")
+    val genres =
+        group.optJSONArray("tags")
+            ?.let { tags ->
+                buildList {
+                    for (i in 0 until minOf(tags.length(), 4)) {
+                        tags.optJSONObject(i)?.optString("name")?.takeIf(String::isNotBlank)
+                            ?.let(::add)
+                    }
+                }.joinToString(", ")
+            }
+            .orEmpty()
+    if (date.isBlank() && kind.isBlank() && genres.isBlank()) return null
+    return KnowledgeRelease(
+        date = date,
+        kind = kind,
+        url = if (id.isBlank()) "" else "https://musicbrainz.org/release-group/$id",
+        genres = genres,
+    )
+}
+
+/** Parses the first page title of a Wikipedia search response. */
+fun parseWikipediaPage(search: JSONObject): String? =
+    search.optJSONObject("query")
+        ?.optJSONArray("search")
+        ?.optJSONObject(0)
+        ?.optString("title")
+        ?.takeIf(String::isNotBlank)
+
+/** Parses a Wikipedia REST summary, falling back to a generated article URL. */
+fun parseWikipediaSummary(
+    summary: JSONObject,
+    fallbackUrl: String,
+): Pair<String, String>? {
+    val extract = summary.optString("extract").takeIf(String::isNotBlank) ?: return null
+    val url =
+        summary.optJSONObject("content_urls")?.optJSONObject("desktop")?.optString("page")
+            .orEmpty()
+            .ifBlank { fallbackUrl }
+    return extract to url
+}
+
 object Knowledge {
+    private const val MB_SOURCE = "MusicBrainz (CC0)"
+    private const val WIKI_SOURCE = "Wikipédia (CC BY-SA)"
+
+    /** Optional on-disk cache; hosts set this once at startup. */
+    @Volatile
+    var cache: KnowledgeCache? = null
+
     suspend fun album(artist: String, title: String): KnowledgeInfo? = withContext(Dispatchers.IO) {
         val term = listOf(artist, title).filter(String::isNotBlank).joinToString(" ").trim()
         if (term.isBlank()) return@withContext null
+        val key = listOf(artist, title).joinToString("|").trim().lowercase()
+        cache?.get(key)?.let { return@withContext it }
         val mb = quietly { musicBrainz(artist, title) }
         val wiki = quietly { wikipedia(term) }
         if (mb == null && wiki == null) return@withContext null
-        return@withContext KnowledgeInfo(
-            summary = wiki?.first.orEmpty(),
-            sourceNames = listOfNotNull(
-                "MusicBrainz".takeIf { mb != null },
-                "Wikipédia".takeIf { wiki != null },
-            ).joinToString(" · "),
-            sourceUrl = wiki?.second ?: mb?.url.orEmpty(),
-            releaseDate = mb?.date.orEmpty(),
-            kind = mb?.kind.orEmpty(),
-            genres = mb?.genres.orEmpty(),
-        )
+        val info =
+            KnowledgeInfo(
+                summary = wiki?.first.orEmpty(),
+                sourceNames = listOfNotNull(
+                    MB_SOURCE.takeIf { mb != null },
+                    WIKI_SOURCE.takeIf { wiki != null },
+                ).joinToString(" · "),
+                sourceUrl = wiki?.second ?: mb?.url.orEmpty(),
+                releaseDate = mb?.date.orEmpty(),
+                kind = mb?.kind.orEmpty(),
+                genres = mb?.genres.orEmpty(),
+                fetchedAt = System.currentTimeMillis(),
+            )
+        cache?.put(key, info)
+        info
     }
 
     private suspend fun <T> quietly(block: suspend () -> T?): T? =
@@ -52,7 +113,6 @@ object Knowledge {
         } catch (_: Exception) {
             null
         }
-
 
     private fun fetch(url: String): JSONObject {
         val connection = URL(url).openConnection() as HttpURLConnection
@@ -92,27 +152,7 @@ object Knowledge {
             fetch(
                 "https://musicbrainz.org/ws/2/release-group/?query=${encode(query)}&fmt=json&limit=1"
             )
-        val group = json.optJSONArray("release-groups")?.optJSONObject(0) ?: return null
-        val date = group.optString("first-release-date").take(10)
-        val kind = group.optString("primary-type")
-        val id = group.optString("id")
-        val genres =
-            group.optJSONArray("tags")
-                ?.let { tags ->
-                    buildList {
-                        for (i in 0 until minOf(tags.length(), 4)) {
-                            tags.optJSONObject(i)?.optString("name")?.takeIf(String::isNotBlank)
-                                ?.let(::add)
-                        }
-                    }.joinToString(", ")
-                }
-                .orEmpty()
-        return KnowledgeRelease(
-            date = date,
-            kind = kind,
-            url = if (id.isBlank()) "" else "https://musicbrainz.org/release-group/$id",
-            genres = genres,
-        )
+        return parseReleaseGroup(json)
     }
 
     private fun wikipedia(term: String): Pair<String, String>? {
@@ -120,17 +160,79 @@ object Knowledge {
             fetch(
                 "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encode(term)}&format=json&srlimit=1"
             )
-        val page = search.optJSONObject("query")?.optJSONArray("search")?.optJSONObject(0)
-            ?.optString("title").orEmpty()
-        if (page.isBlank()) return null
-        val summary =
-            fetch("https://en.wikipedia.org/api/rest_v1/page/summary/${encode(page.replace(' ', '_'))}")
-        val extract = summary.optString("extract")
-        if (extract.isBlank()) return null
-        val url =
-            summary.optJSONObject("content_urls")?.optJSONObject("desktop")?.optString("page")
-                .orEmpty()
-                .ifBlank { "https://en.wikipedia.org/wiki/${encode(page.replace(' ', '_'))}" }
-        return extract to url
+        val page = parseWikipediaPage(search) ?: return null
+        val slug = encode(page.replace(' ', '_'))
+        val summary = fetch("https://en.wikipedia.org/api/rest_v1/page/summary/$slug")
+        return parseWikipediaSummary(summary, "https://en.wikipedia.org/wiki/$slug")
+    }
+}
+
+/** On-disk cache for album knowledge, keyed by artist and title with a TTL. */
+class KnowledgeCache(
+    private val file: java.io.File?,
+    private val ttlMillis: Long = 30L * 24 * 60 * 60 * 1000,
+    private val maxEntries: Int = 300,
+) {
+    private fun read(): JSONObject =
+        try {
+            val text = file?.takeIf { it.isFile }?.readText().orEmpty()
+            if (text.isBlank()) JSONObject() else JSONObject(text)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+
+    fun get(key: String, now: Long = System.currentTimeMillis()): KnowledgeInfo? {
+        if (file == null) return null
+        val entry = read().optJSONObject("entries")?.optJSONObject(key) ?: return null
+        val at = entry.optLong("at", 0)
+        if (at <= 0 || now - at > ttlMillis) return null
+        val info = entry.optJSONObject("info") ?: return null
+        val summary = info.optString("summary")
+        val date = info.optString("date")
+        val kind = info.optString("kind")
+        if (summary.isBlank() && date.isBlank() && kind.isBlank()) return null
+        return KnowledgeInfo(
+            summary = summary,
+            sourceNames = info.optString("sources"),
+            sourceUrl = info.optString("url"),
+            releaseDate = date,
+            kind = kind,
+            genres = info.optString("genres"),
+            fetchedAt = info.optLong("fetched", at),
+        )
+    }
+
+    fun put(key: String, info: KnowledgeInfo, now: Long = System.currentTimeMillis()) {
+        val target = file ?: return
+        if (info.summary.isBlank() && info.releaseDate.isBlank() && info.kind.isBlank()) return
+        val root = read()
+        val entries = root.optJSONObject("entries") ?: JSONObject().also { root.put("entries", it) }
+        entries.put(
+            key,
+            JSONObject().put("at", now).put(
+                "info",
+                JSONObject()
+                    .put("summary", info.summary)
+                    .put("sources", info.sourceNames)
+                    .put("url", info.sourceUrl)
+                    .put("date", info.releaseDate)
+                    .put("kind", info.kind)
+                    .put("genres", info.genres)
+                    .put("fetched", info.fetchedAt),
+            ),
+        )
+        while (entries.length() > maxEntries) {
+            val oldest =
+                entries.keys().asSequence().minByOrNull {
+                    entries.optJSONObject(it)?.optLong("at", 0) ?: 0
+                } ?: break
+            entries.remove(oldest)
+        }
+        try {
+            target.parentFile?.mkdirs()
+            target.writeText(root.put("version", 1).toString())
+        } catch (_: Exception) {
+            // A cache write failure must never break the lookup.
+        }
     }
 }

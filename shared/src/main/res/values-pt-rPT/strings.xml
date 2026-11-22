@@ -679,4 +679,5 @@
     <string name="album_knowledge_failed">Não foi possível obter informação do álbum.</string>
     <string name="album_knowledge_source">Fonte: %1$s</string>
     <string name="album_knowledge_open_source">Abrir fonte</string>
+    <string name="album_knowledge_updated">Recolhido em %1$s</string>
 </resources>

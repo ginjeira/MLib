@@ -674,4 +674,5 @@
     <string name="album_knowledge_failed">Could not fetch album information.</string>
     <string name="album_knowledge_source">Source: %1$s</string>
     <string name="album_knowledge_open_source">Open source</string>
+    <string name="album_knowledge_updated">Collected on %1$s</string>
 </resources>

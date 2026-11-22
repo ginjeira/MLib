@@ -497,6 +497,18 @@ fun AlbumsScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (info.fetchedAt > 0) {
+                                val collected =
+                                    java.time.Instant.ofEpochMilli(info.fetchedAt)
+                                        .atZone(java.time.ZoneId.systemDefault())
+                                        .toLocalDate()
+                                        .toString()
+                                Text(
+                                    tr(R.string.album_knowledge_updated, collected),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 },
