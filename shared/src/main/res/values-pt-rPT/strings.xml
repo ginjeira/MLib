@@ -698,4 +698,5 @@
     <string name="artist_summary">%1$d faixas · %2$d álbuns</string>
     <string name="home_album_complete">Completo</string>
     <string name="home_album_missing">%1$d em falta</string>
+    <string name="download_offline">Descarregar offline</string>
 </resources>

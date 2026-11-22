@@ -3,6 +3,8 @@ package app.spotygram
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -110,6 +112,7 @@ private fun ArtistRow(entry: ArtistProfile, playingId: String, onClick: () -> Un
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ArtistPage(
     profile: ArtistProfile,
@@ -135,7 +138,7 @@ private fun ArtistPage(
                 }
         knowledgeBusy = false
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
         item(key = "header") {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
@@ -144,7 +147,11 @@ private fun ArtistPage(
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr(R.string.back))
                 }
-                Column(Modifier.weight(1f)) {
+                Artwork(
+                    profile.playable.firstOrNull() ?: profile.tracks.firstOrNull(),
+                    88.dp,
+                )
+                Column(Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(
                         profile.name.ifBlank { tr(R.string.unknown_artist) },
                         style = MaterialTheme.typography.titleLarge,
@@ -160,9 +167,10 @@ private fun ArtistPage(
             }
         }
         item(key = "actions") {
-            Row(
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 TextButton(
                     enabled = profile.playable.isNotEmpty(),
@@ -178,18 +186,14 @@ private fun ArtistPage(
                 TextButton(
                     enabled = profile.playable.any { it.available && !it.offlineCopyValid },
                     onClick = { onDownload(profile.playable.map { it.id }) },
-                ) { Text(tr(R.string.album_download_offline)) }
+                ) { Text(tr(R.string.download_offline)) }
                 TextButton(
                     enabled = profile.name.isNotBlank(),
                     onClick = { onSearchTelegram(profile.name) },
                 ) { Text(tr(R.string.search_telegram)) }
             }
         }
-        item(key = "about") {
-            ArtistAbout(knowledge, knowledgeBusy, knowledgeError) { url ->
-                uriHandler.openUri(url)
-            }
-        }
+
         if (profile.playableAlbums.isNotEmpty()) {
             item(key = "albums") {
                 Text(
@@ -255,6 +259,11 @@ private fun ArtistPage(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+        item(key = "about") {
+            ArtistAbout(knowledge, knowledgeBusy, knowledgeError) { url ->
+                uriHandler.openUri(url)
             }
         }
     }

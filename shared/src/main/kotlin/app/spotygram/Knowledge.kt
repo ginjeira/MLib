@@ -103,7 +103,35 @@ fun parseArtist(json: JSONObject): KnowledgeRelease? {
 
 object Knowledge {
     private const val MB_SOURCE = "MusicBrainz (CC0)"
-    private const val WIKI_SOURCE = "Wikipédia (CC BY-SA)"
+
+    private fun appLanguage(): String =
+        runCatching { AppText.platform.locale.language }
+            .getOrDefault("en")
+            .let { if (it.lowercase().startsWith("pt")) "pt" else "en" }
+
+    private fun wikiSource(language: String): String =
+        if (language == "pt") "Wikipédia (CC BY-SA)" else "Wikipedia (CC BY-SA)"
+
+    private fun wikiDomain(language: String): String =
+        if (language == "pt") "pt.wikipedia.org" else "en.wikipedia.org"
+
+    /** MusicBrainz types are English facts; localize the fixed vocabulary only. */
+    private fun localizedType(kind: String, language: String): String {
+        if (language != "pt") return kind
+        return when (kind.lowercase()) {
+            "album" -> "Álbum"
+            "single" -> "Single"
+            "ep" -> "EP"
+            "broadcast" -> "Emissão"
+            "other" -> "Outro"
+            "group" -> "Grupo"
+            "person" -> "Pessoa"
+            "orchestra" -> "Orquestra"
+            "choir" -> "Coro"
+            "character" -> "Personagem"
+            else -> kind
+        }
+    }
 
     /** Optional on-disk cache; hosts set this once at startup. */
     @Volatile
@@ -112,21 +140,22 @@ object Knowledge {
     suspend fun album(artist: String, title: String): KnowledgeInfo? = withContext(Dispatchers.IO) {
         val term = listOf(artist, title).filter(String::isNotBlank).joinToString(" ").trim()
         if (term.isBlank()) return@withContext null
-        val key = listOf(artist, title).joinToString("|").trim().lowercase()
+        val language = appLanguage()
+        val key = "$language|" + listOf(artist, title).joinToString("|").trim().lowercase()
         cache?.get(key)?.let { return@withContext it }
         val mb = quietly { musicBrainz(artist, title) }
-        val wiki = quietly { wikipedia(term) }
+        val wiki = quietly { wikipedia(term, language) }
         if (mb == null && wiki == null) return@withContext null
         val info =
             KnowledgeInfo(
                 summary = wiki?.first.orEmpty(),
                 sourceNames = listOfNotNull(
                     MB_SOURCE.takeIf { mb != null },
-                    WIKI_SOURCE.takeIf { wiki != null },
+                    wikiSource(language).takeIf { wiki != null },
                 ).joinToString(" · "),
                 sourceUrl = wiki?.second ?: mb?.url.orEmpty(),
                 releaseDate = mb?.date.orEmpty(),
-                kind = mb?.kind.orEmpty(),
+                kind = mb?.kind?.let { localizedType(it, language) }.orEmpty(),
                 genres = mb?.genres.orEmpty(),
                 fetchedAt = System.currentTimeMillis(),
             )
@@ -137,21 +166,22 @@ object Knowledge {
     suspend fun artist(name: String): KnowledgeInfo? = withContext(Dispatchers.IO) {
         val term = name.trim()
         if (term.isBlank()) return@withContext null
-        val key = "artist|${term.lowercase()}"
+        val language = appLanguage()
+        val key = "$language|artist|${term.lowercase()}"
         cache?.get(key)?.let { return@withContext it }
         val mb = quietly { musicBrainzArtist(term) }
-        val wiki = quietly { wikipedia(term) }
+        val wiki = quietly { wikipedia(term, language) }
         if (mb == null && wiki == null) return@withContext null
         val info =
             KnowledgeInfo(
                 summary = wiki?.first.orEmpty(),
                 sourceNames = listOfNotNull(
                     MB_SOURCE.takeIf { mb != null },
-                    WIKI_SOURCE.takeIf { wiki != null },
+                    wikiSource(language).takeIf { wiki != null },
                 ).joinToString(" · "),
                 sourceUrl = wiki?.second ?: mb?.url.orEmpty(),
                 releaseDate = mb?.date.orEmpty(),
-                kind = mb?.kind.orEmpty(),
+                kind = mb?.kind?.let { localizedType(it, language) }.orEmpty(),
                 genres = mb?.genres.orEmpty(),
                 fetchedAt = System.currentTimeMillis(),
             )
@@ -217,15 +247,28 @@ object Knowledge {
         return parseReleaseGroup(json)
     }
 
-    private fun wikipedia(term: String): Pair<String, String>? {
-        val search =
-            fetch(
-                "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encode(term)}&format=json&srlimit=1"
-            )
-        val page = parseWikipediaPage(search) ?: return null
-        val slug = encode(page.replace(' ', '_'))
-        val summary = fetch("https://en.wikipedia.org/api/rest_v1/page/summary/$slug")
-        return parseWikipediaSummary(summary, "https://en.wikipedia.org/wiki/$slug")
+    private fun wikipedia(term: String, language: String): Pair<String, String>? {
+        val domains =
+            if (language == "pt") {
+                listOf("pt.wikipedia.org", "en.wikipedia.org")
+            } else {
+                listOf("en.wikipedia.org")
+            }
+        for (domain in domains) {
+            try {
+                val search =
+                    fetch(
+                        "https://$domain/w/api.php?action=query&list=search&srsearch=${encode(term)}&format=json&srlimit=1"
+                    )
+                val page = parseWikipediaPage(search) ?: continue
+                val slug = encode(page.replace(' ', '_'))
+                val summary = fetch("https://$domain/api/rest_v1/page/summary/$slug")
+                parseWikipediaSummary(summary, "https://$domain/wiki/$slug")?.let { return it }
+            } catch (_: Exception) {
+                continue
+            }
+        }
+        return null
     }
 }
 
