@@ -86,6 +86,7 @@ fun MusicScreen(
     onDownload: (List<String>) -> Unit,
     onAddToPlaylist: (List<String>) -> Unit,
     onSearchChats: (String) -> Unit,
+    onSearchTelegram: (String) -> Unit = {},
     onAddTracks: () -> Unit,
     onPlaylistMenu: () -> Unit,
     onRemoveTracks: (List<String>) -> Unit,
@@ -463,6 +464,20 @@ fun MusicScreen(
                     modifier = Modifier.padding(horizontal = 8.dp),
                 ) {
                     Text(tr(R.string.search_selected_chats))
+                }
+            if (
+                query.isNotBlank() &&
+                    !favorites &&
+                    profile == null &&
+                    playlist == null &&
+                    !selecting
+            )
+                TextButton(
+                    onClick = { onSearchTelegram(query) },
+                    enabled = !busy,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                ) {
+                    Text(tr(R.string.search_telegram))
                 }
         }
         PullToRefreshBox(

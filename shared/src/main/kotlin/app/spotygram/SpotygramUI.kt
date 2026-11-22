@@ -90,6 +90,7 @@ fun SpotygramUI(
     }
     var fullPlayer by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf("") }
+    var acquisitionSeed by remember { mutableStateOf("") }
     var selectedTrackId by remember { mutableStateOf<String?>(null) }
     var trackAnchor by remember { mutableStateOf(IntRect.Zero) }
     var playlistId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -835,6 +836,10 @@ fun SpotygramUI(
                                                     onSearchChats = { q ->
                                                         app.action { app.searchMusic(q) }
                                                     },
+                                                    onSearchTelegram = { q ->
+                                                        acquisitionSeed = q
+                                                        sheet = "acquisition"
+                                                    },
                                                     onAddTracks = { editPlaylist(playlistId) },
                                                     onPlaylistMenu = {
                                                         managedPlaylist = playlist
@@ -1140,7 +1145,7 @@ fun SpotygramUI(
                                     "settings",
                                     "sharingSettings",
                                     "cache" -> settingsContent()
-                                    "acquisition" -> AcquisitionSheet(app, onClose = ::closeSheet)
+                                    "acquisition" -> AcquisitionSheet(app, onClose = ::closeSheet, initialQuery = acquisitionSeed)
                                     "share" -> shareContent(Modifier, null)
                                     "chats" ->
                                         SourcePicker(
