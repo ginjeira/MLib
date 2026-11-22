@@ -1010,6 +1010,13 @@ class SpotygramApp(val platform: Platform) {
                 result.takeUnless { it.isEmpty }
     }
 
+    suspend fun prepareCover(bytes: ByteArray): String? = withContext(Dispatchers.IO) {
+        if (bytes.isEmpty()) return@withContext null
+        val prepared = platform.prepareCoverImage(bytes) ?: return@withContext null
+        if (prepared.isEmpty() || prepared.size > 400_000) return@withContext null
+        "data:image/jpeg;base64," + java.util.Base64.getEncoder().encodeToString(prepared)
+    }
+
     suspend fun albumTracklist(album: Album): List<String> = withContext(Dispatchers.IO) {
         val term =
             listOf(album.artist, album.title).filter(String::isNotBlank).joinToString(" ").trim()

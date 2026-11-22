@@ -893,7 +893,11 @@ class Library(private val platform: Platform) : AutoCloseable {
             for (group in clusters.filter { it.size > 1 }) {
                 val keep = group.first()
                 val combined = group.flatMap { trackCache[it.id].orEmpty() }.distinct()
-                val bestCover = group.firstOrNull { it.coverUrl.startsWith("https://") || it.coverUrl.startsWith("http://") }?.coverUrl
+                val bestCover = group.firstOrNull {
+                    it.coverUrl.startsWith("https://") ||
+                        it.coverUrl.startsWith("http://") ||
+                        it.coverUrl.startsWith("data:image/")
+                }?.coverUrl
                     ?: keep.coverUrl
                 val bestYear = keep.year.ifBlank { group.firstNotNullOfOrNull { it.year.takeIf(String::isNotBlank) }.orEmpty() }
                 val bestGenre = keep.genre.ifBlank { group.firstNotNullOfOrNull { it.genre.takeIf(String::isNotBlank) }.orEmpty() }

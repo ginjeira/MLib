@@ -556,7 +556,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val cover = when {
                         existingCover.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(existingCover) -> existingCover
                         trackCover.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(trackCover) -> trackCover
-                        else -> MusicAcquisitionRules.genreCoverPreset("$title $artist")
+                        else -> ""
                     }
                     val albumId = app.library.createOrUpdateAlbum(
                         title = existingAlbum?.title ?: title,
@@ -584,7 +584,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     val firstTrackCover = item.tracks.firstOrNull()?.art.orEmpty()
                     val cover = firstTrackCover.takeIf {
                         it.isNotBlank() && !MusicAcquisitionRules.isMCatJobGenericAlbumCover(it)
-                    } ?: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
+                    }.orEmpty()
                     playlistId =
                         if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)
@@ -752,8 +752,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                         }
                     val cover =
                         existing?.coverUrl?.takeIf { it.isNotBlank() }
-                            ?: first.art.takeIf { it.isNotBlank() }
-                            ?: MusicAcquisitionRules.genreCoverPreset("$title $artist")
+                            ?: first.art.takeIf { it.isNotBlank() }.orEmpty()
                     acquiredAlbums +=
                         app.library.createOrUpdateAlbum(
                             title = existing?.title ?: title,
@@ -780,8 +779,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
                             review.destinationTitle,
                         )
                     val cover =
-                        item.tracks.firstOrNull()?.art?.takeIf { it.isNotBlank() }
-                            ?: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
+                        item.tracks.firstOrNull()?.art?.takeIf { it.isNotBlank() }.orEmpty()
                     playlistId =
                         if (existing != null) {
                             app.library.addToPlaylist(existing.id, ids)

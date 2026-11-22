@@ -39,6 +39,8 @@ interface Platform {
     fun observeNetwork(onType: (String) -> Unit): AutoCloseable
     fun metadata(path: String, name: String = ""): AudioMetadata
     val supportsAppLock: Boolean get() = false
+    /** Re-encodes a picked image into a compact JPEG suitable for a stored cover. */
+    fun prepareCoverImage(bytes: ByteArray, maxSize: Int = 512): ByteArray? = null
     fun openUrl(url: String)
     fun shareFile(file: java.io.File, mime: String) {}
     fun personalMessageLink(user: Long, message: Long, account: Long): String

@@ -124,6 +124,24 @@ fun main(arguments: Array<String>) {
                     dispose()
                 }
             }
+            fun pickCover(callback: (ByteArray?) -> Unit) {
+                FileDialog(null as java.awt.Frame?, tr(R.string.album_cover_pick), FileDialog.LOAD).apply {
+                    setFilenameFilter { _, name ->
+                        name.lowercase().let {
+                            it.endsWith(".jpg") || it.endsWith(".jpeg") ||
+                                it.endsWith(".png") || it.endsWith(".webp")
+                        }
+                    }
+                    isVisible = true
+                    val chosen = if (file != null) File(directory, file) else null
+                    val bytes =
+                        chosen?.takeIf { it.isFile }?.let {
+                            runCatching { it.readBytes() }.getOrNull()
+                        }
+                    dispose()
+                    callback(bytes)
+                }
+            }
             fun activate(values: List<String>) {
                 show()
                 importAddresses(values.filterNot { it.startsWith("--") })
@@ -182,6 +200,7 @@ fun main(arguments: Array<String>) {
                                     onStartPlayback = { tracks, index, order -> queue.start(tracks, index, order ?: app.playbackMode.value.order) },
                                     onImport = ::importFiles,
                                     onDownload = { ids -> app.action { app.download(ids) } },
+                                    onPickCover = ::pickCover,
                                 )
                                 if (restart) GlassDialog(
                                     onDismissRequest = { app.updateRestartRequested.value = false },

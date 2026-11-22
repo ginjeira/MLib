@@ -59,6 +59,21 @@ class MainActivity : ComponentActivity() {
                 }
             val permission =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+            var coverTarget by remember { mutableStateOf<((ByteArray?) -> Unit)?>(null) }
+            val coverPicker =
+                rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    val target = coverTarget
+                    coverTarget = null
+                    target?.invoke(
+                        uri?.let {
+                            runCatching {
+                                contentResolver.openInputStream(it)?.use { stream ->
+                                    stream.readBytes()
+                                }
+                            }.getOrNull()
+                        }
+                    )
+                }
             val configuration = androidx.compose.ui.platform.LocalConfiguration.current
             CompositionLocalProvider(
                 LocalApp provides app,
@@ -74,6 +89,10 @@ class MainActivity : ComponentActivity() {
                         playerConnection.play(tracks, index, order)
                     },
                     onImport = { picker.launch(arrayOf("audio/*")) },
+                    onPickCover = { callback ->
+                        coverTarget = callback
+                        coverPicker.launch("image/*")
+                    },
                     onDownload = { ids ->
                         if (
                             Build.VERSION.SDK_INT >= 33 && ids.any { app.track(it)?.local == false }

@@ -208,6 +208,45 @@ class AndroidPlatform(val context: AndroidApplication) : Platform {
 
     override val supportsAppLock: Boolean get() = true
 
+    override fun prepareCoverImage(bytes: ByteArray, maxSize: Int): ByteArray? {
+        if (bytes.isEmpty() || bytes.size > 8 * 1024 * 1024) return null
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sample = 1
+        while (bounds.outWidth / sample > maxSize * 2 || bounds.outHeight / sample > maxSize * 2) {
+            sample *= 2
+        }
+        val decoded =
+            android.graphics.BitmapFactory.decodeByteArray(
+                bytes,
+                0,
+                bytes.size,
+                android.graphics.BitmapFactory.Options().apply { inSampleSize = sample },
+            ) ?: return null
+        val scale = minOf(
+            maxSize.toFloat() / decoded.width,
+            maxSize.toFloat() / decoded.height,
+            1f,
+        )
+        val scaled =
+            if (scale < 1f) {
+                android.graphics.Bitmap.createScaledBitmap(
+                    decoded,
+                    (decoded.width * scale).toInt().coerceAtLeast(1),
+                    (decoded.height * scale).toInt().coerceAtLeast(1),
+                    true,
+                )
+            } else {
+                decoded
+            }
+        val output = java.io.ByteArrayOutputStream()
+        scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, output)
+        if (scaled !== decoded) scaled.recycle()
+        decoded.recycle()
+        return output.toByteArray()
+    }
+
     override fun openUrl(url: String) {
         val uri = Uri.parse(url)
         if (uri.scheme?.lowercase() !in setOf("http", "https", "tg")) return

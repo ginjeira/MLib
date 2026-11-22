@@ -131,6 +131,29 @@ class DesktopPlatform : Platform, AutoCloseable {
         runCatching { java.awt.Desktop.getDesktop().open(file) }
     }
 
+    override fun prepareCoverImage(bytes: ByteArray, maxSize: Int): ByteArray? {
+        if (bytes.isEmpty() || bytes.size > 8 * 1024 * 1024) return null
+        val source = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(bytes)) ?: return null
+        val scale = minOf(
+            maxSize.toFloat() / source.width,
+            maxSize.toFloat() / source.height,
+            1f,
+        )
+        val width = (source.width * scale).toInt().coerceAtLeast(1)
+        val height = (source.height * scale).toInt().coerceAtLeast(1)
+        val image = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB)
+        val graphics = image.createGraphics()
+        graphics.setRenderingHint(
+            java.awt.RenderingHints.KEY_INTERPOLATION,
+            java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR,
+        )
+        graphics.drawImage(source, 0, 0, width, height, null)
+        graphics.dispose()
+        val output = java.io.ByteArrayOutputStream()
+        javax.imageio.ImageIO.write(image, "jpg", output)
+        return output.toByteArray()
+    }
+
     override fun openUrl(url: String) {
         val uri = URI(url)
         require(uri.scheme in setOf("http", "https", "tg"))

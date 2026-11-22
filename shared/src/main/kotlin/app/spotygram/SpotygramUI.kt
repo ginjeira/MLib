@@ -57,6 +57,7 @@ fun SpotygramUI(
     onStartPlayback: (List<Track>, Int, PlaybackOrder?) -> Unit,
     onImport: () -> Unit,
     onDownload: (List<String>) -> Unit,
+    onPickCover: ((ByteArray?) -> Unit) -> Unit = { callback -> callback(null) },
 ) {
     val library by app.library.state.collectAsStateWithLifecycle()
     val auth by app.telegram.auth.collectAsStateWithLifecycle()
@@ -963,6 +964,8 @@ fun SpotygramUI(
                                                     onTracklist = { album ->
                                                         app.albumTracklist(album)
                                                     },
+                                                    onPickCover = onPickCover,
+                                                    onPrepareCover = { bytes -> app.prepareCover(bytes) },
                                                 )
                                             else ->
                                                 SourcesScreen(

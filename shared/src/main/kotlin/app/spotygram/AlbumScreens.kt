@@ -49,6 +49,8 @@ fun AlbumsScreen(
     onEnrich: suspend (Album) -> AlbumEnrichment?,
     onKnowledge: suspend (Album) -> KnowledgeInfo?,
     onTracklist: suspend (Album) -> List<String>,
+    onPickCover: ((ByteArray?) -> Unit) -> Unit,
+    onPrepareCover: suspend (ByteArray) -> String?,
 ) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Album?>(null) }
@@ -76,6 +78,7 @@ fun AlbumsScreen(
     var coverSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var coverSearchBusy by remember { mutableStateOf(false) }
     var coverSearchError by remember { mutableStateOf("") }
+    var coverBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val current = selected?.let { album -> library.albums.firstOrNull { it.id == album.id } }
@@ -189,6 +192,51 @@ fun AlbumsScreen(
                         OutlinedTextField(value = editYear, onValueChange = { editYear = it }, label = { Text(tr(R.string.year)) }, singleLine = true)
                         OutlinedTextField(value = editGenre, onValueChange = { editGenre = it }, label = { Text(tr(R.string.genre)) }, singleLine = true)
                         OutlinedTextField(value = editCover, onValueChange = { editCover = it }, label = { Text(tr(R.string.cover_url)) }, singleLine = true)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(
+                                enabled = !coverBusy,
+                                onClick = {
+                                    onPickCover { bytes ->
+                                        if (bytes != null) {
+                                            coverBusy = true
+                                            scope.launch {
+                                                val uri =
+                                                    runCatching { onPrepareCover(bytes) }.getOrNull()
+                                                if (uri != null) {
+                                                    editCover = uri
+                                                    coverSearchError = ""
+                                                } else {
+                                                    coverSearchError =
+                                                        tr(R.string.album_cover_failed)
+                                                }
+                                                coverBusy = false
+                                            }
+                                        }
+                                    }
+                                },
+                            ) {
+                                Text(
+                                    tr(
+                                        if (coverBusy) R.string.album_cover_preparing
+                                        else R.string.album_cover_pick
+                                    )
+                                )
+                            }
+                            if (editCover.isNotBlank()) {
+                                TextButton(
+                                    enabled = !coverBusy,
+                                    onClick = { editCover = "" },
+                                ) { Text(tr(R.string.album_cover_remove)) }
+                            }
+                        }
+                        if (editCover.isNotBlank()) {
+                            AsyncImage(
+                                model = editCover,
+                                contentDescription = null,
+                                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TextButton(
                                 enabled = !enriching,
@@ -567,7 +615,10 @@ fun AlbumsScreen(
 
 
 @Composable
-private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.ui.unit.Dp) {    val url = album.coverUrl.takeIf { it.startsWith("https://") || it.startsWith("http://") }
+private fun AlbumArtwork(album: Album, fallback: Track?, size: androidx.compose.ui.unit.Dp) {
+    val url = album.coverUrl.takeIf {
+        it.startsWith("https://") || it.startsWith("http://") || it.startsWith("data:image/")
+    }
     if (url != null) {
         AsyncImage(
             model = url,
