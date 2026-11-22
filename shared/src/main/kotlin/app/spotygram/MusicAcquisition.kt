@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
@@ -165,6 +167,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         allowPendingJob: Boolean = false,
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
+        waitForTelegramOnline()
         check(activeSearchId == null) {
             tr(R.string.acq_previous_pending)
         }
@@ -306,6 +309,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
         destinationChatId: Long,
     ): AcquisitionOutcome = botLane.withLock {
         checkTelegramReady()
+        waitForTelegramOnline()
         check(activeSearchId == null || activeSearchId == searchId) {
             tr(R.string.acq_bot_busy)
         }
@@ -1410,6 +1414,14 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private fun sanitizeSearchQuery(value: String): String =
         MusicAcquisitionRules.sanitizeSearchQuery(value)
 
+    private suspend fun waitForTelegramOnline() {
+        if (telegramOnline(app.telegram.connection.value)) return
+        val online =
+            withTimeoutOrNull(10_000L) {
+                app.telegram.connection.first { telegramOnline(it) }
+            }
+        check(online != null) { tr(R.string.acq_no_connection) }
+    }
     private fun checkTelegramReady() {
         check(app.telegram.auth.value.type == "authorizationStateReady") {
             tr(R.string.acq_auth_required)

@@ -642,4 +642,6 @@
     <string name="album_complete_existing">%1$d existing tracks will be reused:</string>
     <string name="album_complete_more">…and %1$d more</string>
     <string name="acq_from_history">Results reused from the existing bot chat; no new bot request was sent.</string>
+    <string name="acq_no_connection">Telegram is still connecting. Wait for the connection or reconnect.</string>
+    <string name="reconnect">Reconnect</string>
 </resources>

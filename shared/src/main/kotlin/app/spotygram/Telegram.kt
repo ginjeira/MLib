@@ -635,6 +635,16 @@ class Telegram(
             )
         )
 
+    suspend fun reconnect() {
+        close()
+        if (client != 0) {
+            networkObserver?.close()
+            networkObserver = null
+            client = 0
+        }
+        start()
+    }
+
     suspend fun close() {
         if (client == 0) {
             networkObserver?.close()
