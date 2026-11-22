@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.29",
+                english =
+                    "New navigation with Home, Library, Search and Settings. Home gathers what you were listening to, recent tracks, favourites, playlists and albums, marking the albums whose missing tracks are already known. Artist pages group the library and show albums, tracks, sources and information from MusicBrainz and Wikipedia. Source management moved to Settings, and the player now has an artwork gradient with solid surfaces on the bar and mini-player.",
+                portuguese =
+                    "Nova navegação com Início, Biblioteca, Procurar e Definições. O Início reúne o que estavas a ouvir, faixas recentes, favoritos, playlists e álbuns, marcando os álbuns cujas faixas em falta já são conhecidas. As páginas de artista agrupam a biblioteca e mostram álbuns, faixas, fontes e informação do MusicBrainz e da Wikipédia. A gestão de fontes passou para Definições, e o player tem agora um gradiente da arte com superfícies sólidas na barra e no mini-player.",
+            ),
+            ChangelogEntry(
                 version = "0.1.28",
                 english =
                     "Android Auto now has a Home screen with recent, favourites, offline and playlists, and the assistant can play anything already in the library by voice. Covers picked on the phone also appear in the car. Acquisition stays on the phone because Android Auto only allows browsing and playback.",
