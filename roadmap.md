@@ -57,7 +57,8 @@ Verificado em **22-11-2026, 17:56 UTC**.
 - Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
 - Temas AMOLED e alto contraste, com validação de sync e testes.
 - Android Auto completo para reprodução: Início, pesquisa por voz (biblioteca), notificações de todas as ramificações e capas personalizadas; aquisição continua fora do carro por política do Android Auto.
-- Validação local: `:desktop:test` com **109 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Correções pós-0.1.29: recolha de playlists espera pela contagem anunciada (o silêncio de 9 s já não fecha 1 de 27), “Procurar no Telegram” abre o diálogo pré-preenchido sem pesquisar, confirmação de descarregar offline por artista e conhecimento na língua da app.
+- Validação local: `:desktop:test` com **111 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
