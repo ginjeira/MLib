@@ -7,37 +7,27 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado da versão 0.1.21
+## 0. Estado da versão 0.1.25
 
-Verificado em **22-11-2026, 08:35 UTC**.
+Verificado em **22-11-2026, 13:10 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.21** (publicada em 22-11-2026 01:41:21) |
-| Tag `v0.1.21` | **Criada** (`a41cf95`) |
-| Release `v0.1.21` | **Publicada**; run `44969771890` concluído com sucesso |
-| Baseline para `main` | **Sucesso** (`44969525542`) |
-| `origin/main` | `a41cf95`; versão 0.1.21 |
-| Validação | **0.1.20 e 0.1.21 validadas pelo owner** |
-| Documentação | **Atualizada para 0.1.21** |
-| Bloqueio actual | Nenhum |
+| Última release pública | **v0.1.25** (publicada em 22-11-2026 12:45:02) |
+| Tag `v0.1.25` | **Criada** |
+| Release `v0.1.25` | **Publicada**; última release automática |
+| Baseline para `main` | **Sucesso** |
+| Publicação automática | **Desativada** após a 0.1.25; exige `MLIB_AUTO_RELEASE=true` ou acordo manual |
+| Próxima versão | **Bloqueada até acordo do owner** |
+| Documentação | Atualizada para 0.1.25 e política de releases |
 
-**Verificação independente da release:**
+**Hashes publicados:**
 
-| Verificação | Resultado |
-|---|---|
-| `mlib-0.1.21-arm64.apk` SHA-256 | `342c7798e33b07e923f823df68bdcd1e2b9981372d3fb20b9a3eb197d892fed6` ✅ |
-| `mlib-0.1.21-x86_64.apk` SHA-256 | `e9cb3c66516db75a5c72c6a99a5d98131a0b1d6a755d90115ed2ba3217dc4638` ✅ |
-| `SHA256SUMS.txt` SHA-256 | `09735d623621ed48a082280464c7696f2918c44b81c82749a491966965c22a3e` ✅ |
-| Package / versão / versionCode | `pt.ginjeira.mlib` / `0.1.21` / `1021` ✅ |
-| ABI / assinante | `arm64-v8a` / `6e8fc1d0…e200` ✅ |
+- `mlib-0.1.25-arm64.apk` — `8d49452e225a79234d1fed740988956990eb77bd12c79042d383bbaf0b5427af`
+- `mlib-0.1.25-x86_64.apk` — `d63a2418ae693689d53f70b0e18600c7cde9966654e8827683d08d14369cb4cc`
+- `SHA256SUMS.txt` — `05392a91f3240cd23687f007160dd2c1b09237ee3de3fc811f223737b5a423fb`
 
-**Correções 0.1.20/0.1.21:**
-
-- 0.1.20: update check apenas ao abrir a app, debounce do banner de ligação, canais visíveis no seletor de origens.
-- 0.1.21: `getChatMember` com `messageSenderUser`, filtro owner/admin correto, GinjMusic novamente disponível; pesquisa unificada “Procurar no Telegram”.
-
-**Conclusão:** o problema do seletor de origens foi resolvido e validado na 0.1.21.
+**Pendente na 0.1.25:** o fix do fluxo “Completar álbum” que fecha o detalhe do álbum está em `main`, mas não nesta tag; entra apenas numa próxima versão acordada.
 ## 0.2 Progresso por wave — 21-11-2026
 
 | Wave | Estado | Progresso | Notas |
@@ -45,7 +35,7 @@ Verificado em **22-11-2026, 08:35 UTC**.
 | Wave 0 — release/update | **Concluída** | 100% | v0.1.12 validada pelo owner; actualização in-app e reparação de playlist confirmadas. Screenshots antigas removidas para `screenshots/legacy/`; captura actual fica para a próxima passagem de documentação. |
 | Wave 1 — aquisição fiável | **Concluída e testada** | 100% | Destino persistido, confirmação, pré-indexação, revalidação de fontes/perfis, dedup por destino, saúde e rótulo **Completar álbum**. Validação do owner em 21-11-2026. Simulação completa, latência e testes >2.000 passam para Wave 1.1. |
 | Wave 2 — UI/navegação | **Não iniciada** | 0% | Depende de estabilizar Wave 1 e Wave 3. |
-| Wave 3 — confiança/biblioteca | **Em curso** | ~75% | Saúde, reparação, merge de duplicados, exportação JSON e pesquisa unificada. Faltam golden tests de merge e exportação para ficheiro. |
+| Wave 3 — confiança/biblioteca | **Fechada no âmbito atual** | 100% | Saúde, reparação, merge de duplicados, exportação para ficheiro e pesquisa unificada. Limitações em Wave 3.1. |
 | Wave 4 — álbuns/capas | **Parcial** | ~55% | Confirmação de completar álbum, capas de playlist e enriquecimento iTunes/Deezer na 0.1.19. Faltam pré-visualização de faixas e upload local. |
 | Wave 5 — setup/jobs | **Parcial** | ~60% | `/start` apenas no setup, canal de arquivo e histórico de jobs na 0.1.19. Faltam retry parcial e testes crash/restart. |
 | Wave 6 — descoberta/poder | **Em curso** | ~40% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento e pesquisa unificada. Faltam widgets, import/export para ficheiro, privacidade, scrobbling e smart playlists. |

@@ -16,6 +16,7 @@ This directory contains the product specification, architecture, source-project 
 | [MCat Player port status](MCAT-PLAYER-PORT-STATUS.md) | Current parity matrix, remaining port work and release impact |
 | [Product and UX proposal](PRODUCT-UX-PROPOSAL.md) | What to keep/change/reject, new features and Spotify-inspired UI direction |
 | [Execution roadmap by waves](../../roadmap.md) | Ordered implementation plan for Android |
+| [Waves closure](WAVES-CLOSURE.md) | What is admissible to close now and what stays open |
 | [Independent audit remediation](INDEPENDENT-AUDIT-REMEDIATION.md) | Audit findings, source fixes and remaining validation |
 | [Telegram and MCat onboarding](TELEGRAM-ONBOARDING.md) | Proposed guided setup reusing the local TDLib session |
 
