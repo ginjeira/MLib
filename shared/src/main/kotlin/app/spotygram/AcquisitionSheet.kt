@@ -2,6 +2,7 @@ package app.spotygram
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +39,9 @@ internal fun AcquisitionSheet(
     var destinationId by rememberSaveable { mutableLongStateOf(0L) }
     var pickingDestination by remember { mutableStateOf(false) }
     var confirmAcquire by remember { mutableStateOf(false) }
+    var selectedReview by remember(state.review?.id) {
+        mutableStateOf(state.review?.tracks?.map { it.id }?.toSet() ?: emptySet())
+    }
     val selected = remember { mutableStateListOf<Int>() }
 
     suspend fun loadDestinations() {
@@ -472,6 +477,75 @@ internal fun AcquisitionSheet(
                 }
             }
         }
+    }
+    state.review?.let { review ->
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(tr(R.string.acq_review_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(tr(R.string.acq_review_help), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        tr(R.string.acq_review_note, review.tracks.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Column(
+                        Modifier.heightIn(max = 360.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        review.tracks.forEach { track ->
+                            Row(
+                                Modifier.fillMaxWidth().toggleable(
+                                    value = track.id in selectedReview,
+                                    onValueChange = { checked ->
+                                        selectedReview =
+                                            if (checked) selectedReview + track.id
+                                            else selectedReview - track.id
+                                    },
+                                ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = track.id in selectedReview,
+                                    onCheckedChange = null,
+                                )
+                                Column(Modifier.padding(start = 8.dp)) {
+                                    Text(
+                                        track.title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        if (track.imported) track.artist
+                                        else "${track.artist} · ${tr(R.string.acq_review_existing)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = selectedReview.isNotEmpty(),
+                    onClick = {
+                        val selected = selectedReview.toSet()
+                        app.action { app.acquisition.commitReview(selected) }
+                    },
+                ) { Text(tr(R.string.acq_review_commit)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    app.action { app.acquisition.cancelReview() }
+                }) { Text(tr(R.string.acq_review_cancel)) }
+            },
+        )
     }
     if (confirmAcquire) {
         val destination = destinations.firstOrNull { it.id == destinationId }

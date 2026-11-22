@@ -101,8 +101,34 @@ data class AcquisitionState(
     val outcome: AcquisitionOutcome? = null,
     val pendingJob: PendingAcquisitionJob? = null,
     val jobs: List<AcquisitionJob> = emptyList(),
+    val review: AcquisitionReview? = null,
 )
 
+data class AcquisitionReviewTrack(
+    val id: String,
+    val title: String,
+    val artist: String,
+    val optionNumber: Int,
+    val optionTitle: String,
+    val imported: Boolean,
+)
+
+data class AcquisitionReview(
+    val id: String,
+    val tracks: List<AcquisitionReviewTrack>,
+    val destinationTitle: String,
+)
+
+private data class PendingReview(
+    val id: String,
+    val session: SearchSession,
+    val completed: List<AcquiredItem>,
+    val destinationChoice: ChatChoice,
+    val destinationTitle: String,
+    val jobId: String,
+    val pending: PendingAcquisitionJob,
+    val botTurnFinished: Boolean,
+)
 private data class SearchSession(
     val search: AcquisitionSearch,
     val botChatId: Long,
@@ -150,6 +176,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     private val searchCancellationRequested = AtomicBoolean(false)
     private val pendingJobKey = "mlib_pending_music_acquisition"
     private val jobsKey = "mlib_acquisition_jobs"
+    private var pendingReview: PendingReview? = null
 
     init {
         state.value =
@@ -168,6 +195,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AcquisitionSearch = botLane.withLock {
         checkTelegramReady()
         waitForTelegramOnline()
+        check(state.value.review == null) { tr(R.string.acq_review_pending) }
         check(activeSearchId == null) {
             tr(R.string.acq_previous_pending)
         }
@@ -310,6 +338,7 @@ class MusicAcquisition(private val app: SpotygramApp) {
     ): AcquisitionOutcome = botLane.withLock {
         checkTelegramReady()
         waitForTelegramOnline()
+        check(state.value.review == null) { tr(R.string.acq_review_pending) }
         check(activeSearchId == null || activeSearchId == searchId) {
             tr(R.string.acq_bot_busy)
         }
@@ -435,6 +464,56 @@ class MusicAcquisition(private val app: SpotygramApp) {
                     retryTitles += selected.drop(index).map { it.title }
                     break
                 }
+            }
+
+            val reviewTracks =
+                completed.flatMap { item ->
+                    item.tracks.map { track ->
+                        AcquisitionReviewTrack(
+                            id = track.id,
+                            title = track.title,
+                            artist = track.artist,
+                            optionNumber = item.option.number,
+                            optionTitle = item.option.title,
+                            imported = track.id in item.importedIds,
+                        )
+                    }
+                }
+            if (reviewTracks.isNotEmpty()) {
+                val review =
+                    AcquisitionReview(
+                        id = UUID.randomUUID().toString(),
+                        tracks = reviewTracks,
+                        destinationTitle = destinationTitle,
+                    )
+                pendingReview =
+                    PendingReview(
+                        id = review.id,
+                        session = session,
+                        completed = completed.toList(),
+                        destinationChoice = destinationChoice,
+                        destinationTitle = destinationTitle,
+                        jobId = jobId,
+                        pending = pending,
+                        botTurnFinished = botTurnFinished,
+                    )
+                clearPendingJob()
+                activeSearchId = null
+                state.value =
+                    state.value.copy(
+                        acquiring = false,
+                        progress = "",
+                        review = review,
+                        outcome = null,
+                        error = completed.filter { it.error.isNotEmpty() }
+                            .joinToString("\n") { "${it.option.title}: ${it.error}" },
+                    )
+                return@withLock AcquisitionOutcome(
+                    imported = 0,
+                    reused = 0,
+                    failed = completed.count { it.error.isNotEmpty() },
+                    note = tr(R.string.acq_review_note, reviewTracks.size),
+                )
             }
 
             // Persist every newly received track in one transaction. Enabling the
@@ -604,6 +683,195 @@ class MusicAcquisition(private val app: SpotygramApp) {
         }
     }
 
+    suspend fun commitReview(selectedIds: Set<String>): AcquisitionOutcome = botLane.withLock {
+        val review = pendingReview ?: error(tr(R.string.acq_review_pending))
+        val selectedCompleted =
+            review.completed
+                .map { item ->
+                    item.copy(
+                        tracks = item.tracks.filter { it.id in selectedIds },
+                        importedIds = item.importedIds.filter { it in selectedIds }.toSet(),
+                    )
+                }
+                .filter { it.tracks.isNotEmpty() }
+        if (selectedCompleted.isEmpty()) {
+            return@withLock cancelReview()
+        }
+        state.value = state.value.copy(acquiring = true, progress = "", error = "")
+        try {
+            val newlyImported =
+                selectedCompleted.flatMap { item ->
+                    item.tracks.filter { it.id in item.importedIds }
+                }.distinctBy { it.id }
+            if (newlyImported.isNotEmpty()) app.library.upsert(newlyImported)
+            app.library.source(review.destinationChoice, true)
+
+            val allTrackIds = selectedCompleted.flatMap { it.tracks }.map { it.id }.distinct()
+            val importedIds = selectedCompleted.flatMap { it.importedIds }.toSet()
+            var playlistId: Long? = null
+            val acquiredAlbums = mutableListOf<String>()
+            if (review.session.search.contentType == AcquisitionContentType.ALBUM) {
+                for (item in selectedCompleted.filter { !it.skippedDuplicate }) {
+                    val first = item.tracks.firstOrNull() ?: continue
+                    val targetAlbum = review.session.targetAlbumId?.let { id ->
+                        app.library.state.value.albums.firstOrNull { it.id == id }
+                    }
+                    val parsed = MusicAcquisitionRules.parseArtistAndTitle(item.option.title)
+                    val title =
+                        targetAlbum?.title
+                            ?: parsed.title.ifBlank {
+                                MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
+                            }
+                    val artist =
+                        targetAlbum?.artist?.takeIf {
+                            it.isNotBlank() && !it.equals("Artista Desconhecido", ignoreCase = true)
+                        } ?: parsed.artist.ifBlank { first.artist }
+                    val existing =
+                        targetAlbum ?: app.library.state.value.albums.firstOrNull {
+                            MusicAcquisitionRules.areAlbumsDuplicate(
+                                it.title, it.artist, title, artist,
+                            )
+                        }
+                    val cover =
+                        existing?.coverUrl?.takeIf { it.isNotBlank() }
+                            ?: first.art.takeIf { it.isNotBlank() }
+                            ?: MusicAcquisitionRules.genreCoverPreset("$title $artist")
+                    acquiredAlbums +=
+                        app.library.createOrUpdateAlbum(
+                            title = existing?.title ?: title,
+                            artist = existing?.artist?.takeIf(String::isNotBlank) ?: artist,
+                            tracks = item.tracks.map { it.id },
+                            year = existing?.year ?: java.time.Year.now().value.toString(),
+                            coverUrl = cover,
+                            genre = existing?.genre.orEmpty(),
+                            targetAlbumId = existing?.id,
+                        )
+                }
+            }
+            if (review.session.search.contentType == AcquisitionContentType.PLAYLIST) {
+                for (item in selectedCompleted) {
+                    val ids = item.tracks.map { it.id }.distinct()
+                    val name = MusicAcquisitionRules.cleanCollectionTitle(item.option.title)
+                    val existing = app.library.state.value.playlists.firstOrNull {
+                        it.name.equals(name, ignoreCase = true)
+                    }
+                    val description =
+                        tr(
+                            R.string.acq_playlist_description,
+                            review.session.search.provider.wireValue.uppercase(),
+                            review.destinationTitle,
+                        )
+                    val cover =
+                        item.tracks.firstOrNull()?.art?.takeIf { it.isNotBlank() }
+                            ?: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
+                    playlistId =
+                        if (existing != null) {
+                            app.library.addToPlaylist(existing.id, ids)
+                            existing.id
+                        } else {
+                            app.library.createPlaylist(
+                                name = name,
+                                tracks = ids,
+                                description = description,
+                                coverUrl = cover,
+                            )
+                        }
+                }
+            }
+
+            val failed = selectedCompleted.count { it.error.isNotEmpty() }
+            val partial = selectedCompleted.any { it.partial || it.error.isNotEmpty() }
+            updateJob(review.jobId) {
+                it.copy(
+                    status =
+                        if (partial) AcquisitionJobStatus.PARTIAL
+                        else AcquisitionJobStatus.COMPLETED,
+                    error = if (partial) tr(R.string.acq_partial) else "",
+                    items =
+                        it.items.map { item ->
+                            if (item.status == AcquisitionJobStatus.FAILED) item
+                            else item.copy(status = AcquisitionJobStatus.COMPLETED)
+                        },
+                )
+            }
+            try {
+                app.refresh()
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+            }
+            val outcome =
+                AcquisitionOutcome(
+                    imported = importedIds.size,
+                    reused = (allTrackIds.size - importedIds.size).coerceAtLeast(0),
+                    failed = failed,
+                    playlistId = playlistId,
+                    collectionTitle =
+                        selectedCompleted.joinToString(", ") { it.option.title },
+                    note =
+                        when (review.session.search.contentType) {
+                            AcquisitionContentType.ALBUM ->
+                                if (acquiredAlbums.isEmpty()) tr(R.string.acq_album_not_created)
+                                else tr(R.string.acq_tracks_added, acquiredAlbums.size)
+                            AcquisitionContentType.ARTIST -> tr(R.string.acq_search_help)
+                            else -> ""
+                        },
+                )
+            pendingReview = null
+            clearPendingJob()
+            activeSearchId = null
+            state.value =
+                state.value.copy(
+                    acquiring = false,
+                    progress = "",
+                    review = null,
+                    outcome = outcome,
+                    pendingJob = null,
+                )
+            outcome
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            state.value =
+                state.value.copy(acquiring = false, progress = "", error = friendly(error))
+            throw error
+        }
+    }
+
+    suspend fun cancelReview(): AcquisitionOutcome {
+        val review = pendingReview ?: error(tr(R.string.acq_no_pending))
+        val forwarded =
+            review.completed.flatMap { item ->
+                item.tracks.filter { it.id in item.importedIds }
+            }
+        forwarded.groupBy { it.chatId }.forEach { (chatId, tracks) ->
+            tracks.chunked(100).forEach { chunk ->
+                runCatching {
+                    request(
+                        json(
+                            "deleteMessages",
+                            "chat_id" to chatId,
+                            "message_ids" to JSONArray(chunk.map { it.messageId }),
+                            "revoke" to true,
+                        )
+                    )
+                }
+            }
+        }
+        updateJob(review.jobId) {
+            it.copy(status = AcquisitionJobStatus.FAILED, error = tr(R.string.acq_review_rejected))
+        }
+        pendingReview = null
+        clearPendingJob()
+        activeSearchId = null
+        state.value =
+            state.value.copy(
+                acquiring = false,
+                progress = "",
+                review = null,
+                pendingJob = null,
+                outcome = AcquisitionOutcome(imported = 0, reused = 0, failed = 0, note = tr(R.string.acq_review_rejected)),
+            )
+        return state.value.outcome!!
+    }
     /**
      * Rebuilds the bot search after process death and retries the selected results.
      * The destination is refreshed first, so audio forwarded just before a crash

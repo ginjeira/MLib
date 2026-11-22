@@ -647,4 +647,12 @@
     <string name="changelog">changelog</string>
     <string name="changelog_title">What changed</string>
     <string name="changelog_all_versions">All releases on GitHub</string>
+    <string name="acq_review_title">Review acquired tracks</string>
+    <string name="acq_review_help">All tracks are selected. Uncheck the ones you do not want in the library, then confirm.</string>
+    <string name="acq_review_note">%1$d track(s) are waiting for review. Nothing was added to the library yet.</string>
+    <string name="acq_review_commit">Add selected</string>
+    <string name="acq_review_cancel">Reject all</string>
+    <string name="acq_review_pending">Finish or reject the current acquisition review first.</string>
+    <string name="acq_review_rejected">The acquisition was rejected; forwarded test messages were removed.</string>
+    <string name="acq_review_existing">already in library</string>
 </resources>

@@ -652,4 +652,12 @@
     <string name="changelog">novidades</string>
     <string name="changelog_title">O que mudou</string>
     <string name="changelog_all_versions">Todas as releases no GitHub</string>
+    <string name="acq_review_title">Rever faixas adquiridas</string>
+    <string name="acq_review_help">Todas as faixas estão assinaladas. Desassinala as que não queres na biblioteca e confirma.</string>
+    <string name="acq_review_note">%1$d faixa(s) aguardam revisão. Ainda nada foi adicionado à biblioteca.</string>
+    <string name="acq_review_commit">Adicionar selecionadas</string>
+    <string name="acq_review_cancel">Rejeitar tudo</string>
+    <string name="acq_review_pending">Conclui ou rejeita a revisão da aquisição atual primeiro.</string>
+    <string name="acq_review_rejected">A aquisição foi rejeitada; as mensagens de teste encaminhadas foram removidas.</string>
+    <string name="acq_review_existing">já está na biblioteca</string>
 </resources>
