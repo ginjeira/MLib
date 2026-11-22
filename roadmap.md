@@ -38,7 +38,8 @@ Verificado em **22-11-2026, 14:05 UTC**.
 - Wave 8 (MVP): `Knowledge.album()` com MusicBrainz + Wikipédia, dialog “Sobre este álbum” com fonte, data, tipo e géneros.
 - Wave 4: “Completar álbum” passou a mostrar a lista de faixas existentes e em falta (Deezer, fallback iTunes) e deixou de ficar aninhado no dialog de edição.
 - Wave 4: capas personalizadas de álbum e playlist a partir do dispositivo, guardadas como data URI em `cover_url` (persistem e sincronizam); presets Unsplash substituídos por placeholder explícito; anel de completude no detalhe do álbum.
-- Validação local: `:desktop:test` com **66 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
+- Wave 8: cache em disco do conhecimento (TTL 30 dias, 300 entradas), licença por fonte, data de recolha e parsers com fixtures.
+- Validação local: `:desktop:test` com **80 testes, 0 falhas**; `:app:compileDebugKotlin` e `:app:processDebugResources` verdes.
 
 ## 0.2 Progresso por wave — 21-11-2026
 
@@ -52,7 +53,7 @@ Verificado em **22-11-2026, 14:05 UTC**.
 | Wave 5 — setup/jobs | **Fechada no âmbito atual** | 100% | `/start` apenas no setup, canal de arquivo, jobs persistidos e re-pesquisa. Testes crash/restart e gestão de fontes passam para Wave 5.1. |
 | Wave 6 — descoberta/poder | **Em curso** | ~45% | Sleep timer, Android Auto Offline/Recent/Artists, auto-download, enriquecimento, pesquisa unificada, app lock e exportação JSON. Faltam widgets, scrobbling, smart playlists, temas e estatísticas. |
 | Wave 7 — plataformas | **Não iniciada** | 0% | Tablet/TV/perfis; desktop continua congelado. |
-| Wave 8 — conhecimento musical | **Em curso (MVP)** | ~25% | Dialog “Sobre este álbum” com MusicBrainz + Wikipédia, data, tipo, géneros, resumo e link para a fonte. Faltam páginas de artista, cache/ETag, faixas e créditos. |
+| Wave 8 — conhecimento musical | **Fechada no âmbito MVP** | 100% (MVP) | Álbum com MusicBrainz + Wikipédia, data, tipo, géneros, resumo, licença por fonte, link e data de recolha; cache em disco com TTL de 30 dias e limite de 300 entradas; parsers com fixtures. Páginas de artista, discografia, créditos e ETag passam para Wave 8.1. |
 
 **Wave 0 encerrada em 21-11-2026:** o ciclo de release e actualização in-app está provado; a v0.1.13 é a próxima release de correcções e não reabre a Wave 0.
 
@@ -344,6 +345,15 @@ Estes itens deixam de bloquear a Wave 1 e passam para a próxima fase de robuste
 2. **8.2** — Wikipédia/Wikidata: resumo e contexto com atribuição. (MVP de resumo + link entregue)
 3. **8.3** — páginas de artista e discografia.
 4. **8.4** — fontes opcionais (Last.fm/Discogs), só com termos/keys definidos.
+
+### Wave 8.1 — restante do âmbito
+
+- [ ] Página de artista: resumo, origem, datas, géneros e discografia.
+- [ ] Créditos de faixa (compositor/letrista) quando disponíveis.
+- [ ] Cache com ETag/revalidação condicional e badge de “desactualizado”.
+- [ ] Cobertura de testes live com limites de pedidos documentados.
+
+**Âmbito MVP entregue:** “Sobre este álbum” com data de lançamento, tipo, géneros, resumo, fonte com licença, link e data de recolha; cache em disco com TTL de 30 dias e 300 entradas; parsers de MusicBrainz e Wikipédia com fixtures; nenhuma tag local é alterada.
 
 **Aceitação**
 

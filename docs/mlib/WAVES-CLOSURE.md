@@ -10,7 +10,7 @@ A **v0.1.25** é a última release automática. A **v0.1.26** foi publicada como
 - **App lock:** bloqueio opcional com o mecanismo do dispositivo.
 - **Wave 8 (MVP):** dialog “Sobre este álbum” com MusicBrainz + Wikipédia, atribuição e link para a fonte.
 - **Wave 4:** lista de faixas existentes e em falta em “Completar álbum”, com o dialog a renderizar fora do dialog de edição; anel de completude no detalhe; capas personalizadas de álbum e playlist a partir do dispositivo, persistidas e sincronizadas; placeholder explícito em vez de Unsplash.
-- Validação local: 66 testes, 0 falhas.
+- Validação local: 80 testes, 0 falhas.
 
 ## Fechadas
 
@@ -88,7 +88,17 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 
 ### Wave 8 — Conhecimento musical
 
-**Não iniciada.** Proposta registada com MusicBrainz/Wikipédia, fontes, licenças, cache e regras de não sobrescrever tags.
+**Fechada no âmbito MVP (álbum).**
+
+Inclui:
+
+- “Sobre este álbum” com data de lançamento, tipo, géneros e resumo;
+- fonte por licença (MusicBrainz CC0, Wikipédia CC BY-SA), link e data de recolha;
+- cache em disco com TTL de 30 dias e limite de 300 entradas;
+- parsers de MusicBrainz e Wikipédia com fixtures;
+- nenhuma tag local é alterada automaticamente.
+
+Limitações aceites (Wave 8.1): páginas de artista e discografia, créditos de faixa, ETag e testes live.
 
 ## Critério de fecho das restantes
 
@@ -96,6 +106,6 @@ Limitações aceites (Wave 4.1): capa grande com gradiente, faixas ambíguas e p
 - Wave 4.1: capa grande/gradiente, faixas ambíguas e presets de capa.
 - Wave 6: funcionalidades escolhidas implementadas e testadas.
 - Wave 7: só após Android estável e com decisão de descongelar desktop.
-- Wave 8: fontes, licenças, cache e páginas de artista implementadas (MVP de álbum já entregue).
+- Wave 8.1: páginas de artista, discografia, créditos, ETag e testes live.
 
 Enquanto estes critérios não estiverem cumpridos, as waves permanecem abertas.
