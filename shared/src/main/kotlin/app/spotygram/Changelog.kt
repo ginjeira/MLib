@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.31",
+                english =
+                    "CloudSync now carries track covers between devices; favourites already travelled. Secrets such as sessions, API hashes, passwords and TOTP are never included, and the new sync format still reads older packets.",
+                portuguese =
+                    "O CloudSync passa a transportar as capas de faixa entre dispositivos; as favoritas já viajavam. Segredos como sessões, hashes de API, passwords e TOTP nunca são incluídos, e o novo formato continua a ler pacotes antigos.",
+            ),
+            ChangelogEntry(
                 version = "0.1.30",
                 english =
                     "Fixed playlist acquisition stopping after a short pause, which could open the review with one track of a 27-track playlist. Cancelling a search no longer shows an error, and an acquisition can now be cancelled from the progress block, sending /cancel to the bot to stop its download. The artist page fits all actions, its information follows the app language, search opens the acquisition dialog prefilled instead of searching immediately, and offline downloads ask for confirmation.",
