@@ -10,6 +10,12 @@ Actualizada a **22-11-2026**. Versão 3: servidor **sem downloads persistentes**
 - Publicação por Cloudflare Tunnel em `mlib.ginjeira.com`.
 - Um perfil por adulto, **conta Telegram própria**, biblioteca e consumo de bot isolados.
 - iOS por PWA (Safari + ecrã inicial).
+- TDLib **lazy**, com paragem após 30 min de inatividade.
+- Cache temporário **global**, partilhado e deduplicado, com teto único (10 GB por defeito, configurável).
+- Aquisição **com a mesma lógica do Android**: pesquisa, revisão, commit, jobs, `/cancel` e destino obrigatório por perfil.
+- Deploy **systemd + JAR**.
+- UI completa é objetivo; entrega por fatias, com o essencial primeiro.
+- Se a conta tiver CloudSync do MLib, o onboarding oferece **restaurar biblioteca/definições do Telegram**.
 
 ## 1. Reutilização (evidência)
 
@@ -29,7 +35,7 @@ Não se reutiliza: UI Compose, serviços Android, notificações, playback servi
 
 1. **`ServerPlatform`** JVM: `filesDir` por perfil, prefs em ficheiro, `openDatabase` JDBC, `tdlib` via `DesktopTdClient`.
 2. **Streaming on-demand com cache temporário em disco**: na primeira reprodução, o ficheiro é obtido do TDLib para um **cache temporário em disco**, partilhado entre perfis, e servido com `Range`. Não é download offline nem biblioteca: tem teto, TTL e é limpo no arranque. Decisão fechada: **sem tmpfs** e **sem cache persistente**.
-   - **Single-flight** por `remote.unique_id`; refcount de leitores; TTL de inatividade (10 min); teto configurável (ex. 5 GB).
+   - **Single-flight** por `remote.unique_id`; refcount de leitores; TTL de inatividade (10 min); **teto global** de 10 GB (configurável), não por utilizador.
    - **Prefetch controlado**: o player informa a fila e o servidor antecipa **1–2 faixas seguintes**, canceláveis, subordinadas ao espaço livre e serializadas por conta.
 3. **Multi-perfil num processo**: instanciar `AppText`/`Knowledge`/notificações por app ou remover o estado global; `profile_id` em playlists, sources, downloads, settings e jobs (tracks já tem `profile_user`/`profile_position`).
 4. **API HTTP** (Ktor): auth, admin, biblioteca, pesquisa, playlists, jobs (SSE), stream, definições.
@@ -72,7 +78,7 @@ Estados persistidos no perfil: `pending_telegram` → `pending_destination` → 
 2. **Telegram**: telefone → código → 2FA, ou QR. O utilizador introduz os seus próprios dados; a sessão fica **cifrada no servidor** e nunca é mostrada a ninguém.
 3. **Bot**: confirmar o bot configurado; `getMe`/presença; opcional `/start`.
 4. **Destino**: escolher chat onde pode publicar (validar `can_post`); opção de criar canal de arquivo.
-5. **Origens**: escolher chats com música; indexação inicial em background com progresso.
+5. **Origens**: escolher chats com música; indexação inicial em background com progresso. Se a conta já tiver CloudSync do MLib, oferecer **restaurar biblioteca, playlists e definições** antes de indexar.
 6. **Privacidade e confirmação**: explicar o que é guardado; concluir.
 
 Regras:
@@ -91,7 +97,7 @@ Regras:
 ## 5. Streaming e prefetch
 
 - `GET /api/stream/{trackId}`: valida sessão → track do perfil → ficheiro do cache (ou obtém do TDLib) → `206` com `Range`.
-- Cache temporário em disco: chave `remote.unique_id`, single-flight, refcount de leitores, TTL de 10 min após o último leitor, teto configurável (5 GB por defeito), limpeza no arranque.
+- Cache temporário em disco: chave `remote.unique_id`, single-flight, refcount de leitores, TTL de 10 min após o último leitor, **teto global de 10 GB** (configurável), limpeza no arranque. Não há quota de cache por perfil; a partilha é o objetivo.
 - `POST /api/player/queue { currentTrackId, nextTrackIds }`: agenda prefetch das 1–2 faixas seguintes. Cancelar quando a fila muda; nunca prefetch de playlists inteiras.
 - Prefetch só com espaço livre e prioridade abaixo da faixa em reprodução; uma transferência por perfil.
 - Sem autorização por caminho; nunca aceitar `chatId/messageId` do cliente; o cache não concede acesso.
@@ -137,7 +143,7 @@ O que pode esticar: streaming com seek sem cache completa (opção B), áudio em
 | RAM | 350–500 MB | +120–200 MB (TDLib) |
 | vCPU | ~0 em repouso | picos em pesquisa/sync |
 | Disco | 4–6 GB | 30–80 MB de BD TDLib |
-| Cache temporário | 0–5 GB configurável | partilhado |
+| Cache temporário | 0–10 GB global (configurável) | partilhado |
 | Dinheiro | 0 €/mês | 0 € |
 
 Três perfis: **1,1–1,5 GB RAM**, 2 GB recomendados, 8–12 GB de CT.
@@ -175,9 +181,9 @@ Fechar antes de começar a codificar; as marcadas **BLOQUEIA** alteram a arquite
 5.2 **Visibilidade do admin (declarada).** Vê estado, uso e jobs; não navega bibliotecas de outros perfis, embora a BD partilhada lhe dê acesso técnico — consta no aviso de privacidade.
 5.3 **Eliminação de conta (fechado).** Desactivar por defeito; apagar dados exige confirmação explícita.
 6. **Números do cache.** Teto (5 GB), TTL (10 min), profundidade de prefetch (2), limpeza no arranque e comportamento com disco cheio (rejeitar prefetch, servir faixa atual).
-7. **Ciclo de vida do TDLib.** Arranque lazy no primeiro acesso e paragem após inatividade (ex. 30 min) para poupar RAM, ou todas as sessões sempre ligadas. Recomendação: lazy + paragem com estado persistido.
+7. **Fechado — ciclo de vida do TDLib.** Arranque lazy no primeiro acesso e paragem após **30 min** de inatividade, com estado persistido.
 8. **Importação de ficheiros locais no servidor.** Fora do MVP? Confirmar; caso contrário, precisa de upload, pasta e indexação próprios.
-9. **Quem pode adquirir.** Todos os perfis ou só alguns; limite de pedidos por perfil/dia; destino obrigatório definido pelo próprio perfil.
+9. **Fechado — aquisição.** Todos os perfis, com a mesma lógica do Android (pesquisa, revisão, commit, jobs, `/cancel`); destino obrigatório configurado no onboarding.
 10. **Histórico e fila.** Guardar fila por perfil (sim, para retomar) e histórico de reprodução (recomendação: não guardar no servidor no MVP). Retenção e exportação.
 11. **Backups.** Frequência, retenção e cifra; incluir teste de restauro; cache excluído.
 12. **Deploy e atualização.** systemd com JAR vs imagem Docker; como atualizar e reverter; migrações da BD no arranque.
@@ -186,4 +192,5 @@ Fechar antes de começar a codificar; as marcadas **BLOQUEIA** alteram a arquite
 15. **Testes mínimos de isolamento.** Matriz perfil A/B/C × endpoints (biblioteca, track, stream, playlist, jobs) e testes de cache partilhada sem fuga de autorização.
 16. **Migração da biblioteca existente.** O owner pode importar a BD Android para o primeiro perfil? Caminhos e `file_id` diferem; decidir se há importador ou se começa vazia.
 17. **Privacidade e uso.** Aviso de uso familiar, sem partilha pública, logs sem telefones/tokens; o dono da instância tem acesso administrativo a todos os perfis.
+19. **CloudSync e restauro (fechado).** O onboarding detecta o canal de sync do MLib na conta; se existir, oferece restaurar biblioteca, playlists e definições antes de indexar. Sem CloudSync, indexa as origens escolhidas. Não há importação da BD Android.
 18. **Gatilho do fallback.** Se o dispatcher TDLib ou a refactor dos singletons (`AppText`, `Knowledge`) exceder 3 dias, mudar para **um processo por perfil** atrás de um gateway, aceitando +700–900 MB de RAM.
