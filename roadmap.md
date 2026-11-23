@@ -7,21 +7,28 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado das versões 0.1.27 a 0.1.30
+## 0. Estado das versões 0.1.27 a 0.1.31
 
-Verificado em **22-11-2026, 20:26 UTC**.
+Verificado em **23-11-2026, 01:21 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.30** (publicada em 22-11-2026 20:13:51) |
+| Última release pública | **v0.1.31** (publicada em 23-11-2026 01:00:40) |
 | Tag `v0.1.27` | **Criada** (`fda3eb0`); build `45039489724` |
 | Tag `v0.1.28` | **Criada** (`6ccff1b`); build `45043559683` |
 | Tag `v0.1.29` | **Criada** (`b8c5162`); build `45047965275` |
 | Tag `v0.1.30` | **Criada** (`980d09f`); build `45061552047` |
-| Packages | 0.1.27 / 1027, 0.1.28 / 1028, 0.1.29 / 1029 e 0.1.30 / 1030 |
+| Tag `v0.1.31` | **Criada** (`f4d08ca`); build `45088467464` |
+| Packages | 0.1.27 / 1027, 0.1.28 / 1028, 0.1.29 / 1029, 0.1.30 / 1030 e 0.1.31 / 1031 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
-| Próxima versão | **A acordar**; **Google TV congelada** por decisão do owner (22-11-2026) |
+| Próxima versão | **A acordar**; Wave 1 do servidor em validação; **Google TV congelada** |
+
+**Hashes publicados (0.1.31):**
+
+- `mlib-0.1.31-arm64.apk` — `29487e747d7e200b8d1a869c2d31e5b1c435519f67acf3c24231e2f33559eb1c`
+- `mlib-0.1.31-x86_64.apk` — `1c3ded77fe0d1419de7bac4734a96906105ed178a8771a249d93dffa93f62c2c`
+- `SHA256SUMS.txt` — `e55279021365bda77e69cb83f65c75cb673cc2c1af069353c6f2fa887aa87a28`
 
 **Hashes publicados (0.1.30):**
 
@@ -53,6 +60,7 @@ Verificado em **22-11-2026, 20:26 UTC**.
 - **0.1.28:** Android Auto completo para reprodução (Início, pesquisa por voz na biblioteca, notificações e capas personalizadas).
 - **0.1.29:** Wave 2 — navegação de 4 destinos, Início, Biblioteca com chips e artistas, Procurar, Definições em ecrã completo, gradiente da arte no player e superfícies sólidas.
 - **0.1.30:** correções — recolha de playlists espera a contagem anunciada, cancelamento de pesquisa silencioso, cancelamento de obtenção com `/cancel` ao bot, página de artista e conhecimento localizado, aquisição pré-preenchida e confirmação de downloads offline.
+- **0.1.31:** CloudSync transporta capas de faixa (favoritas já viajavam), formato 6 compatível com pacotes antigos e segredos sempre excluídos.
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
