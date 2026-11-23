@@ -11,6 +11,17 @@ Registado a **23-11-2026**. Projecto separado da app Android.
 5. **Sem entrega parcial declarada.** Se uma wave não cumprir a aceitação, continua aberta; não se avança.
 6. **Validação do owner** em cada fecho, no ambiente real (CT + Tunnel + iPhone quando aplicável).
 
+## Estado
+
+| Wave | Estado |
+|---|---|
+| 1 — Fundações | **em validação** (evidência em `docs/mlib/server/wave-1-closure.md`) |
+| 2 — Acesso | não iniciada |
+| 3 — Onboarding | não iniciada |
+| 4 — Biblioteca | não iniciada |
+| 5 — Player | não iniciada |
+| 6 — Aquisição | não iniciada |
+| 7 — Operação | não iniciada |
 ## Wave 1 — Fundações do servidor
 
 **Objectivo:** um perfil, biblioteca real, streaming funcional. Sem autenticação de utilizadores (usa token de serviço por ambiente).

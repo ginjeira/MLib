@@ -17,4 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "MLib"
 
 include(":desktop")
+include(":server")
 if (!providers.gradleProperty("desktopOnly").orElse("false").get().toBoolean()) include(":app")
