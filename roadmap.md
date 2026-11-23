@@ -510,6 +510,29 @@ Ideias registadas, por amadurecer; não estão comprometidas em nenhuma versão.
 **Fase com sinais locais:** `play_count`, `last_played`, `skip_count` por faixa, guardados só no dispositivo; alimentam redescobertas, anti-repetição (48 h) e “Feito para si” diário com seed determinístico.
 
 **Decisões em aberto:** onde vivem os mixes (virtuais vs playlist materializada); regras de diversidade; limiares por artista; explicabilidade do cartão; opt-out por tipo; se o histórico pode ou não entrar no CloudSync (recomendação: nunca).
+### FR-12 — CloudSync completo, sem segredos
+
+**Data:** 23-11-2026. **Estado:** requisito registado; corrige lacunas do sync atual.
+
+**Problema:** o descritor de faixa sincronizado omite `liked` e `art`; as favoritas e capas de faixa não viajam entre dispositivos. Caminhos locais e estado offline também não devem viajar.
+
+**Incluir no sync:**
+- `liked` por faixa (e, no servidor, por perfil).
+- `art` (capa de faixa) com validação `http`/`https`/`data:image` e limite de tamanho.
+- Manter o que já existe: origens, descritores base, playlists (nome/descrição/capa/ordem/membros), álbuns (metadados/capa/ordem), definições da whitelist.
+
+**Excluir sempre (segredos e estado local):**
+- `api_id`/`api_hash`, sessões TDLib, chaves de base de dados, passwords, tokens de convite, TOTP.
+- Caminhos locais (`path`), estado de download/offline, `available`, ficheiros importados.
+
+**Requisitos técnicos:**
+- Subir `FORMAT` com migração e compatibilidade de leitura.
+- Validação estrita dos novos campos no protocolo.
+- Testes: ida-e-volta de favoritas e capas; payload nunca contém segredos nem caminhos.
+- Merge por último escritor por campo, como no resto do sync.
+
+**Aceitação:** dois dispositivos convergem favoritas e capas de faixa; inspeção do payload confirma ausência de segredos; servidor restaura favoritas/capas no onboarding.
+
 ## 8. Próxima acção
 
 Assim que o push for possível:
@@ -576,6 +599,7 @@ Registadas a **22-11-2026**, por amadurecer. Não estão atribuídas a versão n
 | FR-09 | **Blind A/B de qualidade** | Baixo | Comparar cópias às cegas para decidir upgrades. |
 | FR-10 | **Prateleira por cor/humor** | Baixo | Paleta da capa + tags de humor manuais. |
 | FR-11 | **MLib Server + web UI (perfis independentes)** | Alto | Servidor caseiro para iPhones: um perfil por adulto, conta Telegram própria, biblioteca e consumo de bot isolados; streaming por Range e PWA. Proposta em `docs/mlib/SERVER-PROPOSAL.md`. |
+| FR-12 | **CloudSync completo (sem segredos)** | Alto | Sincronizar favoritas, capas de faixa e restantes dados de curadoria; excluir sempre segredos (sessões, chaves, passwords, TOTP). |
 
 **Excluído por princípio:** recomendação por collaborative filtering ou upload de hábitos; separação de vocais/stems; integrações com serviços de streaming.
 
