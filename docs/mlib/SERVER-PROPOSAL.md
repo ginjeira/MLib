@@ -1,5 +1,7 @@
 # MLib Server — proposta de implementação (FR-11)
 
+> Execução por waves sequenciais: ver `docs/mlib/SERVER-WAVES.md`. Uma wave só fecha com evidência e validação; não há percentagens.
+
 Actualizada a **22-11-2026**. Versão 3: servidor **sem downloads persistentes**, tudo online.
 
 ## 0. Decisões fixadas

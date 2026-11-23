@@ -514,11 +514,11 @@ Ideias registadas, por amadurecer; não estão comprometidas em nenhuma versão.
 
 **Data:** 23-11-2026. **Estado:** requisito registado; corrige lacunas do sync atual.
 
-**Problema:** o descritor de faixa sincronizado omite `liked` e `art`; as favoritas e capas de faixa não viajam entre dispositivos. Caminhos locais e estado offline também não devem viajar.
+**Problema corrigido no diagnóstico:** as favoritas **já sincronizam** através de registos `favorite/{id}`. O que faltava era a **capa de faixa** (`art`), ausente do descritor. Caminhos locais e estado offline não devem viajar.
 
 **Incluir no sync:**
-- `liked` por faixa (e, no servidor, por perfil).
 - `art` (capa de faixa) com validação `http`/`https`/`data:image` e limite de tamanho.
+- Manter as favoritas via `favorite/{id}` (já existente).
 - Manter o que já existe: origens, descritores base, playlists (nome/descrição/capa/ordem/membros), álbuns (metadados/capa/ordem), definições da whitelist.
 
 **Excluir sempre (segredos e estado local):**
@@ -526,12 +526,12 @@ Ideias registadas, por amadurecer; não estão comprometidas em nenhuma versão.
 - Caminhos locais (`path`), estado de download/offline, `available`, ficheiros importados.
 
 **Requisitos técnicos:**
-- Subir `FORMAT` com migração e compatibilidade de leitura.
+- `FORMAT` 5 → 6, com leitura retrocompatível de pacotes antigos (sem `art`).
 - Validação estrita dos novos campos no protocolo.
 - Testes: ida-e-volta de favoritas e capas; payload nunca contém segredos nem caminhos.
 - Merge por último escritor por campo, como no resto do sync.
 
-**Aceitação:** dois dispositivos convergem favoritas e capas de faixa; inspeção do payload confirma ausência de segredos; servidor restaura favoritas/capas no onboarding.
+**Aceitação:** dois dispositivos convergem favoritas e capas de faixa; pacotes antigos continuam a ser lidos; inspeção do payload confirma ausência de segredos; servidor restaura favoritas/capas no onboarding.
 
 ## 8. Próxima acção
 

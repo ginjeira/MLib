@@ -60,6 +60,58 @@ class LibrarySyncProtocolTest {
         assertEquals(2, LibrarySync.decode(packet).size)
     }
 
+    private fun trackDescriptor(art: String? = null) =
+        JSONObject()
+            .put("id", "123:456")
+            .put("chat", 123L)
+            .put("message", 456L)
+            .put("title", "Song")
+            .put("artist", "Artist")
+            .put("duration", 200)
+            .put("size", 1_000L)
+            .put("source", "GinjMusic")
+            .put("date", 0L)
+            .put("document", false)
+            .put("key", "")
+            .put("remote", "")
+            .put("profile", 0L)
+            .put("username", "")
+            .also { if (art != null) it.put("art", art) }
+
+    @Test
+    fun trackArtRoundTripsWithDataUrl() {
+        val art = "data:image/jpeg;base64," + "A".repeat(2_000)
+        val packet = JSONArray().put(row("track/123:456", 1, writerA, trackDescriptor(art)))
+        assertEquals(1, LibrarySync.decode(packet).size)
+    }
+
+    @Test
+    fun trackArtRejectsUnsupportedSchemesAndOversize() {
+        val local = JSONArray().put(row("track/123:456", 1, writerA, trackDescriptor("file:///tmp/x.jpg")))
+        assertTrue(runCatching { LibrarySync.decode(local) }.isFailure)
+        val oversized =
+            JSONArray().put(
+                row("track/123:456", 1, writerA, trackDescriptor("https://example.invalid/" + "a".repeat(400_000)))
+            )
+        assertTrue(runCatching { LibrarySync.decode(oversized) }.isFailure)
+    }
+
+    @Test
+    fun trackWithoutArtStillDecodesForOlderPeers() {
+        val packet = JSONArray().put(row("track/123:456", 1, writerB, trackDescriptor()))
+        assertEquals(1, LibrarySync.decode(packet).size)
+    }
+
+    @Test
+    fun favoritesAndSecretsPolicy() {
+        val favorite = JSONArray().put(row("favorite/123:456", 1, writerA, true))
+        assertEquals(1, LibrarySync.decode(favorite).size)
+        for (secret in listOf("api_hash", "api_id", "session", "totp_secret", "password")) {
+            val packet = JSONArray().put(row("setting/$secret", 1, writerA, "x"))
+            assertTrue("secret $secret", runCatching { LibrarySync.decode(packet) }.isFailure)
+        }
+    }
+
     @Test
     fun albumMetadataAcceptsCustomCoverDataUrl() {
         val cover = "data:image/jpeg;base64," + "A".repeat(120_000)

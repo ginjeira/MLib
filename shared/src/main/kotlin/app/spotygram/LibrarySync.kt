@@ -37,7 +37,7 @@ class LibrarySync(
     }
 
     companion object {
-        const val FORMAT = 5
+        const val FORMAT = 6
         private val localPlaybackSettings =
             setOf("setting/speed", "setting/order", "setting/repeat")
         val settings =
@@ -129,6 +129,9 @@ class LibrarySync(
                     )
                     require(value.optLong("size") >= 0 && value.optInt("duration") >= 0)
                     require(value.optString("username").length <= 64)
+                    val art = value.optString("art")
+                    require(art.length <= 400_000)
+                    require(art.isEmpty() || art.startsWith("https://") || art.startsWith("http://") || art.startsWith("data:image/"))
                 }
                 "favorite" ->
                     require(parts.size == 2 && trackId.matches(parts[1]) && value is Boolean)
@@ -424,7 +427,7 @@ class LibrarySync(
 
     fun descriptor(db: SqlDatabase, id: String): JSONObject? =
         db.rawQuery(
-                "SELECT id,chat,message,title,artist,duration,size,source,date,document,file_key,remote_id,profile_user,COALESCE((SELECT username FROM profiles WHERE profiles.id=tracks.profile_user),'') FROM tracks WHERE id=?",
+                "SELECT id,chat,message,title,artist,duration,size,source,date,document,file_key,remote_id,profile_user,COALESCE((SELECT username FROM profiles WHERE profiles.id=tracks.profile_user),''),art FROM tracks WHERE id=?",
                 arrayOf(id),
             )
             .use { c ->
@@ -447,10 +450,11 @@ class LibrarySync(
             .put("remote", c.getString(11))
             .put("profile", c.getLong(12))
             .put("username", c.getString(13))
+            .put("art", c.getString(14).take(400_000))
 
     fun references(db: SqlDatabase, ids: Collection<String>, values: MutableMap<String, Any?>) {
         for (chunk in ids.distinct().chunked(400)) db.rawQuery(
-                "SELECT id,chat,message,title,artist,duration,size,source,date,document,file_key,remote_id,profile_user,COALESCE((SELECT username FROM profiles WHERE profiles.id=tracks.profile_user),'') FROM tracks WHERE id IN(${chunk.joinToString(",") { "?" }})",
+                "SELECT id,chat,message,title,artist,duration,size,source,date,document,file_key,remote_id,profile_user,COALESCE((SELECT username FROM profiles WHERE profiles.id=tracks.profile_user),''),art FROM tracks WHERE id IN(${chunk.joinToString(",") { "?" }})",
                 chunk.toTypedArray(),
             )
             .use { c -> while (c.moveToNext()) values["track/${c.getString(0)}"] = descriptor(c) }
@@ -639,7 +643,7 @@ class LibrarySync(
                     ),
                 )
             db.execSQL(
-                "INSERT OR IGNORE INTO tracks(id,chat,message,file,title,artist,duration,size,source,date,document,file_key,remote_id,available,saved,cloud,profile_user) VALUES(?,?,?,0,?,?,?,?,?,?,?,?,?,?,0,1,?)",
+                "INSERT OR IGNORE INTO tracks(id,chat,message,file,title,artist,duration,size,source,date,document,file_key,remote_id,art,available,saved,cloud,profile_user) VALUES(?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,0,1,?)",
                 arrayOf<Any>(
                     id,
                     chat,
@@ -653,6 +657,7 @@ class LibrarySync(
                     if (t.optBoolean("document")) 1 else 0,
                     t.optString("key"),
                     t.optString("remote"),
+                    t.optString("art"),
                     if (chat == 0L && t.optLong("profile") == 0L) 0 else 1,
                     t.optLong("profile"),
                 ),
@@ -661,6 +666,9 @@ class LibrarySync(
                 "UPDATE tracks SET liked=? WHERE id=?",
                 arrayOf<Any>(if (value("favorite/$id") == true) 1 else 0, id),
             )
+            if (t.has("art")) {
+                db.execSQL("UPDATE tracks SET art=? WHERE id=?", arrayOf(t.optString("art"), id))
+            }
         }
         for (key in changed.filter { it.startsWith("favorite/") }) db.execSQL(
             "UPDATE tracks SET liked=? WHERE id=?",
