@@ -7,23 +7,30 @@
 
 Este é o plano de execução corrente. O histórico detalhado permanece em `docs/mlib/ROADMAP.md`.
 
-## 0. Estado das versões 0.1.27 a 0.1.32
+## 0. Estado das versões 0.1.27 a 0.1.33
 
-Verificado em **26-11-2026, 11:30 UTC**.
+Verificado em **26-11-2026, 13:47 UTC**.
 
 | Item | Estado |
 |---|---|
-| Última release pública | **v0.1.32** (publicada em 26-11-2026 11:20:54) |
+| Última release pública | **v0.1.33** (publicada em 26-11-2026 13:31:34) |
 | Tag `v0.1.27` | **Criada** (`fda3eb0`); build `45039489724` |
 | Tag `v0.1.28` | **Criada** (`6ccff1b`); build `45043559683` |
 | Tag `v0.1.29` | **Criada** (`b8c5162`); build `45047965275` |
 | Tag `v0.1.30` | **Criada** (`980d09f`); build `45061552047` |
 | Tag `v0.1.31` | **Criada** (`f4d08ca`); build `45088467464` |
 | Tag `v0.1.32` | **Criada** (`6c2a3a0`); build `45803904113` |
-| Packages | 0.1.27 / 1027, 0.1.28 / 1028, 0.1.29 / 1029, 0.1.30 / 1030, 0.1.31 / 1031 e 0.1.32 / 1032 |
+| Tag `v0.1.33` | **Criada** (`0532428`); build `45823768450` |
+| Packages | 0.1.27 / 1027, 0.1.28 / 1028, 0.1.29 / 1029, 0.1.30 / 1030, 0.1.31 / 1031, 0.1.32 / 1032 e 0.1.33 / 1033 |
 | Assinatura | `6e8fc1d09b55e70c6183b8cbbebad96d935f01a24558af356b697a942541e200` |
 | Publicação automática | **Desativada**; cada versão é acordada com o owner |
 | Próxima versão | **A acordar**; Wave 1 do servidor em validação; **Google TV congelada** |
+
+**Hashes publicados (0.1.33):**
+
+- `mlib-0.1.33-arm64.apk` — `19e435630b5fa2904252b791842ba63bb10e23d915aba313956067e78588917d`
+- `mlib-0.1.33-x86_64.apk` — `198890e6be00f94c87e3a390cef393137f744dccc5c21fc5b8edd3ea9f9f91f3`
+- `SHA256SUMS.txt` — `e56eedbb07f1cd8ebf267bc34259ae5f4399c674a711379e24f37420ceffacf7`
 
 **Hashes publicados (0.1.32):**
 
@@ -69,6 +76,7 @@ Verificado em **26-11-2026, 11:30 UTC**.
 - **0.1.30:** correções — recolha de playlists espera a contagem anunciada, cancelamento de pesquisa silencioso, cancelamento de obtenção com `/cancel` ao bot, página de artista e conhecimento localizado, aquisição pré-preenchida e confirmação de downloads offline.
 - **0.1.31:** CloudSync transporta capas de faixa (favoritas já viajavam), formato 6 compatível com pacotes antigos e segredos sempre excluídos.
 - **0.1.32:** correção do Android Auto — escolher uma faixa inicia a reprodução em vez de limpar a fila partilhada com o telemóvel.
+- **0.1.33:** Android Auto com play e anterior/seguinte em playlists, álbuns, artistas, favoritas, offline, recentes e todas as faixas; a lista visível passa a ser a fila ao escolher uma faixa.
 
 ## 0.1 Entregue em `main` depois da tag `v0.1.26` (não publicado)
 
