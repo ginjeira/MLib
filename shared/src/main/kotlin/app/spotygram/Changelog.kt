@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.34",
+                english =
+                    "Repairing CloudSync now really starts a new private channel and ignores the old one, so a re-created recovery key no longer gets stuck verifying packets encrypted with the previous key. A key mismatch is reported explicitly. The local library is never changed.",
+                portuguese =
+                    "Reparar o CloudSync passa a criar realmente um canal privado novo e a ignorar o antigo, pelo que uma chave de recuperação recriada deixa de ficar presa a verificar pacotes cifrados com a chave anterior. Uma chave errada passa a ser indicada explicitamente. A biblioteca local nunca é alterada.",
+            ),
+            ChangelogEntry(
                 version = "0.1.33",
                 english =
                     "Android Auto now shows play and previous/next controls for playlists, albums, artists, favourites, offline, recent and all tracks. Selecting a track also keeps the browsed list as the queue, so previous/next and continuous playback work in the car.",
