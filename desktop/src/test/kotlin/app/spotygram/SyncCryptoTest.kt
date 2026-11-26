@@ -36,7 +36,10 @@ class SyncCryptoTest {
     @Test
     fun rejectsWrongKey() {
         val encrypted = SyncCrypto.encrypt(plain, key, aad)
-        assertTrue(runCatching { SyncCrypto.decrypt(encrypted, ByteArray(32) { 7 }, aad) }.isFailure)
+        val failure =
+            runCatching { SyncCrypto.decrypt(encrypted, ByteArray(32) { 7 }, aad) }
+                .exceptionOrNull()
+        assertTrue(failure is javax.crypto.AEADBadTagException)
     }
 
     @Test

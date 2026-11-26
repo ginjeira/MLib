@@ -399,6 +399,7 @@
     <string name="sync_newer_version">Actualize o MLib para ler este formato de biblioteca.</string>
     <string name="sync_history_incomplete">O histórico da biblioteca do Telegram ainda não está disponível.</string>
     <string name="sync_invalid_data">Não foi possível verificar o ficheiro da biblioteca.</string>
+    <string name="sync_key_mismatch">A chave de recuperação deste dispositivo não corresponde ao canal de sincronização MLib existente. Importa o código correto ou cria um canal novo em Definições → Reparar armazenamento de sincronização.</string>
     <string name="sync_storage_missing">O canal de armazenamento privado está indisponível. Restabeleça o acesso para continuar a sincronizar.</string>
     <string name="profile_audio_add_short">Para o perfil</string>
     <string name="profile_audio_remove_short">Remover</string>

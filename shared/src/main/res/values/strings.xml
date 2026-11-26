@@ -385,6 +385,7 @@
     <string name="sync_newer_version">Update MLib to read this library format.</string>
     <string name="sync_history_incomplete">Telegram library history is not available yet.</string>
     <string name="sync_invalid_data">The library file could not be verified.</string>
+    <string name="sync_key_mismatch">The recovery key on this device does not match the existing MLib sync channel. Import the correct code, or create a new channel in Settings → Repair sync storage.</string>
     <string name="sync_storage_missing">The private storage channel is unavailable. Restore access to it to continue syncing.</string>
     <string name="add_profile_audio">Add to Telegram profile</string>
     <string name="remove_profile_audio">Remove from Telegram profile</string>

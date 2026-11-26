@@ -8,6 +8,7 @@ import java.util.Base64
 import java.util.UUID
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import javax.crypto.AEADBadTagException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,10 +20,22 @@ data class SyncState(val phase: String = "offline", val lastSync: Long = 0, val 
 /** Encryption was introduced in protocol v4 and remains mandatory in every later format. */
 internal fun syncFormatUsesEncryption(format: Int): Boolean = format >= 4
 
+internal fun ignoredChannelIds(value: String): Set<Long> =
+    value.split(',').mapNotNull { it.toLongOrNull() }.toSet()
+
+internal fun mergeIgnoredChannels(value: String, added: Collection<Long>): String =
+    (ignoredChannelIds(value) + added.filter { it != 0L })
+        .distinct()
+        .sorted()
+        .joinToString(",")
+
 /**
  * One event-driven worker uses the existing TDLib connection; Telegram owns transport and storage.
  */
 private class SyncPayloadTooLargeException(message: String) : Exception(message)
+
+/** The channel exists but was written with a different 256-bit key. */
+private class SyncKeyMismatchException(message: String) : Exception(message)
 
 class CloudSync(private val app: SpotygramApp) {
     val state = MutableStateFlow(SyncState())
@@ -186,6 +199,14 @@ class CloudSync(private val app: SpotygramApp) {
     private fun associatedData(kind: String, through: Long): ByteArray =
         "mlib-sync/4|${store.account}|$kind|$through".toByteArray(Charsets.UTF_8)
 
+    private suspend fun ignoredChannels(): Set<Long> =
+        ignoredChannelIds(store.meta("ignored-channels"))
+
+    private suspend fun ignoreChannels(ids: Collection<Long>) {
+        val merged = mergeIgnoredChannels(store.meta("ignored-channels"), ids)
+        if (merged.isNotEmpty()) store.meta("ignored-channels", merged)
+    }
+
     suspend fun stop() {
         connected = false
         worker?.cancelAndJoin()
@@ -222,8 +243,13 @@ class CloudSync(private val app: SpotygramApp) {
      */
     suspend fun repairStorage(clearKey: Boolean = false) {
         val wasConnected = connected
-        stop()
         val user = store.account
+        // The old channel keeps packets encrypted with the old key. Forget it explicitly,
+        // otherwise discovery finds it again and every sync fails to decrypt it.
+        ignoreChannels(
+            rooms + listOfNotNull(store.meta("channel/$user")?.toLongOrNull())
+        )
+        stop()
         if (user != 0L) store.removeMeta("channel/$user")
         if (clearKey) app.platform.clearSyncEncryptionKey()
         inspected.clear()
@@ -367,8 +393,9 @@ class CloudSync(private val app: SpotygramApp) {
     }
 
     private suspend fun discover(user: Long): List<Long> {
+        val ignored = ignoredChannels()
         val candidates = linkedSetOf<Long>()
-        val remembered = store.meta("channel/$user").toLongOrNull()
+        val remembered = store.meta("channel/$user").toLongOrNull()?.takeIf { it !in ignored }
         if (remembered != null) candidates += remembered
         for (list in listOf("chatListMain", "chatListArchive")) {
             while (true) {
@@ -388,6 +415,7 @@ class CloudSync(private val app: SpotygramApp) {
         candidates += telegram.channelChats
         val valid = mutableListOf<Long>()
         for (id in candidates) {
+            if (id in ignored) continue
             val chat =
                 try {
                     telegram.request(json("getChat", "chat_id" to id))
@@ -542,7 +570,12 @@ class CloudSync(private val app: SpotygramApp) {
                         packet to
                             LibrarySync.decode(packet.getJSONArray("records"), legacy = format == 1)
                     } catch (e: Exception) {
-                        if (e is CancellationException || e is TelegramException) throw e
+                        if (
+                            e is CancellationException ||
+                                e is TelegramException ||
+                                e is SyncKeyMismatchException
+                        )
+                            throw e
                         throw IllegalArgumentException(tr(R.string.sync_invalid_data), e)
                     }
                 for (r in records) {
@@ -608,7 +641,11 @@ class CloudSync(private val app: SpotygramApp) {
             val compressed =
                 if (syncFormatUsesEncryption(format)) {
                     val through = parts[5].toLong()
-                    SyncCrypto.decrypt(bytes, requireSyncKey(), associatedData(parts[2], through))
+                    try {
+                        SyncCrypto.decrypt(bytes, requireSyncKey(), associatedData(parts[2], through))
+                    } catch (e: AEADBadTagException) {
+                        throw SyncKeyMismatchException(tr(R.string.sync_key_mismatch))
+                    }
                 } else bytes
             val plain =
                 GZIPInputStream(compressed.inputStream()).use { input ->
