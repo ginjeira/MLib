@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.32",
+                english =
+                    "Android Auto now starts playback when a track is selected instead of clearing the queue. The car and the phone keep using the same queue and player, so playback state and history stay in sync.",
+                portuguese =
+                    "O Android Auto passa a iniciar a reprodução quando uma faixa é escolhida, em vez de limpar a fila. O carro e o telemóvel continuam a usar a mesma fila e o mesmo player, mantendo o estado e o histórico sincronizados.",
+            ),
+            ChangelogEntry(
                 version = "0.1.31",
                 english =
                     "CloudSync now carries track covers between devices; favourites already travelled. Secrets such as sessions, API hashes, passwords and TOTP are never included, and the new sync format still reads older packets.",
