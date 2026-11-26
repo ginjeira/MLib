@@ -3,6 +3,7 @@ package app.spotygram
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
+import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -155,22 +156,38 @@ class PlaybackService : MediaLibraryService() {
                     LibraryResult.ofItemList(ImmutableList.copyOf(pageItems), params)
                 )
             }
+            override fun onSetMediaItems(
+                session: MediaSession,
+                controller: MediaSession.ControllerInfo,
+                mediaItems: List<androidx.media3.common.MediaItem>,
+                startIndex: Int,
+                startPositionMs: Long,
+            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+                val tracks = playableTracks(mediaItems)
+                if (tracks.isEmpty()) return emptySetMediaItems()
+                val index = if (startIndex in tracks.indices) startIndex else 0
+                // PlaybackQueue owns ordering, persistence, resume and listening history.
+                queue.start(tracks, index)
+                // Media3 applies whatever this future returns with Player.setMediaItems(). An
+                // empty list would clear the window PlaybackQueue just installed, which is why
+                // "play" from Android Auto did nothing. Return that same window instead.
+                if (player.currentMediaItem?.mediaId != tracks[index].id) {
+                    return emptySetMediaItems()
+                }
+                val window = (0 until player.mediaItemCount).map(player::getMediaItemAt)
+                return Futures.immediateFuture(
+                    MediaSession.MediaItemsWithStartPosition(
+                        window, player.currentMediaItemIndex, player.currentPosition,
+                    )
+                )
+            }
+
             override fun onAddMediaItems(
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo,
                 mediaItems: List<androidx.media3.common.MediaItem>,
-            ): ListenableFuture<List<androidx.media3.common.MediaItem>> {
-                val tracks = mediaItems.mapNotNull { item ->
-                    app.library.state.value.byId[item.mediaId.removePrefix(AutoLibrary.TRACK_PREFIX)]
-                }.filter { it.local || it.available }
-                if (tracks.isNotEmpty()) {
-                    // PlaybackQueue owns ordering, persistence, resume and listening history.
-                    queue.start(tracks, 0)
-                }
-                // The queue has already populated the same ExoPlayer; avoid replacing its
-                // managed timeline with the browser's transient request.
-                return Futures.immediateFuture(emptyList())
-            }
+            ): ListenableFuture<List<androidx.media3.common.MediaItem>> =
+                Futures.immediateFuture(mediaItems.mapNotNull { playableMediaItem(it) })
         }
 
         session = MediaLibrarySession.Builder(this, player, callback)
@@ -221,6 +238,29 @@ class PlaybackService : MediaLibraryService() {
                     }
             }
         }
+    }
+
+    private fun emptySetMediaItems() =
+        Futures.immediateFuture(
+            MediaSession.MediaItemsWithStartPosition(emptyList(), C.INDEX_UNSET, C.TIME_UNSET)
+        )
+
+    private fun playableTracks(
+        items: List<androidx.media3.common.MediaItem>,
+    ): List<Track> =
+        items.mapNotNull { item ->
+            app.library.state.value.byId[item.mediaId.removePrefix(AutoLibrary.TRACK_PREFIX)]
+        }.filter { it.local || it.available }
+
+    private fun playableMediaItem(
+        item: androidx.media3.common.MediaItem,
+    ): androidx.media3.common.MediaItem? {
+        val id = item.mediaId.removePrefix(AutoLibrary.TRACK_PREFIX)
+        val track = app.library.state.value.byId[id] ?: return null
+        if (!track.local && !track.available) return null
+        return item.buildUpon()
+            .setUri(Uri.parse("spotygram://track/${Uri.encode(id)}"))
+            .build()
     }
 
     private fun labels() =
