@@ -10,6 +10,13 @@ object Changelog {
     val entries =
         listOf(
             ChangelogEntry(
+                version = "0.1.33",
+                english =
+                    "Android Auto now shows play and previous/next controls for playlists, albums, artists, favourites, offline, recent and all tracks. Selecting a track also keeps the browsed list as the queue, so previous/next and continuous playback work in the car.",
+                portuguese =
+                    "O Android Auto passa a mostrar play e anterior/seguinte em playlists, álbuns, artistas, favoritas, offline, recentes e todas as faixas. Ao escolher uma faixa, a lista que está a ser vista passa a ser a fila, pelo que anterior/seguinte e a reprodução contínua funcionam no carro.",
+            ),
+            ChangelogEntry(
                 version = "0.1.32",
                 english =
                     "Android Auto now starts playback when a track is selected instead of clearing the queue. The car and the phone keep using the same queue and player, so playback state and history stay in sync.",
