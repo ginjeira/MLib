@@ -11,6 +11,7 @@ class AutoNode(
     val artworkUrl: String = "",
     val artworkData: ByteArray? = null,
     val playable: Boolean = false,
+    val playableCollection: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean =
         other is AutoNode &&
@@ -20,10 +21,11 @@ class AutoNode(
             album == other.album &&
             artworkUrl == other.artworkUrl &&
             artworkData.contentEquals(other.artworkData) &&
-            playable == other.playable
+            playable == other.playable &&
+            playableCollection == other.playableCollection
 
     override fun hashCode(): Int =
-        listOf(id, title, artist, album, artworkUrl, playable).hashCode() * 31 +
+        listOf(id, title, artist, album, artworkUrl, playable, playableCollection).hashCode() * 31 +
             (artworkData?.contentHashCode() ?: 0)
 }
 
@@ -65,9 +67,9 @@ object AutoLibrary {
             folder(PLAYLISTS, labels.playlists),
             folder(ALBUMS, labels.albums),
             folder(ARTISTS, labels.artists),
-            folder(FAVORITES, labels.favorites),
-            folder(OFFLINE, labels.offline),
-            folder(ALL_TRACKS, labels.allTracks),
+            collection(FAVORITES, labels.favorites),
+            collection(OFFLINE, labels.offline),
+            collection(ALL_TRACKS, labels.allTracks),
         )
 
     fun children(parentId: String, library: LibraryState, labels: Labels): List<AutoNode> =
@@ -75,9 +77,9 @@ object AutoLibrary {
             ROOT -> root(labels)
             HOME ->
                 listOf(
-                    folder(RECENT, labels.recent),
-                    folder(FAVORITES, labels.favorites),
-                    folder(OFFLINE, labels.offline),
+                    collection(RECENT, labels.recent),
+                    collection(FAVORITES, labels.favorites),
+                    collection(OFFLINE, labels.offline),
                     folder(PLAYLISTS, labels.playlists),
                 )
             ALL_TRACKS -> library.tracks.playable().sortedByTitle().map(::trackNode)
@@ -88,13 +90,14 @@ object AutoLibrary {
             RECENT ->
                 library.tracks.playable().sortedByDescending { it.date }
                     .take(RECENT_LIMIT).map(::trackNode)
-            PLAYLISTS -> library.playlists.map { folder("$PLAYLIST_PREFIX${it.id}", it.name) }
+            PLAYLISTS ->
+                library.playlists.map { collection("$PLAYLIST_PREFIX${it.id}", it.name) }
             ARTISTS ->
                 library.tracks.playable().filter { it.artist.isNotBlank() }
                     .groupBy { it.artist }
                     .toList()
                     .sortedBy { it.first.lowercase() }
-                    .map { (artist, _) -> folder("$ARTIST_PREFIX$artist", artist) }
+                    .map { (artist, _) -> collection("$ARTIST_PREFIX$artist", artist) }
             ALBUMS -> library.albums.map { albumNode(it) }
             else -> childrenOfFolder(parentId, library)
         }
@@ -103,22 +106,22 @@ object AutoLibrary {
         when {
             id == ROOT -> folder(ROOT, labels.home)
             id == HOME -> folder(HOME, labels.home)
-            id == ALL_TRACKS -> folder(ALL_TRACKS, labels.allTracks)
+            id == ALL_TRACKS -> collection(ALL_TRACKS, labels.allTracks)
             id == PLAYLISTS -> folder(PLAYLISTS, labels.playlists)
             id == ALBUMS -> folder(ALBUMS, labels.albums)
             id == ARTISTS -> folder(ARTISTS, labels.artists)
-            id == FAVORITES -> folder(FAVORITES, labels.favorites)
-            id == OFFLINE -> folder(OFFLINE, labels.offline)
-            id == RECENT -> folder(RECENT, labels.recent)
+            id == FAVORITES -> collection(FAVORITES, labels.favorites)
+            id == OFFLINE -> collection(OFFLINE, labels.offline)
+            id == RECENT -> collection(RECENT, labels.recent)
             id.startsWith(TRACK_PREFIX) ->
                 library.byId[id.removePrefix(TRACK_PREFIX)]?.let(::trackNode)
             id.startsWith(PLAYLIST_PREFIX) -> {
                 val playlistId = id.removePrefix(PLAYLIST_PREFIX).toLongOrNull()
                 library.playlists.firstOrNull { it.id == playlistId }?.let {
-                    folder(id, it.name)
+                    collection(id, it.name)
                 }
             }
-            id.startsWith(ARTIST_PREFIX) -> folder(id, id.removePrefix(ARTIST_PREFIX))
+            id.startsWith(ARTIST_PREFIX) -> collection(id, id.removePrefix(ARTIST_PREFIX))
             id.startsWith(ALBUM_PREFIX) -> {
                 val albumId = id.removePrefix(ALBUM_PREFIX)
                 library.albums.firstOrNull { it.id == albumId }?.let(::albumNode)
@@ -185,6 +188,10 @@ object AutoLibrary {
     private fun folder(id: String, title: String): AutoNode =
         AutoNode(id = id, title = title)
 
+    /** A browsable folder that is also playable as a whole, like a playlist. */
+    private fun collection(id: String, title: String): AutoNode =
+        AutoNode(id = id, title = title, playableCollection = true)
+
     private fun albumNode(album: Album): AutoNode {
         val artwork = artworkOf(album.coverUrl)
         return AutoNode(
@@ -193,6 +200,7 @@ object AutoLibrary {
             artist = listOf(album.artist, album.year).filter(String::isNotBlank).joinToString(" · "),
             artworkUrl = artwork.first,
             artworkData = artwork.second,
+            playableCollection = true,
         )
     }
 

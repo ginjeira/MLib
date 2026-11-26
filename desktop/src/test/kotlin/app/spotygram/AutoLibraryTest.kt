@@ -86,6 +86,38 @@ class AutoLibraryTest {
     }
 
     @Test
+    fun playableCollectionsAreMarkedForTheCar() {
+        val state =
+            library(
+                tracks = listOf(track("1", artist = "Daft Punk")),
+                playlists = listOf(Playlist(id = 7, name = "Road trip", tracks = listOf("1"))),
+                albums =
+                    listOf(
+                        Album(
+                            id = "a",
+                            title = "Discovery",
+                            artist = "Daft Punk",
+                            year = "2001",
+                            tracks = listOf("1"),
+                            createdAt = 1,
+                            updatedAt = 2,
+                        )
+                    ),
+            )
+        assertTrue(AutoLibrary.item(AutoLibrary.ALL_TRACKS, state, labels)!!.playableCollection)
+        assertTrue(AutoLibrary.item(AutoLibrary.FAVORITES, state, labels)!!.playableCollection)
+        assertTrue(
+            AutoLibrary.children(AutoLibrary.PLAYLISTS, state, labels).single().playableCollection
+        )
+        assertTrue(
+            AutoLibrary.children(AutoLibrary.ALBUMS, state, labels).single().playableCollection
+        )
+        assertTrue(
+            AutoLibrary.children(AutoLibrary.ARTISTS, state, labels).single().playableCollection
+        )
+    }
+
+    @Test
     fun playableFiltersOutUnavailableRemoteTracks() {
         val state =
             library(

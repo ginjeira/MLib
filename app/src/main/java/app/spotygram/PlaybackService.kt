@@ -30,6 +30,7 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var session: MediaLibrarySession
     private lateinit var queue: PlaybackQueue
     private var libraryObserver: Job? = null
+    private var browseTracks: List<String> = emptyList()
     private val app get() = (application as AndroidApplication).model
 
     companion object {
@@ -109,6 +110,7 @@ class PlaybackService : MediaLibraryService() {
             ): ListenableFuture<LibraryResult<ImmutableList<androidx.media3.common.MediaItem>>> {
                 val children =
                     AutoLibrary.children(parentId, app.library.state.value, labels())
+                rememberBrowse(children)
                 val start = (page * pageSize).coerceAtMost(children.size)
                 val end = (start + pageSize).coerceAtMost(children.size)
                 val pageItems = children.subList(start, end).map(::toMediaItem)
@@ -149,6 +151,7 @@ class PlaybackService : MediaLibraryService() {
                 params: LibraryParams?,
             ): ListenableFuture<LibraryResult<ImmutableList<androidx.media3.common.MediaItem>>> {
                 val results = AutoLibrary.search(query, app.library.state.value)
+                rememberBrowse(results)
                 val start = (page * pageSize).coerceAtMost(results.size)
                 val end = (start + pageSize).coerceAtMost(results.size)
                 val pageItems = results.subList(start, end).map(::toMediaItem)
@@ -163,15 +166,43 @@ class PlaybackService : MediaLibraryService() {
                 startIndex: Int,
                 startPositionMs: Long,
             ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-                val tracks = playableTracks(mediaItems)
-                if (tracks.isEmpty()) return emptySetMediaItems()
-                val index = if (startIndex in tracks.indices) startIndex else 0
+                val requested = playableTracks(mediaItems)
+                val collection =
+                    if (requested.isEmpty() && mediaItems.size == 1) {
+                        collectionTracks(mediaItems[0])
+                    } else {
+                        emptyList()
+                    }
+                if (requested.isEmpty() && collection.isEmpty()) return emptySetMediaItems()
+                val tracks: List<Track>
+                val selected: Track
+                val index: Int
+                if (collection.isNotEmpty()) {
+                    // Android Auto can ask to play a browsable collection as a whole.
+                    tracks = collection
+                    index = 0
+                    selected = tracks[0]
+                } else {
+                    val requestedIndex = if (startIndex in requested.indices) startIndex else 0
+                    selected = requested[requestedIndex]
+                    // Android Auto selects one track from the list it is showing. Rebuild the
+                    // queue from that visible list so the car gets previous/next and autoplay
+                    // instead of a one-item timeline. Multi-item requests are left untouched.
+                    val surrounding =
+                        if (mediaItems.size == 1) {
+                            browseQueueContaining(selected.id)
+                        } else {
+                            emptyList()
+                        }
+                    tracks = surrounding.ifEmpty { requested }
+                    index = tracks.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
+                }
                 // PlaybackQueue owns ordering, persistence, resume and listening history.
                 queue.start(tracks, index)
                 // Media3 applies whatever this future returns with Player.setMediaItems(). An
                 // empty list would clear the window PlaybackQueue just installed, which is why
                 // "play" from Android Auto did nothing. Return that same window instead.
-                if (player.currentMediaItem?.mediaId != tracks[index].id) {
+                if (player.currentMediaItem?.mediaId != selected.id) {
                     return emptySetMediaItems()
                 }
                 val window = (0 until player.mediaItemCount).map(player::getMediaItemAt)
@@ -252,6 +283,36 @@ class PlaybackService : MediaLibraryService() {
             app.library.state.value.byId[item.mediaId.removePrefix(AutoLibrary.TRACK_PREFIX)]
         }.filter { it.local || it.available }
 
+    /** Expands a browsable collection (playlist, album, artist...) into its tracks. */
+    private fun collectionTracks(
+        item: androidx.media3.common.MediaItem,
+    ): List<Track> {
+        val state = app.library.state.value
+        val node = AutoLibrary.item(item.mediaId, state, labels())
+        if (node?.playableCollection != true) return emptyList()
+        return AutoLibrary.children(item.mediaId, state, labels())
+            .asSequence().filter { it.playable }
+            .mapNotNull { state.byId[it.id.removePrefix(AutoLibrary.TRACK_PREFIX)] }
+            .filter { it.local || it.available }
+            .toList()
+    }
+
+    /** Remembers the ordered tracks of the list the car is browsing or searching. */
+    private fun rememberBrowse(nodes: List<AutoNode>) {
+        val ids =
+            nodes.asSequence().filter { it.playable }
+                .map { it.id.removePrefix(AutoLibrary.TRACK_PREFIX) }
+                .toList()
+        if (ids.isNotEmpty()) browseTracks = ids
+    }
+
+    /** Returns the browsed list around [id], or empty when that list cannot be rebuilt. */
+    private fun browseQueueContaining(id: String): List<Track> {
+        if (browseTracks.size < 2 || id !in browseTracks) return emptyList()
+        val byId = app.library.state.value.byId
+        return browseTracks.mapNotNull { byId[it] }.filter { it.local || it.available }
+    }
+
     private fun playableMediaItem(
         item: androidx.media3.common.MediaItem,
     ): androidx.media3.common.MediaItem? {
@@ -282,7 +343,7 @@ class PlaybackService : MediaLibraryService() {
                 .setArtist(node.artist.takeIf { it.isNotBlank() })
                 .setAlbumTitle(node.album.takeIf { it.isNotBlank() })
                 .setIsBrowsable(!node.playable)
-                .setIsPlayable(node.playable)
+                .setIsPlayable(node.playable || node.playableCollection)
         when {
             node.artworkData != null -> metadata.setArtworkData(node.artworkData)
             node.artworkUrl.isNotBlank() -> metadata.setArtworkUri(Uri.parse(node.artworkUrl))
